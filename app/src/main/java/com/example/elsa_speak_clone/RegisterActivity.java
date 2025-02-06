@@ -6,7 +6,6 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,12 +23,12 @@ public class RegisterActivity extends AppCompatActivity {
     private Button btnRegisterUser;
     private ImageButton btnTogglePassword;
     private ImageButton btnToggleRewritePassword;
-    private LearningAppDatabase dbHelper;
     private TextView btnLogin;
     private TextView tvPassword;
     private TextView tvRewritePassword;
     private TextView tvUsername;
     private UserSessionManager sessionManager;
+    private LearningAppDatabase dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -214,7 +213,7 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         if (hasError) {
-            setTvPassword(errorMessage.toString() + ".");
+            setTvPassword(errorMessage + ".");
             return false;
         }
         else {
@@ -222,7 +221,7 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         if (!Objects.equals(password, rewritePassword)) {
-            setTvRewritePassword("Passwords do not match.");
+            setTvRewritePassword();
             return false;
         }
         else {
@@ -267,8 +266,9 @@ public class RegisterActivity extends AppCompatActivity {
         tvPassword.setVisibility(View.VISIBLE);
     }
 
-    private void setTvRewritePassword(String message) {
-        tvRewritePassword.setText(message);
+    @SuppressLint("SetTextI18n")
+    private void setTvRewritePassword() {
+        tvRewritePassword.setText("Password do not match");
         tvRewritePassword.setVisibility(View.VISIBLE);
     }
 
