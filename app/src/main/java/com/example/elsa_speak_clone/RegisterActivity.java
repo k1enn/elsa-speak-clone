@@ -54,7 +54,7 @@ public class RegisterActivity extends AppCompatActivity {
         btnRegisterUser = findViewById(R.id.btnRegisterUser);
         btnLogin = findViewById(R.id.btnLogin);
         btnTogglePassword = findViewById(R.id.btnTogglePassword);
-        btnToggleRewritePassword = findViewById(R.id.btnToggleRewritePassword);
+        btnToggleRewritePassword = findViewById(R.id.btnToggleLoginPassword);
     }
 
     private void setupLoginButton() {

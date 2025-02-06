@@ -1,5 +1,7 @@
 package com.example.elsa_speak_clone;
 
+import android.annotation.SuppressLint;
+import android.graphics.Typeface;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
@@ -8,8 +10,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.content.Intent;
+import android.text.InputType;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,6 +26,7 @@ import com.google.firebase.auth.FirebaseUser;
 public class LoginActivity extends AppCompatActivity {
     private EditText etUsername, etPassword;
     private Button btnLogin;
+    private ImageButton btnToggleLoginPassword;
     private TextView btnRegister ;
     private LinearLayout googleLoginButton;
     private LearningAppDatabase dbHelper;
@@ -54,6 +60,7 @@ public class LoginActivity extends AppCompatActivity {
         setupLoginButton();
         setupRegisterButton();
         setupGoogleLoginButton();
+        setupShowPasswordButton();
     }
 
     private void initializeUI() {
@@ -62,9 +69,33 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
         googleLoginButton = findViewById(R.id.btnGoogleLogin);
-        
+        btnToggleLoginPassword = findViewById(R.id.btnToggleLoginPassword);
+
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupShowPasswordButton() {
+        btnToggleLoginPassword.setOnClickListener(new View.OnClickListener() {
+            boolean isPasswordVisible = false;
+
+            @Override
+            public void onClick(View v) {
+                if (isPasswordVisible) {
+                    // Hide Password
+                    etPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_closed); // Change to closed eye icon
+                    etPassword.setTypeface(null, Typeface.NORMAL); // Set to default font
+                } else {
+                    // Show Password
+                    etPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_open); // Change to open eye icon
+                    etPassword.setTypeface(null, Typeface.NORMAL); // Set to default font
+                }
+                isPasswordVisible = !isPasswordVisible;
+                etPassword.setSelection(etPassword.getText().length()); // Move cursor to the end
+            }
+        });
+    }
     private void initializeDatabase() {
         dbHelper = new LearningAppDatabase(this);
     }
