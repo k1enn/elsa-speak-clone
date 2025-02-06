@@ -46,8 +46,8 @@ public class UserSessionManager {
     }
 
     public boolean isLoggedIn() {
-        String authType = pref.getString(KEY_AUTH_TYPE, "");
-        
+        String authType = getAuthType();
+
         if (AUTH_TYPE_FIREBASE.equals(authType)) {
             FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
             boolean firebaseLoggedIn = firebaseUser != null;
@@ -62,8 +62,8 @@ public class UserSessionManager {
     }
 
     public String getUsername() {
-        String authType = pref.getString(KEY_AUTH_TYPE, "");
-        
+        String authType = getAuthType();
+
         if (AUTH_TYPE_FIREBASE.equals(authType)) {
             FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
             return firebaseUser != null ? firebaseUser.getEmail() : pref.getString(KEY_FIREBASE_EMAIL, null);
@@ -79,8 +79,8 @@ public class UserSessionManager {
     }
 
     public void logout() {
-        String authType = pref.getString(KEY_AUTH_TYPE, "");
-        
+        String authType = getAuthType();
+
         if (AUTH_TYPE_FIREBASE.equals(authType)) {
             firebaseAuth.signOut();
             editor.remove(KEY_FIREBASE_EMAIL);

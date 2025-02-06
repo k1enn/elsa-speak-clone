@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:fillColor="#000000"
+        android:pathData="M12,6C15.5,6 18.7,8.1 20,12C18.7,15.9 15.5,18 12,18C8.5,18 5.3,15.9 4,12C5.3,8.1 8.5,6 12,6M12,8C9.8,8 8,9.8 8,12C8,14.2 9.8,16 12,16C14.2,16 16,14.2 16,12C16,9.8 14.2,8 12,8M12,10C13.1,10 14,10.9 14,12C14,13.1 13.1,14 12,14C10.9,14 10,13.1 10,12C10,10.9 10.9,10 12,10"/>
+    
+    <!-- Diagonal slash for closed eye -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="2"
+        android:pathData="M6,6L18,18"/>
+</vector>

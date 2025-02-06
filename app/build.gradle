@@ -1,6 +1,6 @@
 plugins {
-    id 'com.android.application' // ✅ This must be in the app module
-    id 'com.google.gms.google-services' // ✅ Firebase Plugin
+    id 'com.android.application'
+    id 'com.google.gms.google-services'
 }
 
 android {

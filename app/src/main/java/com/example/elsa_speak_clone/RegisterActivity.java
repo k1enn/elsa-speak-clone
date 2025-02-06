@@ -1,10 +1,16 @@
 package com.example.elsa_speak_clone;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.TextUtils;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,8 +22,13 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText etNewPassword;
     private EditText etRewritePassword;
     private Button btnRegisterUser;
+    private ImageButton btnTogglePassword;
+    private ImageButton btnToggleRewritePassword;
     private LearningAppDatabase dbHelper;
     private TextView btnLogin;
+    private TextView tvPassword;
+    private TextView tvRewritePassword;
+    private TextView tvUsername;
     private UserSessionManager sessionManager;
 
     @Override
@@ -30,14 +41,21 @@ public class RegisterActivity extends AppCompatActivity {
         dbHelper = new LearningAppDatabase(this);
         setupRegisterButton();
         setupLoginButton();
+        setupShowPasswordButton(etNewPassword, btnTogglePassword);
+        setupShowPasswordButton(etRewritePassword, btnToggleRewritePassword);
     }
 
     private void initializeViews() {
         etNewUsername = findViewById(R.id.etUsername);
         etNewPassword = findViewById(R.id.etPassword);
         etRewritePassword = findViewById(R.id.etRewritePassword);
+        tvPassword = findViewById(R.id.tvPassword);
+        tvRewritePassword = findViewById(R.id.tvRewritePassword);
+        tvUsername = findViewById(R.id.tvUsername);
         btnRegisterUser = findViewById(R.id.btnRegisterUser);
         btnLogin = findViewById(R.id.btnLogin);
+        btnTogglePassword = findViewById(R.id.btnTogglePassword);
+        btnToggleRewritePassword = findViewById(R.id.btnToggleRewritePassword);
     }
 
     private void setupLoginButton() {
@@ -48,6 +66,29 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupShowPasswordButton(EditText editText, ImageButton imageButton) {
+        imageButton.setOnClickListener(new View.OnClickListener() {
+            boolean isPasswordVisible = false;
+
+            @Override
+            public void onClick(View v) {
+                if (isPasswordVisible) {
+                    // Hide Password
+                    editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                    imageButton.setImageResource(R.drawable.ic_eye_closed); // Change to closed eye icon
+                    editText.setTypeface(null, Typeface.NORMAL); // Set to default font
+                } else {
+                    // Show Password
+                    editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                    imageButton.setImageResource(R.drawable.ic_eye_open); // Change to open eye icon
+                    editText.setTypeface(null, Typeface.NORMAL); // Set to default font
+                }
+                isPasswordVisible = !isPasswordVisible;
+                editText.setSelection(editText.getText().length()); // Move cursor to the end
+            }
+        });
+    }
     private void setupRegisterButton() {
         btnRegisterUser.setOnClickListener(v -> {
             String username = etNewUsername.getText().toString().trim();
@@ -70,21 +111,47 @@ public class RegisterActivity extends AppCompatActivity {
         if (!validateUsername(username)) {
             return false;
         }
+        else {
+            hideTvUsername();
+        }
         // Validate password and rewritePassword
         if (!validatePassword(password, rewritePassword)) {
             return false;
         }
+        else {
+            hideTvPassword();
+            hideTvRewritePassword();
+        }
        return true;
     }
 
+
     private boolean validateUsername(String username) {
         if (TextUtils.isEmpty(username)) {
-            showToast("Please enter a username.");
+            setTvUsername("Please enter a username.");
             return false;
         }
 
         if (username.length() < 6 || username.length() > 32) {
-            showToast("Username must be between 6 and 32 characters.");
+            setTvUsername("Username must be between 6 and 32 characters.");
+            return false;
+        }
+
+        // Check for valid characters (letters, numbers, underscore, hyphen)
+        if (!username.matches("^[a-zA-Z0-9_-]*$")) {
+            setTvUsername("Username can only contain letters, numbers, underscore and hyphen.");
+            return false;
+        }
+
+        // Must start with a letter
+        if (!username.matches("^[a-zA-Z].*")) {
+            setTvUsername("Username must start with a letter.");
+            return false;
+        }
+
+        // Check for consecutive special characters
+        if (username.contains("__") || username.contains("--") || username.contains("-_") || username.contains("_-")) {
+            setTvUsername("Username cannot contain consecutive special characters.");
             return false;
         }
 
@@ -98,18 +165,68 @@ public class RegisterActivity extends AppCompatActivity {
 
     private boolean validatePassword(String password, String rewritePassword) {
         if (TextUtils.isEmpty(password)) {
-            showToast("Please enter a password.");
+            setTvPassword("Please enter a password.");
             return false;
         }
 
-        if (password.length() < 8 || !password.matches(".*\\d.*")) {
-            showToast("Password must be at least 8 characters and contain at least one number.");
+        // Check for minimum requirements
+        boolean hasUpperCase = password.matches(".*[A-Z].*");
+        boolean hasLowerCase = password.matches(".*[a-z].*");
+        boolean hasNumber = password.matches(".*\\d.*");
+        boolean hasSpecialChar = password.matches(".*[!@#$%^&*()\\-_=+\\[\\]{};:'\",.<>/?].*");
+        boolean hasMinLength = password.length() >= 8;
+
+        // Build error message based on missing requirements
+        StringBuilder errorMessage = new StringBuilder("Password must ");
+        boolean hasError = false;
+
+        if (!hasMinLength) {
+            errorMessage.append("be at least 8 characters");
+            hasError = true;
+        }
+
+        if (!hasNumber || !hasUpperCase || !hasLowerCase || !hasSpecialChar) {
+            if (hasError) {
+                errorMessage.append(" and ");
+            }
+            errorMessage.append("contain ");
+            
+            boolean isFirst = true;
+            if (!hasUpperCase) {
+                errorMessage.append("an uppercase letter");
+                isFirst = false;
+            }
+            if (!hasLowerCase) {
+                if (!isFirst) errorMessage.append(", ");
+                errorMessage.append("a lowercase letter");
+                isFirst = false;
+            }
+            if (!hasNumber) {
+                if (!isFirst) errorMessage.append(", ");
+                errorMessage.append("a number");
+                isFirst = false;
+            }
+            if (!hasSpecialChar) {
+                if (!isFirst) errorMessage.append(", ");
+                errorMessage.append("a special character");
+            }
+            hasError = true;
+        }
+
+        if (hasError) {
+            setTvPassword(errorMessage.toString() + ".");
             return false;
+        }
+        else {
+            hideTvPassword();
         }
 
         if (!Objects.equals(password, rewritePassword)) {
-            showToast("Passwords do not match.");
+            setTvRewritePassword("Passwords do not match.");
             return false;
+        }
+        else {
+            hideTvRewritePassword();
         }
 
         return true;
@@ -132,6 +249,37 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void showToast(String message) {
         Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    // Showing and hiding user input error messages
+    private void setTvUsername(String message) {
+        tvUsername.setText(message);
+        tvUsername.setVisibility(View.VISIBLE);
+    }
+
+    private void hideTvUsername() {
+        tvUsername.setText("");
+        tvUsername.setVisibility(View.GONE);
+    }
+
+    private void setTvPassword(String message) {
+        tvPassword.setText(message);
+        tvPassword.setVisibility(View.VISIBLE);
+    }
+
+    private void setTvRewritePassword(String message) {
+        tvRewritePassword.setText(message);
+        tvRewritePassword.setVisibility(View.VISIBLE);
+    }
+
+    private void hideTvPassword() {
+        tvPassword.setText("");
+        tvPassword.setVisibility(View.GONE);
+    }
+
+    private void hideTvRewritePassword() {
+        tvRewritePassword.setText("");
+        tvRewritePassword.setVisibility(View.GONE);
     }
    
 }

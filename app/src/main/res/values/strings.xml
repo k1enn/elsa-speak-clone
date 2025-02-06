@@ -7,7 +7,7 @@
     <string name="facebook_login_protocol_scheme" translatable="false">com.example.elsa_speak_clone</string>
     
     <!-- Google -->
-    <string name="client_id">812766092434-841qsgtqt4bo6c8vp6noi3akeoe85u37.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">812766092434-841qsgtqt4bo6c8vp6noi3akeoe85u37.apps.googleusercontent.com</string>
 
     <!-- Others -->
     <string name="title_activity_login">LoginActivity</string>
