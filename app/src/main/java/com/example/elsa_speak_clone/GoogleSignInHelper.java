@@ -44,7 +44,13 @@ public class GoogleSignInHelper {
 
         mGoogleSignInClient = GoogleSignIn.getClient(activity, gso);
     }
-
+    public boolean CheckGoogleLoginState() {
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this.activity);
+        if (account != null) {
+            return false;
+        }
+        return true;
+    }
     public void signIn() {
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
         activity.startActivityForResult(signInIntent, RC_SIGN_IN);
