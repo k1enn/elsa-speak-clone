@@ -119,7 +119,7 @@
                     android:textColorHint="@color/hint_color_fade" />
 
                 <ImageButton
-                    android:id="@+id/btnToggleRewritePassword"
+                    android:id="@+id/btnToggleLoginPassword"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_alignParentEnd="true"

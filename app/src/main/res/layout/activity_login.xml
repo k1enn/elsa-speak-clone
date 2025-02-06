@@ -37,34 +37,57 @@
                 android:textStyle="bold"
                 android:textColor="@color/purple"/>
 
-            <EditText
-                android:id="@+id/etUsername"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="40dp"
-                android:background="@drawable/custom_edittext"
-                android:drawablePadding="8dp"
-                android:hint="Username"
-                android:paddingStart="14dp"
-                android:padding="8dp"
-                android:textColor="@color/black"
-                android:textColorHighlight="@color/cardview_dark_background"
-                android:textColorHint="@color/hint_color_fade" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp">
 
-            <EditText
-                android:id="@+id/etPassword"
+                <EditText
+                    android:id="@+id/etUsername"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/custom_edittext"
+                    android:drawablePadding="8dp"
+                    android:hint="Enter your username"
+                    android:inputType="text"
+                    android:paddingStart="14dp"
+                    android:padding="8dp"
+                    android:textColor="@color/black"
+                    android:textColorHighlight="@color/cardview_dark_background"
+                    android:textColorHint="@color/hint_color_fade" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/custom_edittext"
-                android:drawablePadding="8dp"
-                android:hint="Password"
-                android:paddingStart="14dp"
-                android:inputType="textPassword"
-                android:padding="8dp"
-                android:textColor="@color/black"
-                android:textColorHighlight="@color/cardview_dark_background"
-                android:textColorHint="@color/hint_color_fade" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp">
+
+                <EditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/custom_edittext"
+                    android:drawablePadding="8dp"
+                    android:hint="Enter your password"
+                    android:inputType="textPassword"
+                    android:paddingStart="14dp"
+                    android:padding="8dp"
+                    android:textColor="@color/black"
+                    android:textColorHighlight="@color/cardview_dark_background"
+                    android:textColorHint="@color/hint_color_fade" />
+
+                <ImageButton
+                    android:id="@+id/btnToggleLoginPassword"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@null"
+                    android:padding="10dp"
+                    android:paddingEnd="10dp"
+                    android:src="@drawable/ic_eye_closed" />
+            </RelativeLayout>
 
             <Button
                 android:id="@+id/btnLogin"
