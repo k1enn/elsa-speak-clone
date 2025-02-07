@@ -56,4 +56,7 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.8.2'
     // Facebook SDK (optional)
     implementation "com.facebook.android:facebook-login:16.0.0"
+
+    // Icons lib: android-material-icons
+    implementation 'com.malinskiy:materialicons:1.0.3'
 }

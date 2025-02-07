@@ -5,7 +5,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    >
+    android:padding="16dp"
+    android:gravity="center_horizontal">
 
     <!-- The Lottie AnimationView as a background layer -->
     <com.airbnb.lottie.LottieAnimationView
@@ -18,38 +19,57 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:elevation="-1dp" /> <!-- Lower elevation to place it behind other views -->
+        android:elevation="1dp" /> <!-- Higher elevation to place it forward other views -->
 
     <!-- The content layer above the animation -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:gravity="center"
+        android:background="@color/white"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/tvWord"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Say this word:"
+            android:textSize="24sp"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:padding="16dp" />
 
         <TextView
             android:id="@+id/tvPrompt"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Tap the button and say a word"
-            android:textSize="18sp"
+            android:text="Tap Speak Now to start"
+            android:textSize="24sp"
+            android:textColor="@color/black"
             android:gravity="center"
             android:padding="16dp" />
 
         <Button
             android:id="@+id/btnSpeak"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Speak Now"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="@color/colorPrimary"
+            android:textColor="@android:color/white"
+            android:padding="16dp"
             android:layout_gravity="center" />
 
         <Button
             android:id="@+id/btnRandomWord"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Random Word"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="@color/colorAccent"
+            android:textColor="@android:color/white"
+            android:padding="16dp"
             android:layout_gravity="center" />
 
     </LinearLayout>
