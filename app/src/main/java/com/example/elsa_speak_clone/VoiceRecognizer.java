@@ -19,6 +19,7 @@ import java.util.Locale;
 
 public class VoiceRecognizer {
     private final TextView tvPrompt;
+    private final TextView tvWord;
     private final Button btnSpeak, btnRandomWord;
     private final SpeechRecognizer speechRecognizer;
     private final LottieAnimationView lottieConfetti;
@@ -26,8 +27,9 @@ public class VoiceRecognizer {
     private final Handler errorHandler = new Handler(Looper.getMainLooper());
     private boolean isProcessingError = false; // Prevent multiple triggers
 
-    public VoiceRecognizer(TextView tvPrompt, Button btnSpeak, Button btnRandomWord, SpeechRecognizer speechRecognizer, LottieAnimationView lottieConfetti) {
+    public VoiceRecognizer(TextView tvPrompt, TextView tvWord, Button btnSpeak, Button btnRandomWord, SpeechRecognizer speechRecognizer, LottieAnimationView lottieConfetti) {
         this.tvPrompt = tvPrompt;
+        this.tvWord = tvWord;
         this.btnSpeak = btnSpeak;
         this.btnRandomWord = btnRandomWord;
         this.speechRecognizer = speechRecognizer;
@@ -113,7 +115,7 @@ public class VoiceRecognizer {
 
     public void setupRandomWordButton() {
         btnRandomWord.setOnClickListener(v -> {
-            tvPrompt.setText("Say this word: " + generateRandomWord());
+            tvWord.setText("Say this word: " + generateRandomWord());
         });
     }
 

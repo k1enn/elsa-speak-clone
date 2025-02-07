@@ -31,6 +31,7 @@ public class SpeechToText extends AppCompatActivity {
 
     // UI elements
     private TextView tvPrompt;
+    private TextView tvWord;
     private Button btnSpeak;
     private Button btnRandomWord;
     private LottieAnimationView lottieConfetti;
@@ -60,6 +61,7 @@ public class SpeechToText extends AppCompatActivity {
 
     private void initializeUI() {
         tvPrompt = findViewById(R.id.tvPrompt);
+        tvWord = findViewById(R.id.tvWord);
         btnRandomWord = findViewById(R.id.btnRandomWord);
         btnSpeak = findViewById(R.id.btnSpeak);
         lottieConfetti = findViewById(R.id.lottieConfetti);
@@ -83,7 +85,7 @@ public class SpeechToText extends AppCompatActivity {
     }
 
     private void setupVoiceRecognizer() {
-        voiceRecognizer = new VoiceRecognizer(tvPrompt, btnSpeak, btnRandomWord, speechRecognizer, lottieConfetti);
+        voiceRecognizer = new VoiceRecognizer(tvPrompt, tvWord, btnSpeak, btnRandomWord, speechRecognizer, lottieConfetti);
         voiceRecognizer.setupRandomWordButton();
         voiceRecognizer.startListening();
     }
