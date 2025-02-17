@@ -10,9 +10,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Objects;
 
@@ -23,8 +27,10 @@ public class RegisterActivity extends AppCompatActivity {
     private Button btnRegisterUser;
     private ImageButton btnTogglePassword;
     private ImageButton btnToggleRewritePassword;
+    private LinearLayout btnGoogleRegister;
     private TextView btnLogin;
     private TextView tvPassword;
+    private GoogleSignInHelper googleSignInHelper;
     private TextView tvRewritePassword;
     private TextView tvUsername;
     private UserSessionManager sessionManager;
@@ -42,6 +48,8 @@ public class RegisterActivity extends AppCompatActivity {
         setupLoginButton();
         setupShowPasswordButton(etNewPassword, btnTogglePassword);
         setupShowPasswordButton(etRewritePassword, btnToggleRewritePassword);
+        initializeGoogleRegister();
+        setupGoogleRegisterButton();
     }
 
     private void initializeViews() {
@@ -55,6 +63,7 @@ public class RegisterActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnTogglePassword = findViewById(R.id.btnTogglePassword);
         btnToggleRewritePassword = findViewById(R.id.btnToggleLoginPassword);
+        btnGoogleRegister = findViewById(R.id.btnGoogleRegister);
     }
 
     private void setupLoginButton() {
@@ -78,7 +87,7 @@ public class RegisterActivity extends AppCompatActivity {
                     imageButton.setImageResource(R.drawable.ic_eye_closed); // Change to closed eye icon
                     editText.setTypeface(null, Typeface.NORMAL); // Set to default font
                 } else {
-                    // Show Password
+                    // Show Passwordk
                     editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
                     imageButton.setImageResource(R.drawable.ic_eye_open); // Change to open eye icon
                     editText.setTypeface(null, Typeface.NORMAL); // Set to default font
@@ -88,6 +97,45 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
     }
+
+ private void setupGoogleRegisterButton() {
+    btnGoogleRegister.setOnClickListener(v -> {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if(currentUser != null || googleSignInHelper.CheckGoogleLoginState()) {
+            String email = currentUser.getEmail();
+            sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
+            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+            showToast("Register successfully");
+            startActivity(intent);
+            finish();
+        } else {
+            googleSignInHelper.signIn();
+        }
+    });
+}
+    private void initializeGoogleRegister() {
+        googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser user) {
+                String email = user.getEmail();
+                sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
+                Toast.makeText(RegisterActivity.this, "Signed in as: " + email, Toast.LENGTH_SHORT).show();
+                navigateToMain();
+                finish();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    private void navigateToMain() {
+        Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
     private void setupRegisterButton() {
         btnRegisterUser.setOnClickListener(v -> {
             String username = etNewUsername.getText().toString().trim();
