@@ -31,6 +31,10 @@ public class GoogleSignInHelper {
         void onError(String message);
     }
 
+    public FirebaseAuth MAuth() {
+        return mAuth;
+    }
+
     public GoogleSignInHelper(Activity activity, AuthCallback callback) {
         this.activity = activity;
         this.authCallback = callback;
@@ -44,6 +48,7 @@ public class GoogleSignInHelper {
 
         mGoogleSignInClient = GoogleSignIn.getClient(activity, gso);
     }
+    // It will return true if have an account already signed in
     public boolean CheckGoogleLoginState() {
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this.activity);
         if (account != null) {

@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     String username;
     IconDrawable iconPronunciation;
     IconDrawable iconProfile;
-
+    boolean loginCheck;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,8 +46,9 @@ public class MainActivity extends AppCompatActivity {
 
         initializeUI();
         initializeVariables();
+        boolean skipLoginCheck = getIntent().getBooleanExtra("skipLoginCheck", false);
 
-        if(!CheckLoginState())
+        if(!skipLoginCheck && !CheckLoginState())
             navigateToLogin();
         else
             WelcomeUsername();
@@ -69,13 +70,10 @@ public class MainActivity extends AppCompatActivity {
         // Use for testing
         // databaseHelper.injectProgress("github_k1enn", 69, 69);
         username = sessionManager.getUsername();
-
+        loginCheck = getIntent().getBooleanExtra("logged", false);
     }
     private boolean CheckLoginState() {
-        if (!sessionManager.isLoggedIn()) {           
-            return false;
-        }
-        return true;
+        return sessionManager.isLoggedIn();
     }
     private void initializeUI() {
         btnLogin = findViewById(R.id.btnLogin);
