@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.graphics.Typeface;
 import android.os.Bundle;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -20,8 +19,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+
+import java.util.Objects;
 
 public class LoginActivity extends AppCompatActivity {
     private EditText etUsername, etPassword;
@@ -105,8 +105,12 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onSuccess(FirebaseUser user) {
                 String email = user.getEmail();
+                if (!dbHelper.doesUserGmailExist(email)) {
+                    String name = user.getDisplayName() != null ? 
+                        user.getDisplayName() : Objects.requireNonNull(email).split("@")[0];
+                    dbHelper.registerUser(email, name);
+                }
                 sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
-                Toast.makeText(LoginActivity.this, "Signed in as: " + email, Toast.LENGTH_SHORT).show();
                 navigateToMain();
                 finish();
             }
@@ -123,14 +127,14 @@ public class LoginActivity extends AppCompatActivity {
             String username = etUsername.getText().toString();
             String password = etPassword.getText().toString();
 
-            if (dbHelper.authenticateUser(username, password)) {
-                sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
-                Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                navigateToMain();
-                finish();
-            } else {
-                Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
-            }
+               if (dbHelper.authenticateUser(username, password)) {
+                   sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
+                   Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+                   navigateToMain();
+                   finish();
+               } else {
+                   Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
+               } 
         });
     }
 
