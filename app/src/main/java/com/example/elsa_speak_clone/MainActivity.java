@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView profileImage;
     private LearningAppDatabase databaseHelper;
     private UserSessionManager sessionManager;
+    int user_id;
     String username;
     IconDrawable iconPronunciation;
     IconDrawable iconProfile;
@@ -41,17 +42,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-
-
         initializeUI();
         initializeVariables();
-        boolean skipLoginCheck = getIntent().getBooleanExtra("skipLoginCheck", false);
 
-        if(!skipLoginCheck && !CheckLoginState())
+        boolean skipLoginCheck = getIntent().getBooleanExtra("skipLoginCheck", false);
+        if (!skipLoginCheck && !CheckLoginState()) {
             navigateToLogin();
-        else
+        } else {
             WelcomeUsername();
+        }
 
         loadUserProgress();
         setupLoginButton();
@@ -101,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadUserProgress() {
-        if (username != null) {
-            Cursor cursor = databaseHelper.getUserProgress(username);
+        if (user_id >= 0) {
+            Cursor cursor = databaseHelper.getUserProgress(user_id);
             if (cursor != null && cursor.moveToFirst()) {
                 try {
                     int xp = cursor.getInt(cursor.getColumnIndexOrThrow("xp_points"));

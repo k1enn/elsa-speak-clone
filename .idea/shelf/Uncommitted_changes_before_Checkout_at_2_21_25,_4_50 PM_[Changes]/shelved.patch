@@ -1,0 +1,65 @@
+Index: app/src/main/res/values/colors.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <color name=\"black\">#FF000000</color>\n    <color name=\"white\">#FFFFFFFF</color>\n    <color name=\"colorPrimary\">#7b4bff</color>\n    <color name=\"colorPrimaryDark\">#6539ba</color>\n    <color name=\"colorAccent\">#FF4081o</color>\n    <color name=\"bgBottomNavigation\">#fe485a</color>\n    <color name=\"gray\">#808080</color>\n\n    <!--colors for modern ui-->\n    <color name=\"whiteTextColor\">#fff</color>\n    <color name=\"primaryTextColor\">#00a5ff</color>\n    <color name=\"loginBkColor\">#f0f0f0</color>\n\n    <!--colros for card-->\n    <color name=\"whiteCardColor\">#fff</color>\n\n    <color name=\"purple\">#8692f7</color>\n\n\n    <color name=\"hint_color_fade\">#80CCCCCC</color> <!-- Adjust the alpha value for fading -->\n    <color name=\"real_purple\">#FFEB3BFF</color>\n\n</resources>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/values/colors.xml b/app/src/main/res/values/colors.xml
+--- a/app/src/main/res/values/colors.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/src/main/res/values/colors.xml	(date 1740130723916)
+@@ -1,25 +1,24 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+-    <color name="black">#FF000000</color>
+-    <color name="white">#FFFFFFFF</color>
++    <color name="black">#00000</color>
++    <color name="white">#FFFFFF</color>
+     <color name="colorPrimary">#7b4bff</color>
+     <color name="colorPrimaryDark">#6539ba</color>
+-    <color name="colorAccent">#FF4081o</color>
++    <color name="colorAccent">#FF4081</color> <!-- Fixed invalid character 'o' -->
++
+     <color name="bgBottomNavigation">#fe485a</color>
+     <color name="gray">#808080</color>
+ 
+-    <!--colors for modern ui-->
++    <!-- Colors for modern UI -->
+     <color name="whiteTextColor">#fff</color>
+     <color name="primaryTextColor">#00a5ff</color>
+     <color name="loginBkColor">#f0f0f0</color>
+ 
+-    <!--colros for card-->
+-    <color name="whiteCardColor">#fff</color>
+-
++    <!-- Colors for card -->
++    <color name="whiteCardColor">#ffffff</color>
+     <color name="purple">#8692f7</color>
+ 
+-
+     <color name="hint_color_fade">#80CCCCCC</color> <!-- Adjust the alpha value for fading -->
+-    <color name="real_purple">#FFEB3BFF</color>
+ 
+-</resources>
+\ No newline at end of file
++    <color name="real_purple">#6200EE</color>
++</resources>
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"VcsDirectoryMappings\">\n    <mapping directory=\"$PROJECT_DIR$\" vcs=\"Git\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+--- a/.idea/vcs.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/.idea/vcs.xml	(date 1740131322564)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="VcsDirectoryMappings">
+-    <mapping directory="$PROJECT_DIR$" vcs="Git" />
++    <mapping directory="" vcs="Git" />
+   </component>
+ </project>
+\ No newline at end of file

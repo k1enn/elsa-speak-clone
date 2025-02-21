@@ -101,15 +101,18 @@ public class RegisterActivity extends AppCompatActivity {
  private void setupGoogleRegisterButton() {
     btnGoogleRegister.setOnClickListener(v -> {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if(currentUser != null || googleSignInHelper.CheckGoogleLoginState()) {
+        if (currentUser != null) {
             String email = currentUser.getEmail();
             sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
-            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-            showToast("Register successfully");
-            startActivity(intent);
+            Toast.makeText(RegisterActivity.this, "Welcome back: " + email, Toast.LENGTH_SHORT).show();
+            navigateToMain();
             finish();
-        } else {
+        } else if (googleSignInHelper.CheckGoogleLoginState()) {
             googleSignInHelper.signIn();
+        } else {
+            Toast.makeText(RegisterActivity.this, "Please wait, signing you in...", Toast.LENGTH_SHORT).show();
+            navigateToMain();
+            finish();
         }
     });
 }
