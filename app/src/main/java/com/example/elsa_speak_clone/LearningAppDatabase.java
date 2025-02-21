@@ -1,36 +1,63 @@
 package com.example.elsa_speak_clone;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
+import android.content.ContentValues;
+import android.database.Cursor;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Random;
 
 public class LearningAppDatabase extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "elsa_speak_clone.db";
     private static final int DATABASE_VERSION = 1;
 
     // Users Table
-    private static final String TABLE_USERS = "users";
-    private static final String COLUMN_ID = "id";
-    private static final String COLUMN_USERNAME = "username";
-    private static final String COLUMN_PASSWORD = "password";
-    private static final String COLUMN_DAY_STREAK = "day_streak";
-    private static final String COLUMN_XP_POINTS = "xp_points";
-    private static final String COLUMN_LEVEL = "level";
+    private static final String TABLE_USERS = "Users";
+    private static final String COLUMN_USER_ID = "UserId";
+    private static final String COLUMN_GMAIL = "Gmail";
+    private static final String COLUMN_NAME = "Name";
+    private static final String COLUMN_JOIN_DATE = "JoinDate";
+    private static final String COLUMN_PASSWORD = "Password";
 
     // Lessons Table
-    private static final String TABLE_LESSONS = "lessons";
-    private static final String COLUMN_LESSON_ID = "lesson_id";
-    private static final String COLUMN_LESSON_NAME = "lesson_name";
-    private static final String COLUMN_LESSON_STATUS = "status"; // Completed or Not
+    private static final String TABLE_LESSONS = "Lessons";
+    private static final String COLUMN_LESSON_ID = "LessonId";
+    private static final String COLUMN_TOPIC = "Topic";
+    private static final String COLUMN_DIFFICULTY_LEVEL = "DifficultyLevel";
 
-    // Pronunciation Scores Table
-    private static final String TABLE_PRONUNCIATION = "pronunciation_scores";
-    private static final String COLUMN_WORD = "word_pronounced";
-    private static final String COLUMN_SCORE = "score";
-    private static final String COLUMN_DATE_TIME = "date_time";
+    // Vocabulary Table
+    private static final String TABLE_VOCABULARY = "Vocabulary";
+    private static final String COLUMN_WORD = "Word";
+    private static final String COLUMN_PRONUNCIATION = "Pronunciation";
+    private static final String COLUMN_WORD_ID = "WordId";
+
+    // UserProgress Table
+    private static final String TABLE_USER_PROGRESS = "UserProgress";
+    private static final String COLUMN_PROGRESS_ID = "ProgressId";
+    private static final String COLUMN_COMPLETION_TIME = "CompletionTime";
+    private static final String COLUMN_STREAK = "Streak";
+    private static final String COLUMN_LAST_STUDY_DATE = "LastStudyDate";
+
+    // Quizzes Table
+    private static final String TABLE_QUIZZES = "Quizzes";
+    private static final String COLUMN_QUIZ_ID = "QuizId";
+    private static final String COLUMN_QUESTION = "Question";
+    private static final String COLUMN_ANSWER = "Answer";
+
+    // UserScores Table
+    private static final String TABLE_USER_SCORES = "UserScores";
+    private static final String COLUMN_SCORE_ID = "ScoreId";
+    private static final String COLUMN_SCORE = "Score";
+    private static final String COLUMN_ATTEMPT_DATE = "AttemptDate";
+
+    // SharedResult Table
+    private static final String TABLE_SHARED_RESULT = "SharedResult";
+    private static final String COLUMN_SHARE_ID = "ShareId";
+    private static final String COLUMN_MESSAGE = "Message";
+    private static final String COLUMN_SHARE_DATE = "ShareDate";
 
     public LearningAppDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -38,153 +65,357 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Create Users Table
+        // Create Users Table with password
         String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_USERS + " (" +
-                COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                COLUMN_USERNAME + " TEXT UNIQUE, " +
+                COLUMN_USER_ID + " INTEGER NOT NULL, " +
+                COLUMN_GMAIL + " TEXT NOT NULL, " +
+                COLUMN_NAME + " TEXT NOT NULL, " +
                 COLUMN_PASSWORD + " TEXT, " +
-                COLUMN_DAY_STREAK + " INTEGER DEFAULT 1, " +
-                COLUMN_XP_POINTS + " INTEGER DEFAULT 0, " +
-                COLUMN_LEVEL + " INTEGER DEFAULT 1)";
+                COLUMN_JOIN_DATE + " DATE NOT NULL, " +
+                "PRIMARY KEY (" + COLUMN_USER_ID + "))";
         db.execSQL(CREATE_USERS_TABLE);
-
 
         // Create Lessons Table
         String CREATE_LESSONS_TABLE = "CREATE TABLE " + TABLE_LESSONS + " (" +
-                COLUMN_LESSON_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                COLUMN_USERNAME + " TEXT, " +
-                COLUMN_LESSON_NAME + " TEXT, " +
-                COLUMN_LESSON_STATUS + " TEXT, " +
-                "FOREIGN KEY (" + COLUMN_USERNAME + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USERNAME + "))";
+                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
+                COLUMN_TOPIC + " TEXT NOT NULL, " +
+                COLUMN_DIFFICULTY_LEVEL + " INTEGER NOT NULL, " +
+                "PRIMARY KEY (" + COLUMN_LESSON_ID + "))";
         db.execSQL(CREATE_LESSONS_TABLE);
 
-        // Create Pronunciation Scores Table
-        String CREATE_PRONUNCIATION_TABLE = "CREATE TABLE " + TABLE_PRONUNCIATION + " (" +
-                COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                COLUMN_USERNAME + " TEXT, " +
-                COLUMN_WORD + " TEXT, " +
-                COLUMN_SCORE + " INTEGER, " +
-                COLUMN_DATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "FOREIGN KEY (" + COLUMN_USERNAME + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USERNAME + "))";
-        db.execSQL(CREATE_PRONUNCIATION_TABLE);
+        // Create Vocabulary Table
+        String CREATE_VOCABULARY_TABLE = "CREATE TABLE " + TABLE_VOCABULARY + " (" +
+                COLUMN_WORD + " TEXT NOT NULL, " +
+                COLUMN_PRONUNCIATION + " TEXT NOT NULL, " +
+                COLUMN_WORD_ID + " INTEGER NOT NULL, " +
+                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
+                "PRIMARY KEY (" + COLUMN_WORD_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_LESSON_ID + ") REFERENCES " + TABLE_LESSONS + "(" + COLUMN_LESSON_ID + "))";
+        db.execSQL(CREATE_VOCABULARY_TABLE);
+
+        // Create UserProgress Table
+        String CREATE_USER_PROGRESS_TABLE = "CREATE TABLE " + TABLE_USER_PROGRESS + " (" +
+                COLUMN_PROGRESS_ID + " INTEGER NOT NULL, " +
+                COLUMN_DIFFICULTY_LEVEL + " INTEGER NOT NULL, " +
+                COLUMN_COMPLETION_TIME + " DATE NOT NULL, " +
+                COLUMN_STREAK + " INTEGER NOT NULL, " +
+                COLUMN_LAST_STUDY_DATE + " DATE NOT NULL, " +
+                COLUMN_USER_ID + " INTEGER NOT NULL, " +
+                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
+                "PRIMARY KEY (" + COLUMN_PROGRESS_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USER_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_LESSON_ID + ") REFERENCES " + TABLE_LESSONS + "(" + COLUMN_LESSON_ID + "))";
+        db.execSQL(CREATE_USER_PROGRESS_TABLE);
+
+        // Create Quizzes Table
+        String CREATE_QUIZZES_TABLE = "CREATE TABLE " + TABLE_QUIZZES + " (" +
+                COLUMN_QUIZ_ID + " INTEGER NOT NULL, " +
+                COLUMN_QUESTION + " TEXT NOT NULL, " +
+                COLUMN_ANSWER + " TEXT NOT NULL, " +
+                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
+                "PRIMARY KEY (" + COLUMN_QUIZ_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_LESSON_ID + ") REFERENCES " + TABLE_LESSONS + "(" + COLUMN_LESSON_ID + "))";
+        db.execSQL(CREATE_QUIZZES_TABLE);
+
+        // Create UserScores Table
+        String CREATE_USER_SCORES_TABLE = "CREATE TABLE " + TABLE_USER_SCORES + " (" +
+                COLUMN_SCORE_ID + " INTEGER NOT NULL, " +
+                COLUMN_SCORE + " INTEGER NOT NULL, " +
+                COLUMN_ATTEMPT_DATE + " DATE NOT NULL, " +
+                COLUMN_USER_ID + " INTEGER NOT NULL, " +
+                COLUMN_QUIZ_ID + " INTEGER NOT NULL, " +
+                "PRIMARY KEY (" + COLUMN_SCORE_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USER_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_QUIZ_ID + ") REFERENCES " + TABLE_QUIZZES + "(" + COLUMN_QUIZ_ID + "))";
+        db.execSQL(CREATE_USER_SCORES_TABLE);
+
+        // Create SharedResult Table
+        String CREATE_SHARED_RESULT_TABLE = "CREATE TABLE " + TABLE_SHARED_RESULT + " (" +
+                COLUMN_SHARE_ID + " INTEGER NOT NULL, " +
+                COLUMN_MESSAGE + " TEXT NOT NULL, " +
+                COLUMN_SHARE_DATE + " DATE NOT NULL, " +
+                COLUMN_USER_ID + " INTEGER NOT NULL, " +
+                "PRIMARY KEY (" + COLUMN_SHARE_ID + "), " +
+                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USER_ID + "))";
+        db.execSQL(CREATE_SHARED_RESULT_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
+        // Drop older tables if existed
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_SHARED_RESULT);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_SCORES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_QUIZZES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_PROGRESS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_VOCABULARY);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_LESSONS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_PRONUNCIATION);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
+
+        // Create tables again
         onCreate(db);
     }
 
-    // Register a User
-    public boolean registerUser(String username, String password) {
+    // For local SQLite authentication
+    // Check if user exist
+    public boolean authenticateUser(String username, String password) {
+        if (username == null || password == null) return false;
+        
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_NAME, COLUMN_PASSWORD},  // Get both username and password
+            COLUMN_NAME + "=?",
+            new String[]{username},
+            null,
+            null,
+            null
+        );
+        
+        boolean isAuthenticated = false;
+        if (cursor != null && cursor.moveToFirst()) {
+            String storedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
+            // Check if both username and password match
+            isAuthenticated = storedPassword != null && storedPassword.equals(password);
+            cursor.close();
+        }
+        return isAuthenticated;
+    }
+
+    // For Firebase authentication
+    public boolean doesUserGmailExist(String gmail) {
+        if (gmail == null) return false;
+        
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_GMAIL},
+            COLUMN_GMAIL + "=?",  // Only check Gmail for Firebase auth
+            new String[]{gmail},
+            null,
+            null,
+            null
+        );
+        
+        boolean exists = false;
+        if (cursor != null) {
+            exists = cursor.getCount() > 0;
+            cursor.close();
+        }
+        return exists;
+    }
+
+    // Register a new user (works for both local and Firebase)
+    public boolean registerUser(String identifier, String name, String password) {
+        if (identifier == null || name == null) return false;
+        
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_USERNAME, username);
-        values.put(COLUMN_PASSWORD, password);
+
+        int userId = generateUniqueId(db);
+        values.put(COLUMN_USER_ID, userId);
+        
+        if (identifier.contains("@")) {
+            // Google account registration
+            values.put(COLUMN_GMAIL, identifier);
+            values.put(COLUMN_NAME, name);
+            values.put(COLUMN_PASSWORD, "");  // No password for Google accounts
+        } else {
+            // Local account registration
+            values.put(COLUMN_NAME, identifier);
+            values.put(COLUMN_GMAIL, "");
+            values.put(COLUMN_PASSWORD, password);  // Store password for local accounts
+        }
+        
+        values.put(COLUMN_JOIN_DATE, getCurrentDate());
 
         long result = db.insert(TABLE_USERS, null, values);
         return result != -1;
     }
 
-    // Authenticate User (Login)
-    public boolean authenticateUser(String username, String password) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USERS +
-                        " WHERE " + COLUMN_USERNAME + "=? AND " + COLUMN_PASSWORD + "=?",
-                new String[]{username, password});
-
-        boolean success = cursor.getCount() > 0;
-        cursor.close();
-        return success;
+    private String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return dateFormat.format(new Date());
     }
 
-    // Check Username Availability
-    public boolean isUsernameAvailable(String username) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_USERNAME},
-                COLUMN_USERNAME + "=?", new String[]{username}, null, null, null);
-
-        boolean available = cursor.getCount() == 0;
-        cursor.close();
-        return available;
-    }
-
-    // Update User XP and Streak
-    public void updateUserProgress(String username, int xpGained) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_XP_POINTS, COLUMN_DAY_STREAK},
-                COLUMN_USERNAME + "=?", new String[]{username}, null, null, null);
-
-        if (cursor.moveToFirst()) {
-            int currentXP = cursor.getInt(0);
-            int currentStreak = cursor.getInt(1);
-
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_XP_POINTS, currentXP + xpGained);
-            values.put(COLUMN_DAY_STREAK, currentStreak + 1); // Increase streak
-
-            db.update(TABLE_USERS, values, COLUMN_USERNAME + "=?", new String[]{username});
-        }
-        cursor.close();
+    private int generateUniqueId(SQLiteDatabase db) {
+        Random random = new Random();
+        int userId;
+        do {
+            userId = 10000 + random.nextInt(90000); // Generates a 5-digit random number
+        } while (doesUserIdExist(db, userId));
+        return userId;
     }
 
     // Add Lesson Progress
-    public boolean addLessonProgress(String username, String lessonName, String status) {
+    public boolean addUserProgress(int userId, int lessonId, int difficultyLevel) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_USERNAME, username);
-        values.put(COLUMN_LESSON_NAME, lessonName);
-        values.put(COLUMN_LESSON_STATUS, status);
 
-        long result = db.insert(TABLE_LESSONS, null, values);
+        // Generate unique progress ID
+        int progressId = generateUniqueProgressId(db);
+
+        values.put(COLUMN_PROGRESS_ID, progressId);
+        values.put(COLUMN_USER_ID, userId);
+        values.put(COLUMN_LESSON_ID, lessonId);
+        values.put(COLUMN_DIFFICULTY_LEVEL, difficultyLevel);
+        values.put(COLUMN_COMPLETION_TIME, getCurrentDate());
+        values.put(COLUMN_STREAK, 1);
+        values.put(COLUMN_LAST_STUDY_DATE, getCurrentDate());
+
+        long result = db.insert(TABLE_USER_PROGRESS, null, values);
         return result != -1;
     }
 
-    // Store Pronunciation Score
-    public boolean addPronunciationScore(String username, String word, int score) {
+    private int generateUniqueProgressId(SQLiteDatabase db) {
+        Random random = new Random();
+        int progressId;
+        do {
+            progressId = random.nextInt(1000000);
+        } while (doesProgressIdExist(db, progressId));
+        return progressId;
+    }
+
+    private boolean doesProgressIdExist(SQLiteDatabase db, int progressId) {
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USER_PROGRESS + 
+                " WHERE " + COLUMN_PROGRESS_ID + "=?",
+                new String[]{String.valueOf(progressId)});
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
+    }
+
+    // Add Quiz Score
+    public boolean addQuizScore(int userId, int quizId, int score) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_USERNAME, username);
-        values.put(COLUMN_WORD, word);
+
+        // Generate unique score ID
+        int scoreId = generateUniqueScoreId(db);
+
+        values.put(COLUMN_SCORE_ID, scoreId);
+        values.put(COLUMN_USER_ID, userId);
+        values.put(COLUMN_QUIZ_ID, quizId);
         values.put(COLUMN_SCORE, score);
+        values.put(COLUMN_ATTEMPT_DATE, getCurrentDate());
 
-        long result = db.insert(TABLE_PRONUNCIATION, null, values);
+        long result = db.insert(TABLE_USER_SCORES, null, values);
         return result != -1;
     }
 
-    // Retrieve User Progress
-    public Cursor getUserProgress(String username) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        return db.rawQuery("SELECT * FROM " + TABLE_USERS + " WHERE " + COLUMN_USERNAME + "=?", new String[]{username});
+    private int generateUniqueScoreId(SQLiteDatabase db) {
+        Random random = new Random();
+        int scoreId;
+        do {
+            scoreId = random.nextInt(1000000);
+        } while (doesScoreIdExist(db, scoreId));
+        return scoreId;
     }
 
-    // Get User's Completed Lessons
-    public Cursor getCompletedLessons(String username) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        return db.rawQuery("SELECT * FROM " + TABLE_LESSONS + " WHERE " + COLUMN_USERNAME + "=? AND " +
-                COLUMN_LESSON_STATUS + "='Completed'", new String[]{username});
+    private boolean doesScoreIdExist(SQLiteDatabase db, int scoreId) {
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USER_SCORES + 
+                " WHERE " + COLUMN_SCORE_ID + "=?",
+                new String[]{String.valueOf(scoreId)});
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
     }
 
-    // Use for testing
-    public void injectProgress(String username, int xpPoints, int dayStreak) {
-        SQLiteDatabase db = this.getWritableDatabase();
+    // Get User Progress
+    public Cursor getUserProgress(int userId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery(
+            "SELECT l.Topic, up.DifficultyLevel, up.CompletionTime, up.Streak " +
+            "FROM " + TABLE_USER_PROGRESS + " up " +
+            "JOIN " + TABLE_LESSONS + " l ON up.LessonId = l.LessonId " +
+            "WHERE up.UserId = ?",
+            new String[]{String.valueOf(userId)}
+        );
+    }
 
-        // Prepare the ContentValues to update the user progress
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_XP_POINTS, xpPoints);
-        values.put(COLUMN_DAY_STREAK, dayStreak);
+    // Get User's Quiz Scores
+    public Cursor getUserScores(int userId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery(
+            "SELECT q.Question, us.Score, us.AttemptDate " +
+            "FROM " + TABLE_USER_SCORES + " us " +
+            "JOIN " + TABLE_QUIZZES + " q ON us.QuizId = q.QuizId " +
+            "WHERE us.UserId = ? " +
+            "ORDER BY us.AttemptDate DESC",
+            new String[]{String.valueOf(userId)}
+        );
+    }
 
-        // Update the user's progress based on the username
-        int rowsUpdated = db.update(TABLE_USERS, values, COLUMN_USERNAME + " = ?", new String[]{username});
-
-        // If rowsUpdated is greater than 0, it means the user was found and updated
-        if (rowsUpdated > 0) {
-            Log.d("Database", "User progress updated successfully.");
-        } else {
-            Log.d("Database", "Failed to update user progress.");
+    public int getUserId(String emailOrUsername) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_USER_ID},
+                COLUMN_GMAIL + "=? OR " + COLUMN_NAME + "=?", 
+                new String[]{emailOrUsername, emailOrUsername}, 
+                null, null, null);
+        
+        int userId = -1;
+        if (cursor != null && cursor.moveToFirst()) {
+            userId = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_USER_ID));
+            cursor.close();
         }
+        return userId;
     }
 
+    public boolean doesUserExist(String gmail) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_GMAIL},
+            COLUMN_GMAIL + "=?",
+            new String[]{gmail},
+            null,
+            null,
+            null
+        );
+        
+        boolean exists = false;
+        if (cursor != null) {
+            exists = cursor.getCount() > 0;
+            cursor.close();
+        }
+        return exists;
+    }
+
+    private boolean doesUserIdExist(SQLiteDatabase db, int userId) {
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_USER_ID},
+            COLUMN_USER_ID + "=?",
+            new String[]{String.valueOf(userId)},
+            null,
+            null,
+            null
+        );
+        
+        boolean exists = false;
+        if (cursor != null) {
+            exists = cursor.getCount() > 0;
+            cursor.close();
+        }
+        return exists;
+    }
+
+    public boolean isUsernameAvailable(String username) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_NAME},
+            COLUMN_NAME + "=? OR " + COLUMN_GMAIL + "=?",  // Check both name and gmail
+            new String[]{username, username},
+            null,
+            null,
+            null
+        );
+        
+        boolean isAvailable = true;  // Username is available by default
+        if (cursor != null) {
+            isAvailable = cursor.getCount() == 0;  // Available if no matches found
+            cursor.close();
+        }
+        return isAvailable;
+    }
 }

@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "812766092434-8o2jtcu3cjk5rdd33gsna1k0m2s6dnbf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.elsa_speak_clone",
+            "certificate_hash": "24f8284b8822195c93e281e6d5c1e23b74c510d0"
+          }
+        },
+        {
           "client_id": "812766092434-kik9792f0bja1ujrbhijef9760jrssgg.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
