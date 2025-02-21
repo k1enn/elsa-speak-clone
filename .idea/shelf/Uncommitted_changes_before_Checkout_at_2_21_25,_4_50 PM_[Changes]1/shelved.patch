@@ -1,0 +1,1167 @@
+Index: app/src/main/java/com/example/elsa_speak_clone/LoginActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.elsa_speak_clone;\n\nimport android.annotation.SuppressLint;\nimport android.graphics.Typeface;\nimport android.os.Bundle;\n\nimport androidx.activity.EdgeToEdge;\nimport androidx.appcompat.app.AppCompatActivity;\nimport androidx.core.graphics.Insets;\nimport androidx.core.view.ViewCompat;\nimport androidx.core.view.WindowInsetsCompat;\nimport android.content.Intent;\nimport android.text.InputType;\nimport android.view.View;\nimport android.widget.Button;\nimport android.widget.EditText;\nimport android.widget.ImageButton;\nimport android.widget.LinearLayout;\nimport android.widget.TextView;\nimport android.widget.Toast;\nimport androidx.annotation.Nullable;\n\nimport com.google.firebase.auth.FirebaseAuth;\nimport com.google.firebase.auth.FirebaseUser;\n\npublic class LoginActivity extends AppCompatActivity {\n    private EditText etUsername, etPassword;\n    private Button btnLogin;\n    private ImageButton btnToggleLoginPassword;\n    private TextView btnRegister ;\n    private LinearLayout googleLoginButton;\n    private LearningAppDatabase dbHelper;\n    private GoogleSignInHelper googleSignInHelper;\n    private UserSessionManager sessionManager;\n\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        //EdgeToEdge.enable(this);\n        setContentView(R.layout.activity_login);\n        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {\n            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());\n            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);\n            return insets;\n        });\n\n        // Initialize sessionManager first\n        sessionManager = new UserSessionManager(this);\n\n        // Check if already logged in\n        if (sessionManager.isLoggedIn()) {\n            navigateToMain();\n            finish();\n            return;\n        }\n\n        initializeUI();\n        initializeDatabase();\n        initializeGoogleLogin();\n        setupLoginButton();\n        setupRegisterButton();\n        setupGoogleLoginButton();\n        setupShowPasswordButton();\n    }\n\n    private void initializeUI() {\n        etUsername = findViewById(R.id.etUsername);\n        etPassword = findViewById(R.id.etPassword);\n        btnLogin = findViewById(R.id.btnLogin);\n        btnRegister = findViewById(R.id.btnRegister);\n        googleLoginButton = findViewById(R.id.btnGoogleLogin);\n        btnToggleLoginPassword = findViewById(R.id.btnToggleLoginPassword);\n\n    }\n\n    @SuppressLint(\"ClickableViewAccessibility\")\n    private void setupShowPasswordButton() {\n        btnToggleLoginPassword.setOnClickListener(new View.OnClickListener() {\n            boolean isPasswordVisible = false;\n\n            @Override\n            public void onClick(View v) {\n                if (isPasswordVisible) {\n                    // Hide Password\n                    etPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);\n                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_closed); // Change to closed eye icon\n                    etPassword.setTypeface(null, Typeface.NORMAL); // Set to default font\n                } else {\n                    // Show Password\n                    etPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);\n                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_open); // Change to open eye icon\n                    etPassword.setTypeface(null, Typeface.NORMAL); // Set to default font\n                }\n                isPasswordVisible = !isPasswordVisible;\n                etPassword.setSelection(etPassword.getText().length()); // Move cursor to the end\n            }\n        });\n    }\n    private void initializeDatabase() {\n        dbHelper = new LearningAppDatabase(this);\n    }\n\n    private void initializeGoogleLogin() {\n        googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {\n            @Override\n            public void onSuccess(FirebaseUser user) {\n                String email = user.getEmail();\n                sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);\n                Toast.makeText(LoginActivity.this, \"Signed in as: \" + email, Toast.LENGTH_SHORT).show();\n                navigateToMain();\n                finish();\n            }\n\n            @Override\n            public void onError(String message) {\n                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();\n            }\n        });\n    }\n\n    private void setupLoginButton() {\n        btnLogin.setOnClickListener(v -> {\n            String username = etUsername.getText().toString();\n            String password = etPassword.getText().toString();\n\n            if (dbHelper.authenticateUser(username, password)) {\n                sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);\n                Toast.makeText(this, \"Login Successful\", Toast.LENGTH_SHORT).show();\n                navigateToMain();\n                finish();\n            } else {\n                Toast.makeText(this, \"Invalid Credentials\", Toast.LENGTH_SHORT).show();\n            }\n        });\n    }\n\n    // Google Sign-In Setup\n    private void setupGoogleLoginButton() {\n        googleLoginButton.setOnClickListener(v -> googleSignInHelper.signIn());\n    }\n\n    private void setupRegisterButton() {\n        btnRegister.setOnClickListener(v -> {\n            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);\n            startActivity(intent);\n            finish();\n        });\n    }\n\n    private void navigateToSpeechToText() {\n        Intent intent = new Intent(LoginActivity.this, SpeechToText.class);\n        startActivity(intent);\n        finish();\n    }\n\n    private void navigateToMain() {\n        Intent intent = new Intent(LoginActivity.this, MainActivity.class);\n        startActivity(intent);\n        finish();\n    }\n\n    // Handle Google Sign-In Result\n    @Override\n    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {\n        super.onActivityResult(requestCode, resultCode, data);\n        googleSignInHelper.handleActivityResult(requestCode, resultCode, data);\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/elsa_speak_clone/LoginActivity.java b/app/src/main/java/com/example/elsa_speak_clone/LoginActivity.java
+--- a/app/src/main/java/com/example/elsa_speak_clone/LoginActivity.java	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/src/main/java/com/example/elsa_speak_clone/LoginActivity.java	(date 1740130105282)
+@@ -4,7 +4,6 @@
+ import android.graphics.Typeface;
+ import android.os.Bundle;
+ 
+-import androidx.activity.EdgeToEdge;
+ import androidx.appcompat.app.AppCompatActivity;
+ import androidx.core.graphics.Insets;
+ import androidx.core.view.ViewCompat;
+@@ -19,10 +18,10 @@
+ import android.widget.TextView;
+ import android.widget.Toast;
+ import androidx.annotation.Nullable;
+-
+-import com.google.firebase.auth.FirebaseAuth;
+ import com.google.firebase.auth.FirebaseUser;
+ 
++import java.util.Objects;
++
+ public class LoginActivity extends AppCompatActivity {
+     private EditText etUsername, etPassword;
+     private Button btnLogin;
+@@ -36,7 +35,6 @@
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+-        //EdgeToEdge.enable(this);
+         setContentView(R.layout.activity_login);
+         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+@@ -70,7 +68,6 @@
+         btnRegister = findViewById(R.id.btnRegister);
+         googleLoginButton = findViewById(R.id.btnGoogleLogin);
+         btnToggleLoginPassword = findViewById(R.id.btnToggleLoginPassword);
+-
+     }
+ 
+     @SuppressLint("ClickableViewAccessibility")
+@@ -105,8 +102,12 @@
+             @Override
+             public void onSuccess(FirebaseUser user) {
+                 String email = user.getEmail();
++                if (!dbHelper.doesUserGmailExist(email)) {
++                    String name = user.getDisplayName() != null ?
++                        user.getDisplayName() : (Objects.requireNonNull(email != null ? email.split("@") : null))[0];
++                    dbHelper.registerUser(email, name);
++                }
+                 sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
+-                Toast.makeText(LoginActivity.this, "Signed in as: " + email, Toast.LENGTH_SHORT).show();
+                 navigateToMain();
+                 finish();
+             }
+@@ -147,12 +148,13 @@
+         });
+     }
+ 
+-    private void navigateToSpeechToText() {
++    // No more need
++   /* private void navigateToSpeechToText() {
+         Intent intent = new Intent(LoginActivity.this, SpeechToText.class);
+         startActivity(intent);
+         finish();
+     }
+-
++*/
+     private void navigateToMain() {
+         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+         startActivity(intent);
+Index: app/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>plugins {\n    id 'com.android.application'\n    id 'com.google.gms.google-services'\n}\n\nandroid {\n    namespace \"com.example.elsa_speak_clone\"\n    compileSdk 35\n\n    defaultConfig {\n        applicationId \"com.example.elsa_speak_clone\"\n        minSdk 24\n        targetSdk 35\n        versionCode 1\n        versionName \"1.0\"\n\n        testInstrumentationRunner \"androidx.test.runner.AndroidJUnitRunner\"\n    }\n\n    buildTypes {\n        release {\n            minifyEnabled false\n            proguardFiles getDefaultProguardFile(\"proguard-android-optimize.txt\"), \"proguard-rules.pro\"\n        }\n    }\n\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_11\n        targetCompatibility JavaVersion.VERSION_11\n    }\n\n    buildFeatures {\n        viewBinding true\n    }\n}\n\ndependencies {\n    implementation \"androidx.appcompat:appcompat:1.6.1\"\n    implementation \"androidx.constraintlayout:constraintlayout:2.1.4\"\n    implementation \"androidx.cardview:cardview:1.0.0\"\n    implementation \"com.google.android.material:material:1.12.0\"\n\n    // Firebase BoM\n    implementation platform(\"com.google.firebase:firebase-bom:33.8.0\")\n    implementation \"com.google.firebase:firebase-auth\"\n    implementation \"com.google.android.gms:play-services-auth:21.3.0\"\n\n    // Lottie Animation\n    implementation \"com.airbnb.android:lottie:6.0.0\"\n\n    // Unit Testing\n    testImplementation \"junit:junit:4.13.2\"\n    androidTestImplementation \"androidx.test:runner:1.5.2\"\n    androidTestImplementation \"androidx.test.espresso:espresso-core:3.5.1\"\n    implementation 'androidx.core:core-ktx:1.12.0'\n    implementation 'androidx.activity:activity-ktx:1.8.2'\n    // Facebook SDK (optional)\n    implementation \"com.facebook.android:facebook-login:16.0.0\"\n\n    // Icons lib: android-material-icons\n    implementation 'com.malinskiy:materialicons:1.0.3'\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle b/app/build.gradle
+--- a/app/build.gradle	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/build.gradle	(date 1740130707422)
+@@ -35,28 +35,27 @@
+ }
+ 
+ dependencies {
+-    implementation "androidx.appcompat:appcompat:1.6.1"
+-    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+-    implementation "androidx.cardview:cardview:1.0.0"
+-    implementation "com.google.android.material:material:1.12.0"
++    implementation 'androidx.appcompat:appcompat:1.6.1'
++    implementation libs.constraintlayout
++    implementation libs.cardview
++    implementation libs.material
+ 
+     // Firebase BoM
+-    implementation platform("com.google.firebase:firebase-bom:33.8.0")
+-    implementation "com.google.firebase:firebase-auth"
+-    implementation "com.google.android.gms:play-services-auth:21.3.0"
++    implementation platform(libs.firebase.bom.v3390)
++    implementation libs.google.firebase.auth
++    implementation libs.play.services.auth
+ 
+     // Lottie Animation
+-    implementation "com.airbnb.android:lottie:6.0.0"
++    implementation libs.lottie.v600
+ 
+     // Unit Testing
+-    testImplementation "junit:junit:4.13.2"
+-    androidTestImplementation "androidx.test:runner:1.5.2"
+-    androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+-    implementation 'androidx.core:core-ktx:1.12.0'
+-    implementation 'androidx.activity:activity-ktx:1.8.2'
++    testImplementation libs.junit
++    androidTestImplementation libs.runner
++    androidTestImplementation libs.espresso.core
++    implementation libs.core.ktx
++    implementation libs.activity.ktx
+     // Facebook SDK (optional)
+-    implementation "com.facebook.android:facebook-login:16.0.0"
+-
++    implementation libs.facebook.login
+     // Icons lib: android-material-icons
+-    implementation 'com.malinskiy:materialicons:1.0.3'
++    implementation libs.materialicons
+ }
+\ No newline at end of file
+Index: build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Top-level build file where you can add configuration options common to all sub-projects/modules.\nbuildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath 'com.android.tools.build:gradle:8.8.1'\n\n        classpath 'com.google.gms:google-services:4.3.15' // Use the latest version\n    }\n}\n\nplugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false\n}\n\nallprojects {\n    repositories {\n//        google()\n//        mavenCentral()\n    }\n}\n\ntask clean(type: Delete) {\n    delete rootProject.buildDir\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle b/build.gradle
+--- a/build.gradle	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/build.gradle	(date 1740131336366)
+@@ -6,8 +6,7 @@
+     }
+     dependencies {
+         classpath 'com.android.tools.build:gradle:8.8.1'
+-
+-        classpath 'com.google.gms:google-services:4.3.15' // Use the latest version
++        classpath libs.google.services // Use the latest version
+     }
+ }
+ 
+@@ -22,6 +21,6 @@
+     }
+ }
+ 
+-task clean(type: Delete) {
++tasks.register('clean', Delete) {
+     delete rootProject.buildDir
+ }
+Index: .idea/inspectionProfiles/Project_Default.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/inspectionProfiles/Project_Default.xml b/.idea/inspectionProfiles/Project_Default.xml
+deleted file mode 100644
+--- a/.idea/inspectionProfiles/Project_Default.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ /dev/null	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
+@@ -1,6 +0,0 @@
+-<component name="InspectionProjectProfileManager">
+-  <profile version="1.0">
+-    <option name="myName" value="Project Default" />
+-    <inspection_tool class="Deprecation" enabled="false" level="WARNING" enabled_by_default="false" />
+-  </profile>
+-</component>
+\ No newline at end of file
+Index: .idea/appInsightsSettings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/appInsightsSettings.xml b/.idea/appInsightsSettings.xml
+deleted file mode 100644
+--- a/.idea/appInsightsSettings.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ /dev/null	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
+@@ -1,26 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="AppInsightsSettings">
+-    <option name="tabSettings">
+-      <map>
+-        <entry key="Firebase Crashlytics">
+-          <value>
+-            <InsightsFilterSettings>
+-              <option name="connection">
+-                <ConnectionSetting>
+-                  <option name="appId" value="com.example.elsa_speak_clone" />
+-                  <option name="mobileSdkAppId" value="1:812766092434:android:b903facad6b026c51e5a4b" />
+-                  <option name="projectId" value="elsa-speak-clone" />
+-                  <option name="projectNumber" value="812766092434" />
+-                </ConnectionSetting>
+-              </option>
+-              <option name="signal" value="SIGNAL_UNSPECIFIED" />
+-              <option name="timeIntervalDays" value="THIRTY_DAYS" />
+-              <option name="visibilityType" value="ALL" />
+-            </InsightsFilterSettings>
+-          </value>
+-        </entry>
+-      </map>
+-    </option>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: .idea/discord.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/discord.xml b/.idea/discord.xml
+deleted file mode 100644
+--- a/.idea/discord.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ /dev/null	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="DiscordProjectSettings">
+-    <option name="show" value="PROJECT_FILES" />
+-    <option name="description" value="" />
+-  </component>
+-</project>
+\ No newline at end of file
+Index: .idea/.gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/.gitignore b/.idea/.gitignore
+deleted file mode 100644
+--- a/.idea/.gitignore	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ /dev/null	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
+@@ -1,3 +0,0 @@
+-# Default ignored files
+-/shelf/
+-/workspace.xml
+Index: gradle/wrapper/gradle-wrapper.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>distributionUrl=https\\://services.gradle.org/distributions/gradle-8.10.2-bin.zip\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+--- a/gradle/wrapper/gradle-wrapper.properties	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/gradle/wrapper/gradle-wrapper.properties	(date 1740128675955)
+@@ -1,1 +1,6 @@
++#Fri Feb 21 16:04:35 ICT 2025
++distributionBase=GRADLE_USER_HOME
++distributionPath=wrapper/dists
+ distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-bin.zip
++zipStoreBase=GRADLE_USER_HOME
++zipStorePath=wrapper/dists
+Index: app/google-services.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\n  \"project_info\": {\n    \"project_number\": \"812766092434\",\n    \"project_id\": \"elsa-speak-clone\",\n    \"storage_bucket\": \"elsa-speak-clone.firebasestorage.app\"\n  },\n  \"client\": [\n    {\n      \"client_info\": {\n        \"mobilesdk_app_id\": \"1:812766092434:android:b903facad6b026c51e5a4b\",\n        \"android_client_info\": {\n          \"package_name\": \"com.example.elsa_speak_clone\"\n        }\n      },\n      \"oauth_client\": [\n        {\n          \"client_id\": \"812766092434-kik9792f0bja1ujrbhijef9760jrssgg.apps.googleusercontent.com\",\n          \"client_type\": 1,\n          \"android_info\": {\n            \"package_name\": \"com.example.elsa_speak_clone\",\n            \"certificate_hash\": \"c7b3fd70874d5a5dbace36153d596016eeeea54e\"\n          }\n        },\n        {\n          \"client_id\": \"812766092434-841qsgtqt4bo6c8vp6noi3akeoe85u37.apps.googleusercontent.com\",\n          \"client_type\": 3\n        }\n      ],\n      \"api_key\": [\n        {\n          \"current_key\": \"AIzaSyB91fbHzZ9b4AW05O-HtVGraFth18VstH8\"\n        }\n      ],\n      \"services\": {\n        \"appinvite_service\": {\n          \"other_platform_oauth_client\": [\n            {\n              \"client_id\": \"812766092434-841qsgtqt4bo6c8vp6noi3akeoe85u37.apps.googleusercontent.com\",\n              \"client_type\": 3\n            }\n          ]\n        }\n      }\n    }\n  ],\n  \"configuration_version\": \"1\"\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/google-services.json b/app/google-services.json
+--- a/app/google-services.json	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/google-services.json	(date 1740129660033)
+@@ -14,6 +14,14 @@
+       },
+       "oauth_client": [
+         {
++          "client_id": "812766092434-8o2jtcu3cjk5rdd33gsna1k0m2s6dnbf.apps.googleusercontent.com",
++          "client_type": 1,
++          "android_info": {
++            "package_name": "com.example.elsa_speak_clone",
++            "certificate_hash": "24f8284b8822195c93e281e6d5c1e23b74c510d0"
++          }
++        },
++        {
+           "client_id": "812766092434-kik9792f0bja1ujrbhijef9760jrssgg.apps.googleusercontent.com",
+           "client_type": 1,
+           "android_info": {
+Index: gradle/libs.versions.toml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>[versions]\nagp = \"8.8.0\"\nfacebookAndroidSdk = \"18.0.1\"\nfirebaseBom = \"33.8.0\"\nfirebaseUiAuth = \"7.2.0\"\njunit = \"4.13.2\"\njunitVersion = \"1.2.1\"\nespressoCore = \"3.6.1\"\nappcompat = \"1.7.0\"\nlottie = \"6.6.2\"\nmaterial = \"1.12.0\"\nactivity = \"1.10.0\"\nconstraintlayout = \"2.2.0\"\nplayServicesAuth = \"21.3.0\"\nannotation = \"1.9.1\"\nlifecycleLivedataKtx = \"2.8.7\"\nlifecycleViewmodelKtx = \"2.8.7\"\n\n[libraries]\nfacebook-android-sdk = { module = \"com.facebook.android:facebook-android-sdk\", version.ref = \"facebookAndroidSdk\" }\nfirebase-auth = { module = \"com.google.firebase:firebase-auth\" }\nfirebase-bom = { module = \"com.google.firebase:firebase-bom\", version.ref = \"firebaseBom\" }\nfirebase-ui-auth = { module = \"com.firebaseui:firebase-ui-auth\", version.ref = \"firebaseUiAuth\" }\njunit = { group = \"junit\", name = \"junit\", version.ref = \"junit\" }\next-junit = { group = \"androidx.test.ext\", name = \"junit\", version.ref = \"junitVersion\" }\nespresso-core = { group = \"androidx.test.espresso\", name = \"espresso-core\", version.ref = \"espressoCore\" }\nappcompat = { group = \"androidx.appcompat\", name = \"appcompat\", version.ref = \"appcompat\" }\nlottie = { module = \"com.airbnb.android:lottie\", version.ref = \"lottie\" }\nmaterial = { group = \"com.google.android.material\", name = \"material\", version.ref = \"material\" }\nactivity = { group = \"androidx.activity\", name = \"activity\", version.ref = \"activity\" }\nconstraintlayout = { group = \"androidx.constraintlayout\", name = \"constraintlayout\", version.ref = \"constraintlayout\" }\nplay-services-auth = { module = \"com.google.android.gms:play-services-auth\", version.ref = \"playServicesAuth\" }\nannotation = { group = \"androidx.annotation\", name = \"annotation\", version.ref = \"annotation\" }\nlifecycle-livedata-ktx = { group = \"androidx.lifecycle\", name = \"lifecycle-livedata-ktx\", version.ref = \"lifecycleLivedataKtx\" }\nlifecycle-viewmodel-ktx = { group = \"androidx.lifecycle\", name = \"lifecycle-viewmodel-ktx\", version.ref = \"lifecycleViewmodelKtx\" }\n\n[plugins]\nandroid-application = { id = \"com.android.application\", version.ref = \"agp\" }\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
+--- a/gradle/libs.versions.toml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/gradle/libs.versions.toml	(date 1740129934560)
+@@ -1,38 +1,61 @@
+ [versions]
++activityKtx = "1.8.2"
+ agp = "8.8.0"
++appcompatVersion = "1.6.1"
++cardview = "1.0.0"
++coreKtx = "1.12.0"
+ facebookAndroidSdk = "18.0.1"
++facebookLogin = "16.0.0"
+ firebaseBom = "33.8.0"
++firebaseBomVersion = "33.9.0"
+ firebaseUiAuth = "7.2.0"
++googleServices = "4.4.2"
++gradle = "8.8.1"
+ junit = "4.13.2"
+ junitVersion = "1.2.1"
+ espressoCore = "3.6.1"
+ appcompat = "1.7.0"
+ lottie = "6.6.2"
++lottieVersion = "6.0.0"
+ material = "1.12.0"
+ activity = "1.10.0"
+ constraintlayout = "2.2.0"
++materialicons = "1.0.3"
+ playServicesAuth = "21.3.0"
+ annotation = "1.9.1"
+ lifecycleLivedataKtx = "2.8.7"
+ lifecycleViewmodelKtx = "2.8.7"
++runner = "1.6.2"
+ 
+ [libraries]
++activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityKtx" }
++appcompat-v161 = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
++cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
++core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+ facebook-android-sdk = { module = "com.facebook.android:facebook-android-sdk", version.ref = "facebookAndroidSdk" }
++facebook-login = { module = "com.facebook.android:facebook-login", version.ref = "facebookLogin" }
+ firebase-auth = { module = "com.google.firebase:firebase-auth" }
+ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
++firebase-bom-v3390 = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
+ firebase-ui-auth = { module = "com.firebaseui:firebase-ui-auth", version.ref = "firebaseUiAuth" }
++google-firebase-auth = { module = "com.google.firebase:firebase-auth" }
++google-services = { module = "com.google.gms:google-services", version.ref = "googleServices" }
++gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
+ junit = { group = "junit", name = "junit", version.ref = "junit" }
+ ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+ espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+ lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" }
++lottie-v600 = { module = "com.airbnb.android:lottie", version.ref = "lottieVersion" }
+ material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+ activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
++materialicons = { module = "com.malinskiy:materialicons", version.ref = "materialicons" }
+ play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+ annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
+ lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
+ lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
++runner = { module = "androidx.test:runner", version.ref = "runner" }
+ 
+ [plugins]
+ android-application = { id = "com.android.application", version.ref = "agp" }
+Index: app/src/main/java/com/example/elsa_speak_clone/GoogleSignInHelper.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.elsa_speak_clone;\n\nimport android.app.Activity;\nimport android.content.Intent;\nimport android.widget.Toast;\n\nimport androidx.annotation.NonNull;\n\nimport com.google.android.gms.auth.api.signin.GoogleSignIn;\nimport com.google.android.gms.auth.api.signin.GoogleSignInAccount;\nimport com.google.android.gms.auth.api.signin.GoogleSignInClient;\nimport com.google.android.gms.auth.api.signin.GoogleSignInOptions;\nimport com.google.android.gms.common.api.ApiException;\nimport com.google.android.gms.tasks.OnCompleteListener;\nimport com.google.android.gms.tasks.Task;\nimport com.google.firebase.auth.AuthCredential;\nimport com.google.firebase.auth.AuthResult;\nimport com.google.firebase.auth.FirebaseAuth;\nimport com.google.firebase.auth.FirebaseUser;\nimport com.google.firebase.auth.GoogleAuthProvider;\n\npublic class GoogleSignInHelper {\n    private final FirebaseAuth mAuth;\n    private final GoogleSignInClient mGoogleSignInClient;\n    private final Activity activity;\n    private final AuthCallback authCallback;\n    private static final int RC_SIGN_IN = 9001;\n\n    public interface AuthCallback {\n        void onSuccess(FirebaseUser user);\n        void onError(String message);\n    }\n\n    public FirebaseAuth MAuth() {\n        return mAuth;\n    }\n\n    public GoogleSignInHelper(Activity activity, AuthCallback callback) {\n        this.activity = activity;\n        this.authCallback = callback;\n        mAuth = FirebaseAuth.getInstance();\n\n        // Configure Google Sign In\n        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)\n                .requestIdToken(activity.getString(R.string.default_web_client_id))\n                .requestEmail()\n                .build();\n\n        mGoogleSignInClient = GoogleSignIn.getClient(activity, gso);\n    }\n    // It will return true if have an account already signed in\n    public boolean CheckGoogleLoginState() {\n        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this.activity);\n        if (account != null) {\n            return false;\n        }\n        return true;\n    }\n    public void signIn() {\n        Intent signInIntent = mGoogleSignInClient.getSignInIntent();\n        activity.startActivityForResult(signInIntent, RC_SIGN_IN);\n    }\n\n    public void handleActivityResult(int requestCode, int resultCode, Intent data) {\n        if (requestCode == RC_SIGN_IN) {\n            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);\n            try {\n                GoogleSignInAccount account = task.getResult(ApiException.class);\n                firebaseAuthWithGoogle(account.getIdToken());\n            } catch (ApiException e) {\n                authCallback.onError(\"Google sign in failed: \" + e.getStatusCode());\n            }\n        }\n    }\n\n    private void firebaseAuthWithGoogle(String idToken) {\n        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);\n        mAuth.signInWithCredential(credential)\n                .addOnCompleteListener(activity, new OnCompleteListener<AuthResult>() {\n                    @Override\n                    public void onComplete(@NonNull Task<AuthResult> task) {\n                        if (task.isSuccessful()) {\n                            FirebaseUser user = mAuth.getCurrentUser();\n                            authCallback.onSuccess(user);\n                        } else {\n                            authCallback.onError(\"Authentication failed: \" + \n                                    (task.getException() != null ? task.getException().getMessage() : \"\"));\n                        }\n                    }\n                });\n    }\n\n    public void signOut() {\n        FirebaseAuth.getInstance().signOut();\n        mGoogleSignInClient.signOut().addOnCompleteListener(activity,\n                task -> Toast.makeText(activity, \"Signed out successfully\", Toast.LENGTH_SHORT).show());\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/elsa_speak_clone/GoogleSignInHelper.java b/app/src/main/java/com/example/elsa_speak_clone/GoogleSignInHelper.java
+--- a/app/src/main/java/com/example/elsa_speak_clone/GoogleSignInHelper.java	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/src/main/java/com/example/elsa_speak_clone/GoogleSignInHelper.java	(date 1740130105289)
+@@ -4,17 +4,14 @@
+ import android.content.Intent;
+ import android.widget.Toast;
+ 
+-import androidx.annotation.NonNull;
+ 
+ import com.google.android.gms.auth.api.signin.GoogleSignIn;
+ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+ import com.google.android.gms.common.api.ApiException;
+-import com.google.android.gms.tasks.OnCompleteListener;
+ import com.google.android.gms.tasks.Task;
+ import com.google.firebase.auth.AuthCredential;
+-import com.google.firebase.auth.AuthResult;
+ import com.google.firebase.auth.FirebaseAuth;
+ import com.google.firebase.auth.FirebaseUser;
+ import com.google.firebase.auth.GoogleAuthProvider;
+@@ -31,9 +28,6 @@
+         void onError(String message);
+     }
+ 
+-    public FirebaseAuth MAuth() {
+-        return mAuth;
+-    }
+ 
+     public GoogleSignInHelper(Activity activity, AuthCallback callback) {
+         this.activity = activity;
+@@ -51,10 +45,7 @@
+     // It will return true if have an account already signed in
+     public boolean CheckGoogleLoginState() {
+         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this.activity);
+-        if (account != null) {
+-            return false;
+-        }
+-        return true;
++        return account == null;
+     }
+     public void signIn() {
+         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+@@ -76,16 +67,13 @@
+     private void firebaseAuthWithGoogle(String idToken) {
+         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
+         mAuth.signInWithCredential(credential)
+-                .addOnCompleteListener(activity, new OnCompleteListener<AuthResult>() {
+-                    @Override
+-                    public void onComplete(@NonNull Task<AuthResult> task) {
+-                        if (task.isSuccessful()) {
+-                            FirebaseUser user = mAuth.getCurrentUser();
+-                            authCallback.onSuccess(user);
+-                        } else {
+-                            authCallback.onError("Authentication failed: " + 
+-                                    (task.getException() != null ? task.getException().getMessage() : ""));
+-                        }
++                .addOnCompleteListener(activity, task -> {
++                    if (task.isSuccessful()) {
++                        FirebaseUser user = mAuth.getCurrentUser();
++                        authCallback.onSuccess(user);
++                    } else {
++                        authCallback.onError("Authentication failed: " +
++                                (task.getException() != null ? task.getException().getMessage() : ""));
+                     }
+                 });
+     }
+Index: app/src/main/java/com/example/elsa_speak_clone/LearningAppDatabase.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.elsa_speak_clone;\n\nimport android.content.ContentValues;\nimport android.content.Context;\nimport android.database.Cursor;\nimport android.database.sqlite.SQLiteDatabase;\nimport android.database.sqlite.SQLiteOpenHelper;\nimport android.util.Log;\n\npublic class LearningAppDatabase extends SQLiteOpenHelper {\n    private static final String DATABASE_NAME = \"elsa_speak_clone.db\";\n    private static final int DATABASE_VERSION = 1;\n\n    // Users Table\n    private static final String TABLE_USERS = \"users\";\n    private static final String COLUMN_ID = \"id\";\n    private static final String COLUMN_USERNAME = \"username\";\n    private static final String COLUMN_PASSWORD = \"password\";\n    private static final String COLUMN_DAY_STREAK = \"day_streak\";\n    private static final String COLUMN_XP_POINTS = \"xp_points\";\n    private static final String COLUMN_LEVEL = \"level\";\n\n    // Lessons Table\n    private static final String TABLE_LESSONS = \"lessons\";\n    private static final String COLUMN_LESSON_ID = \"lesson_id\";\n    private static final String COLUMN_LESSON_NAME = \"lesson_name\";\n    private static final String COLUMN_LESSON_STATUS = \"status\"; // Completed or Not\n\n    // Pronunciation Scores Table\n    private static final String TABLE_PRONUNCIATION = \"pronunciation_scores\";\n    private static final String COLUMN_WORD = \"word_pronounced\";\n    private static final String COLUMN_SCORE = \"score\";\n    private static final String COLUMN_DATE_TIME = \"date_time\";\n\n    public LearningAppDatabase(Context context) {\n        super(context, DATABASE_NAME, null, DATABASE_VERSION);\n    }\n\n    @Override\n    public void onCreate(SQLiteDatabase db) {\n        // Create Users Table\n        String CREATE_USERS_TABLE = \"CREATE TABLE \" + TABLE_USERS + \" (\" +\n                COLUMN_ID + \" INTEGER PRIMARY KEY AUTOINCREMENT, \" +\n                COLUMN_USERNAME + \" TEXT UNIQUE, \" +\n                COLUMN_PASSWORD + \" TEXT, \" +\n                COLUMN_DAY_STREAK + \" INTEGER DEFAULT 1, \" +\n                COLUMN_XP_POINTS + \" INTEGER DEFAULT 0, \" +\n                COLUMN_LEVEL + \" INTEGER DEFAULT 1)\";\n        db.execSQL(CREATE_USERS_TABLE);\n\n\n        // Create Lessons Table\n        String CREATE_LESSONS_TABLE = \"CREATE TABLE \" + TABLE_LESSONS + \" (\" +\n                COLUMN_LESSON_ID + \" INTEGER PRIMARY KEY AUTOINCREMENT, \" +\n                COLUMN_USERNAME + \" TEXT, \" +\n                COLUMN_LESSON_NAME + \" TEXT, \" +\n                COLUMN_LESSON_STATUS + \" TEXT, \" +\n                \"FOREIGN KEY (\" + COLUMN_USERNAME + \") REFERENCES \" + TABLE_USERS + \"(\" + COLUMN_USERNAME + \"))\";\n        db.execSQL(CREATE_LESSONS_TABLE);\n\n        // Create Pronunciation Scores Table\n        String CREATE_PRONUNCIATION_TABLE = \"CREATE TABLE \" + TABLE_PRONUNCIATION + \" (\" +\n                COLUMN_ID + \" INTEGER PRIMARY KEY AUTOINCREMENT, \" +\n                COLUMN_USERNAME + \" TEXT, \" +\n                COLUMN_WORD + \" TEXT, \" +\n                COLUMN_SCORE + \" INTEGER, \" +\n                COLUMN_DATE_TIME + \" DATETIME DEFAULT CURRENT_TIMESTAMP, \" +\n                \"FOREIGN KEY (\" + COLUMN_USERNAME + \") REFERENCES \" + TABLE_USERS + \"(\" + COLUMN_USERNAME + \"))\";\n        db.execSQL(CREATE_PRONUNCIATION_TABLE);\n    }\n\n    @Override\n    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {\n        db.execSQL(\"DROP TABLE IF EXISTS \" + TABLE_USERS);\n        db.execSQL(\"DROP TABLE IF EXISTS \" + TABLE_LESSONS);\n        db.execSQL(\"DROP TABLE IF EXISTS \" + TABLE_PRONUNCIATION);\n        onCreate(db);\n    }\n\n    // Register a User\n    public boolean registerUser(String username, String password) {\n        SQLiteDatabase db = this.getWritableDatabase();\n        ContentValues values = new ContentValues();\n        values.put(COLUMN_USERNAME, username);\n        values.put(COLUMN_PASSWORD, password);\n\n        long result = db.insert(TABLE_USERS, null, values);\n        return result != -1;\n    }\n\n    // Authenticate User (Login)\n    public boolean authenticateUser(String username, String password) {\n        SQLiteDatabase db = this.getReadableDatabase();\n        Cursor cursor = db.rawQuery(\"SELECT * FROM \" + TABLE_USERS +\n                        \" WHERE \" + COLUMN_USERNAME + \"=? AND \" + COLUMN_PASSWORD + \"=?\",\n                new String[]{username, password});\n\n        boolean success = cursor.getCount() > 0;\n        cursor.close();\n        return success;\n    }\n\n    // Check Username Availability\n    public boolean isUsernameAvailable(String username) {\n        SQLiteDatabase db = this.getReadableDatabase();\n        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_USERNAME},\n                COLUMN_USERNAME + \"=?\", new String[]{username}, null, null, null);\n\n        boolean available = cursor.getCount() == 0;\n        cursor.close();\n        return available;\n    }\n\n    // Update User XP and Streak\n    public void updateUserProgress(String username, int xpGained) {\n        SQLiteDatabase db = this.getWritableDatabase();\n        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_XP_POINTS, COLUMN_DAY_STREAK},\n                COLUMN_USERNAME + \"=?\", new String[]{username}, null, null, null);\n\n        if (cursor.moveToFirst()) {\n            int currentXP = cursor.getInt(0);\n            int currentStreak = cursor.getInt(1);\n\n            ContentValues values = new ContentValues();\n            values.put(COLUMN_XP_POINTS, currentXP + xpGained);\n            values.put(COLUMN_DAY_STREAK, currentStreak + 1); // Increase streak\n\n            db.update(TABLE_USERS, values, COLUMN_USERNAME + \"=?\", new String[]{username});\n        }\n        cursor.close();\n    }\n\n    // Add Lesson Progress\n    public boolean addLessonProgress(String username, String lessonName, String status) {\n        SQLiteDatabase db = this.getWritableDatabase();\n        ContentValues values = new ContentValues();\n        values.put(COLUMN_USERNAME, username);\n        values.put(COLUMN_LESSON_NAME, lessonName);\n        values.put(COLUMN_LESSON_STATUS, status);\n\n        long result = db.insert(TABLE_LESSONS, null, values);\n        return result != -1;\n    }\n\n    // Store Pronunciation Score\n    public boolean addPronunciationScore(String username, String word, int score) {\n        SQLiteDatabase db = this.getWritableDatabase();\n        ContentValues values = new ContentValues();\n        values.put(COLUMN_USERNAME, username);\n        values.put(COLUMN_WORD, word);\n        values.put(COLUMN_SCORE, score);\n\n        long result = db.insert(TABLE_PRONUNCIATION, null, values);\n        return result != -1;\n    }\n\n    // Retrieve User Progress\n    public Cursor getUserProgress(String username) {\n        SQLiteDatabase db = this.getReadableDatabase();\n        return db.rawQuery(\"SELECT * FROM \" + TABLE_USERS + \" WHERE \" + COLUMN_USERNAME + \"=?\", new String[]{username});\n    }\n\n    // Get User's Completed Lessons\n    public Cursor getCompletedLessons(String username) {\n        SQLiteDatabase db = this.getReadableDatabase();\n        return db.rawQuery(\"SELECT * FROM \" + TABLE_LESSONS + \" WHERE \" + COLUMN_USERNAME + \"=? AND \" +\n                COLUMN_LESSON_STATUS + \"='Completed'\", new String[]{username});\n    }\n\n    // Use for testing\n    public void injectProgress(String username, int xpPoints, int dayStreak) {\n        SQLiteDatabase db = this.getWritableDatabase();\n\n        // Prepare the ContentValues to update the user progress\n        ContentValues values = new ContentValues();\n        values.put(COLUMN_XP_POINTS, xpPoints);\n        values.put(COLUMN_DAY_STREAK, dayStreak);\n\n        // Update the user's progress based on the username\n        int rowsUpdated = db.update(TABLE_USERS, values, COLUMN_USERNAME + \" = ?\", new String[]{username});\n\n        // If rowsUpdated is greater than 0, it means the user was found and updated\n        if (rowsUpdated > 0) {\n            Log.d(\"Database\", \"User progress updated successfully.\");\n        } else {\n            Log.d(\"Database\", \"Failed to update user progress.\");\n        }\n    }\n\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/elsa_speak_clone/LearningAppDatabase.java b/app/src/main/java/com/example/elsa_speak_clone/LearningAppDatabase.java
+--- a/app/src/main/java/com/example/elsa_speak_clone/LearningAppDatabase.java	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/src/main/java/com/example/elsa_speak_clone/LearningAppDatabase.java	(date 1740129616623)
+@@ -6,31 +6,53 @@
+ import android.database.sqlite.SQLiteDatabase;
+ import android.database.sqlite.SQLiteOpenHelper;
+ import android.util.Log;
++import java.text.SimpleDateFormat;
++import java.util.Date;
++import java.util.Locale;
++import java.util.Random;
+ 
+ public class LearningAppDatabase extends SQLiteOpenHelper {
+     private static final String DATABASE_NAME = "elsa_speak_clone.db";
+     private static final int DATABASE_VERSION = 1;
+ 
+-    // Users Table
++   // USER
+     private static final String TABLE_USERS = "users";
+-    private static final String COLUMN_ID = "id";
+-    private static final String COLUMN_USERNAME = "username";
+-    private static final String COLUMN_PASSWORD = "password";
+-    private static final String COLUMN_DAY_STREAK = "day_streak";
+-    private static final String COLUMN_XP_POINTS = "xp_points";
+-    private static final String COLUMN_LEVEL = "level";
++    private static final String COLUMN_USER_PASSWORD = "user_password";
++    private static final String COLUMN_USER_ID = "user_id";
++    private static final String COLUMN_GMAIL = "gmail";
++    private static final String COLUMN_NAME = "name";
++    private static final String COLUMN_JOIN_DATE = "join_date";
+ 
+-    // Lessons Table
++    // LESSON
+     private static final String TABLE_LESSONS = "lessons";
+     private static final String COLUMN_LESSON_ID = "lesson_id";
+-    private static final String COLUMN_LESSON_NAME = "lesson_name";
+-    private static final String COLUMN_LESSON_STATUS = "status"; // Completed or Not
++    private static final String COLUMN_TOPIC = "topic";
++    private static final String COLUMN_DIFFICULTY_LEVEL = "difficulty_level";
++
++    // VOCABULARY
++    private static final String TABLE_VOCABULARY = "vocabulary";
++    private static final String COLUMN_WORD = "word";
++    private static final String COLUMN_PRONUNCIATION = "pronunciation";
++    private static final String COLUMN_WORD_ID = "word_id";
+ 
+-    // Pronunciation Scores Table
+-    private static final String TABLE_PRONUNCIATION = "pronunciation_scores";
+-    private static final String COLUMN_WORD = "word_pronounced";
++    // USER PROGRESS
++    private static final String TABLE_USER_PROGRESS = "user_progress";
++    private static final String COLUMN_PROGRESS_ID = "progress_id";
++    private static final String COLUMN_COMPLETION_TIME = "completion_time";
++    private static final String COLUMN_STREAK = "streak";
++    private static final String COLUMN_LAST_STUDY_DATE = "last_study_date";
++
++    // USER SCORE
++    private static final String TABLE_USER_SCORES = "user_scores";
++    private static final String COLUMN_SCORE_ID = "score_id";
+     private static final String COLUMN_SCORE = "score";
+-    private static final String COLUMN_DATE_TIME = "date_time";
++    private static final String COLUMN_ATTEMPT_DATE = "attempt_date";
++
++    // SHARED RESULT
++    private static final String TABLE_SHARED_RESULT = "shared_result";
++    private static final String COLUMN_SHARE_ID = "share_id";
++    private static final String COLUMN_MESSAGE = "message";
++    private static final String COLUMN_SHARE_DATE = "share_date";
+ 
+     public LearningAppDatabase(Context context) {
+         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+@@ -38,61 +60,143 @@
+ 
+     @Override
+     public void onCreate(SQLiteDatabase db) {
+-        // Create Users Table
+         String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_USERS + " (" +
+-                COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+-                COLUMN_USERNAME + " TEXT UNIQUE, " +
+-                COLUMN_PASSWORD + " TEXT, " +
+-                COLUMN_DAY_STREAK + " INTEGER DEFAULT 1, " +
+-                COLUMN_XP_POINTS + " INTEGER DEFAULT 0, " +
+-                COLUMN_LEVEL + " INTEGER DEFAULT 1)";
++                COLUMN_USER_ID + " INTEGER NOT NULL, " +
++                COLUMN_USER_PASSWORD + " TEXT NOT NULL, " +
++                COLUMN_GMAIL + " TEXT, " +
++                COLUMN_NAME + " TEXT NOT NULL, " +
++                COLUMN_JOIN_DATE + " DATE NOT NULL, " +
++                "PRIMARY KEY (" + COLUMN_USER_ID + "))";
+         db.execSQL(CREATE_USERS_TABLE);
+ 
+-
+-        // Create Lessons Table
++        // Create LESSON
+         String CREATE_LESSONS_TABLE = "CREATE TABLE " + TABLE_LESSONS + " (" +
+-                COLUMN_LESSON_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+-                COLUMN_USERNAME + " TEXT, " +
+-                COLUMN_LESSON_NAME + " TEXT, " +
+-                COLUMN_LESSON_STATUS + " TEXT, " +
+-                "FOREIGN KEY (" + COLUMN_USERNAME + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USERNAME + "))";
++                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
++                COLUMN_TOPIC + " TEXT NOT NULL, " +
++                COLUMN_DIFFICULTY_LEVEL + " INTEGER NOT NULL, " +
++                "PRIMARY KEY (" + COLUMN_LESSON_ID + "))";
+         db.execSQL(CREATE_LESSONS_TABLE);
+ 
+-        // Create Pronunciation Scores Table
+-        String CREATE_PRONUNCIATION_TABLE = "CREATE TABLE " + TABLE_PRONUNCIATION + " (" +
+-                COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+-                COLUMN_USERNAME + " TEXT, " +
+-                COLUMN_WORD + " TEXT, " +
+-                COLUMN_SCORE + " INTEGER, " +
+-                COLUMN_DATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+-                "FOREIGN KEY (" + COLUMN_USERNAME + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USERNAME + "))";
+-        db.execSQL(CREATE_PRONUNCIATION_TABLE);
++        // Create VOCABULARY
++        String CREATE_VOCABULARY_TABLE = "CREATE TABLE " + TABLE_VOCABULARY + " (" +
++                COLUMN_WORD + " TEXT NOT NULL, " +
++                COLUMN_PRONUNCIATION + " TEXT NOT NULL, " +
++                COLUMN_WORD_ID + " INTEGER NOT NULL, " +
++                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
++                "PRIMARY KEY (" + COLUMN_WORD_ID + "), " +
++                "FOREIGN KEY (" + COLUMN_LESSON_ID + ") REFERENCES " + TABLE_LESSONS + "(" + COLUMN_LESSON_ID + "))";
++        db.execSQL(CREATE_VOCABULARY_TABLE);
++        
++        // Create USER PROGRESS
++        String CREATE_USER_PROGRESS_TABLE = "CREATE TABLE " + TABLE_USER_PROGRESS + " (" +
++                COLUMN_PROGRESS_ID + " INTEGER NOT NULL, " +
++                COLUMN_DIFFICULTY_LEVEL + " INTEGER NOT NULL, " +
++                COLUMN_COMPLETION_TIME + " DATE NOT NULL, " +
++                COLUMN_STREAK + " INTEGER NOT NULL, " +
++                COLUMN_LAST_STUDY_DATE + " DATE NOT NULL, " +
++                COLUMN_USER_ID + " INTEGER NOT NULL, " +
++                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
++                "PRIMARY KEY (" + COLUMN_PROGRESS_ID + "), " +
++                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USER_ID + "), " +
++                "FOREIGN KEY (" + COLUMN_LESSON_ID + ") REFERENCES " + TABLE_LESSONS + "(" + COLUMN_LESSON_ID + "))";
++        db.execSQL(CREATE_USER_PROGRESS_TABLE);
++
++        // Create QUIZZES
++        String CREATE_QUIZZES_TABLE = "CREATE TABLE " + TABLE_QUIZZES + " (" +
++                COLUMN_QUIZ_ID + " INTEGER NOT NULL, " +
++                COLUMN_QUESTION + " TEXT NOT NULL, " +
++                COLUMN_ANSWER + " TEXT NOT NULL, " +
++                COLUMN_LESSON_ID + " INTEGER NOT NULL, " +
++                "PRIMARY KEY (" + COLUMN_QUIZ_ID + "), " +
++                "FOREIGN KEY (" + COLUMN_LESSON_ID + ") REFERENCES " + TABLE_LESSONS + "(" + COLUMN_LESSON_ID + "))";
++        db.execSQL(CREATE_QUIZZES_TABLE);
++
++        // Create USER SCORES
++        String CREATE_USER_SCORES_TABLE = "CREATE TABLE " + TABLE_USER_SCORES + " (" +
++                COLUMN_SCORE_ID + " INTEGER NOT NULL, " +
++                COLUMN_SCORE + " INTEGER NOT NULL, " +
++                COLUMN_ATTEMPT_DATE + " DATE NOT NULL, " +
++                COLUMN_USER_ID + " INTEGER NOT NULL, " +
++                COLUMN_QUIZ_ID + " INTEGER NOT NULL, " +
++                "PRIMARY KEY (" + COLUMN_SCORE_ID + "), " +
++                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USER_ID + "), " +
++                "FOREIGN KEY (" + COLUMN_QUIZ_ID + ") REFERENCES " + TABLE_QUIZZES + "(" + COLUMN_QUIZ_ID + "))";
++        db.execSQL(CREATE_USER_SCORES_TABLE);
++
++        // Create SHARED RESULT
++        String CREATE_SHARED_RESULT_TABLE = "CREATE TABLE " + TABLE_SHARED_RESULT + " (" +
++                COLUMN_SHARE_ID + " INTEGER NOT NULL, " +
++                COLUMN_MESSAGE + " TEXT NOT NULL, " +
++                COLUMN_SHARE_DATE + " DATE NOT NULL, " +
++                COLUMN_USER_ID + " INTEGER NOT NULL, " +
++                "PRIMARY KEY (" + COLUMN_SHARE_ID + "), " +
++                "FOREIGN KEY (" + COLUMN_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + COLUMN_USER_ID + "))";
++        db.execSQL(CREATE_SHARED_RESULT_TABLE);
+     }
+ 
+-    @Override
++      @Override
+     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
++        // Drop older tables if existed
++        db.execSQL("DROP TABLE IF EXISTS " + TABLE_SHARED_RESULT);
++        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_SCORES);
++        db.execSQL("DROP TABLE IF EXISTS " + TABLE_QUIZZES);
++        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_PROGRESS);
++        db.execSQL("DROP TABLE IF EXISTS " + TABLE_VOCABULARY);
+         db.execSQL("DROP TABLE IF EXISTS " + TABLE_LESSONS);
+-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_PRONUNCIATION);
++        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
++
++        // Create tables again
+         onCreate(db);
+     }
+ 
+     // Register a User
+-    public boolean registerUser(String username, String password) {
++    public boolean registerUser(String gmail, String name) {
+         SQLiteDatabase db = this.getWritableDatabase();
+         ContentValues values = new ContentValues();
+-        values.put(COLUMN_USERNAME, username);
+-        values.put(COLUMN_PASSWORD, password);
++
++        // Generate unique ID
++        int userId = generateUniqueId(db);
++
++        // Add values to columns
++        values.put(COLUMN_USER_ID, userId);
++        values.put(COLUMN_GMAIL, gmail);
++        values.put(COLUMN_NAME, name);
++        values.put(COLUMN_JOIN_DATE, getCurrentDate());
+ 
+         long result = db.insert(TABLE_USERS, null, values);
+         return result != -1;
+     }
+ 
++    private String getCurrentDate() {
++        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
++        return dateFormat.format(new Date());
++    }
++
++    private int generateUniqueId(SQLiteDatabase db) {
++        Random random = new Random();
++        int userId;
++        do {
++            userId = 10000 + random.nextInt(90000); // Generates a 5-digit random number
++        } while (doesUserIdExist(db, userId)); // Keep generating if it exists
++
++        return userId;
++    }
++
++
++    // Function to check if the user ID already exists in the database
++    private boolean doesUserIdExist(SQLiteDatabase db, int userId) {
++        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ID + "=?",
++                new String[]{String.valueOf(userId)});
++        boolean exists = cursor.getCount() > 0;
++        cursor.close();
++        return exists;
++    }
++
+     // Authenticate User (Login)
+     public boolean authenticateUser(String username, String password) {
+         SQLiteDatabase db = this.getReadableDatabase();
+         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USERS +
+-                        " WHERE " + COLUMN_USERNAME + "=? AND " + COLUMN_PASSWORD + "=?",
++                        " WHERE " + COLUMN_NAME + "=? AND " + COLUMN_USER_PASSWORD + "=?",
+                 new String[]{username, password});
+ 
+         boolean success = cursor.getCount() > 0;
+@@ -100,91 +204,156 @@
+         return success;
+     }
+ 
+-    // Check Username Availability
+-    public boolean isUsernameAvailable(String username) {
+-        SQLiteDatabase db = this.getReadableDatabase();
+-        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_USERNAME},
+-                COLUMN_USERNAME + "=?", new String[]{username}, null, null, null);
+-
+-        boolean available = cursor.getCount() == 0;
+-        cursor.close();
+-        return available;
+-    }
+-
+-    // Update User XP and Streak
+-    public void updateUserProgress(String username, int xpGained) {
+-        SQLiteDatabase db = this.getWritableDatabase();
+-        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_XP_POINTS, COLUMN_DAY_STREAK},
+-                COLUMN_USERNAME + "=?", new String[]{username}, null, null, null);
+-
+-        if (cursor.moveToFirst()) {
+-            int currentXP = cursor.getInt(0);
+-            int currentStreak = cursor.getInt(1);
+-
+-            ContentValues values = new ContentValues();
+-            values.put(COLUMN_XP_POINTS, currentXP + xpGained);
+-            values.put(COLUMN_DAY_STREAK, currentStreak + 1); // Increase streak
+-
+-            db.update(TABLE_USERS, values, COLUMN_USERNAME + "=?", new String[]{username});
+-        }
+-        cursor.close();
+-    }
+-
+     // Add Lesson Progress
+-    public boolean addLessonProgress(String username, String lessonName, String status) {
++    public boolean addUserProgress(int userId, int lessonId, int difficultyLevel) {
+         SQLiteDatabase db = this.getWritableDatabase();
+         ContentValues values = new ContentValues();
+-        values.put(COLUMN_USERNAME, username);
+-        values.put(COLUMN_LESSON_NAME, lessonName);
+-        values.put(COLUMN_LESSON_STATUS, status);
++
++        // Generate unique progress ID
++        int progressId = generateUniqueProgressId(db);
+ 
+-        long result = db.insert(TABLE_LESSONS, null, values);
++        values.put(COLUMN_PROGRESS_ID, progressId);
++        values.put(COLUMN_USER_ID, userId);
++        values.put(COLUMN_LESSON_ID, lessonId);
++        values.put(COLUMN_DIFFICULTY_LEVEL, difficultyLevel);
++        values.put(COLUMN_COMPLETION_TIME, getCurrentDate());
++        values.put(COLUMN_STREAK, 1);
++        values.put(COLUMN_LAST_STUDY_DATE, getCurrentDate());
++
++        long result = db.insert(TABLE_USER_PROGRESS, null, values);
+         return result != -1;
+     }
+ 
+-    // Store Pronunciation Score
+-    public boolean addPronunciationScore(String username, String word, int score) {
++    private int generateUniqueProgressId(SQLiteDatabase db) {
++        Random random = new Random();
++        int progressId;
++        do {
++            progressId = random.nextInt(1000000);
++        } while (doesProgressIdExist(db, progressId));
++        return progressId;
++    }
++
++    private boolean doesProgressIdExist(SQLiteDatabase db, int progressId) {
++        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USER_PROGRESS + 
++                " WHERE " + COLUMN_PROGRESS_ID + "=?",
++                new String[]{String.valueOf(progressId)});
++        boolean exists = cursor.getCount() > 0;
++        cursor.close();
++        return exists;
++    }
++
++    // Add Quiz Score
++    public boolean addQuizScore(int userId, int quizId, int score) {
+         SQLiteDatabase db = this.getWritableDatabase();
+         ContentValues values = new ContentValues();
+-        values.put(COLUMN_USERNAME, username);
+-        values.put(COLUMN_WORD, word);
++
++        // Generate unique score ID
++        int scoreId = generateUniqueScoreId(db);
++
++        values.put(COLUMN_SCORE_ID, scoreId);
++        values.put(COLUMN_USER_ID, userId);
++        values.put(COLUMN_QUIZ_ID, quizId);
+         values.put(COLUMN_SCORE, score);
++        values.put(COLUMN_ATTEMPT_DATE, getCurrentDate());
+ 
+-        long result = db.insert(TABLE_PRONUNCIATION, null, values);
++        long result = db.insert(TABLE_USER_SCORES, null, values);
+         return result != -1;
+     }
+ 
+-    // Retrieve User Progress
+-    public Cursor getUserProgress(String username) {
++    private int generateUniqueScoreId(SQLiteDatabase db) {
++        Random random = new Random();
++        int scoreId;
++        do {
++            scoreId = random.nextInt(1000000);
++        } while (doesScoreIdExist(db, scoreId));
++        return scoreId;
++    }
++
++    private boolean doesScoreIdExist(SQLiteDatabase db, int scoreId) {
++        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USER_SCORES + 
++                " WHERE " + COLUMN_SCORE_ID + "=?",
++                new String[]{String.valueOf(scoreId)});
++        boolean exists = cursor.getCount() > 0;
++        cursor.close();
++        return exists;
++    }
++
++    // Get User Progress
++    public Cursor getUserProgress(int userId) {
+         SQLiteDatabase db = this.getReadableDatabase();
+-        return db.rawQuery("SELECT * FROM " + TABLE_USERS + " WHERE " + COLUMN_USERNAME + "=?", new String[]{username});
++        return db.rawQuery(
++            "SELECT l.Topic, up.DifficultyLevel, up.CompletionTime, up.Streak " +
++            "FROM " + TABLE_USER_PROGRESS + " up " +
++            "JOIN " + TABLE_LESSONS + " l ON up.LessonId = l.LessonId " +
++            "WHERE up.UserId = ?",
++            new String[]{String.valueOf(userId)}
++        );
+     }
+ 
+-    // Get User's Completed Lessons
+-    public Cursor getCompletedLessons(String username) {
++    // Get User's Quiz Scores
++    public Cursor getUserScores(int userId) {
+         SQLiteDatabase db = this.getReadableDatabase();
+-        return db.rawQuery("SELECT * FROM " + TABLE_LESSONS + " WHERE " + COLUMN_USERNAME + "=? AND " +
+-                COLUMN_LESSON_STATUS + "='Completed'", new String[]{username});
++        return db.rawQuery(
++            "SELECT q.Question, us.Score, us.AttemptDate " +
++            "FROM " + TABLE_USER_SCORES + " us " +
++            "JOIN " + TABLE_QUIZZES + " q ON us.QuizId = q.QuizId " +
++            "WHERE us.UserId = ? " +
++            "ORDER BY us.AttemptDate DESC",
++            new String[]{String.valueOf(userId)}
++        );
+     }
+ 
+-    // Use for testing
+-    public void injectProgress(String username, int xpPoints, int dayStreak) {
+-        SQLiteDatabase db = this.getWritableDatabase();
+-
+-        // Prepare the ContentValues to update the user progress
+-        ContentValues values = new ContentValues();
+-        values.put(COLUMN_XP_POINTS, xpPoints);
+-        values.put(COLUMN_DAY_STREAK, dayStreak);
+-
+-        // Update the user's progress based on the username
+-        int rowsUpdated = db.update(TABLE_USERS, values, COLUMN_USERNAME + " = ?", new String[]{username});
+-
+-        // If rowsUpdated is greater than 0, it means the user was found and updated
+-        if (rowsUpdated > 0) {
+-            Log.d("Database", "User progress updated successfully.");
+-        } else {
+-            Log.d("Database", "Failed to update user progress.");
++    public int getUserId(String emailOrUsername) {
++        SQLiteDatabase db = this.getReadableDatabase();
++        Cursor cursor = db.query(TABLE_USERS, new String[]{COLUMN_USER_ID},
++                COLUMN_GMAIL + "=? OR " + COLUMN_NAME + "=?", 
++                new String[]{emailOrUsername, emailOrUsername}, 
++                null, null, null);
++        
++        int userId = -1;
++        if (cursor != null && cursor.moveToFirst()) {
++            userId = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_USER_ID));
++            cursor.close();
++        }
++        return userId;
++    }
++       public boolean doesUserGmailExist(String gmail) {
++        SQLiteDatabase db = this.getReadableDatabase();
++        Cursor cursor = db.query(
++            TABLE_USERS,
++            new String[]{COLUMN_GMAIL},
++            COLUMN_GMAIL + "=?",
++            new String[]{gmail},
++            null,
++            null,
++            null
++        );
++        
++        boolean exists = false;
++        if (cursor != null) {
++            exists = cursor.getCount() > 0;
++            cursor.close();
+         }
++        return exists;
+     }
+ 
++    private boolean doesUserIdExist(SQLiteDatabase db, int userId) {
++        Cursor cursor = db.query(
++            TABLE_USERS,
++            new String[]{COLUMN_USER_ID},
++            COLUMN_USER_ID + "=?",
++            new String[]{String.valueOf(userId)},
++            null,
++            null,
++            null
++        );
++        
++        boolean exists = false;
++        if (cursor != null) {
++            // Return true if true if there is at least one matching row (count > 0)
++            exists = cursor.getCount() > 0;
++            cursor.close();
++        }
++        return exists;
++    } 
+ }
+Index: app/src/main/java/com/example/elsa_speak_clone/MainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.elsa_speak_clone;\n\nimport android.content.Intent;\nimport android.database.Cursor;\nimport android.graphics.Paint;\nimport android.os.Bundle;\nimport android.widget.Button;\nimport android.widget.ImageView;\nimport android.widget.TextView;\n\nimport androidx.appcompat.app.AppCompatActivity;\nimport androidx.cardview.widget.CardView;\nimport androidx.core.content.ContextCompat;\n\n// Icon lib\nimport com.malinskiy.materialicons.IconDrawable;\nimport com.malinskiy.materialicons.Iconify;\n//import com.malinskiy.materialicons.IconValue;\n\nimport com.google.firebase.auth.FirebaseAuth;\n\npublic class MainActivity extends AppCompatActivity {\n\n    Button btnLogin;\n    CardView cvVocabulary;\n    CardView cvGrammar;\n    CardView cvPronunciation;\n    TextView tvDayStreak;\n    TextView tvXPPoint;\n    TextView tvWelcome;\n    ImageView ivPronunciation;\n    ImageView profileImage;\n    private LearningAppDatabase databaseHelper;\n    private UserSessionManager sessionManager;\n    String username;\n    IconDrawable iconPronunciation;\n    IconDrawable iconProfile;\n    boolean loginCheck;\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n\n\n\n\n        initializeUI();\n        initializeVariables();\n        boolean skipLoginCheck = getIntent().getBooleanExtra(\"skipLoginCheck\", false);\n\n        if(!skipLoginCheck && !CheckLoginState())\n            navigateToLogin();\n        else\n            WelcomeUsername();\n\n        loadUserProgress();\n        setupLoginButton();\n        setupSpeechToTextButton();\n        setupGrammarButton();\n        setupVocabularyButton();\n    }\n\n    private void WelcomeUsername() {\n        tvWelcome.setText(\"Welcome back \" + username + \"!\");\n    }\n\n    private void initializeVariables() {\n        sessionManager = new UserSessionManager(this);\n        databaseHelper = new LearningAppDatabase(this);\n        // Use for testing\n        // databaseHelper.injectProgress(\"github_k1enn\", 69, 69);\n        username = sessionManager.getUsername();\n        loginCheck = getIntent().getBooleanExtra(\"logged\", false);\n    }\n    private boolean CheckLoginState() {\n        return sessionManager.isLoggedIn();\n    }\n    private void initializeUI() {\n        btnLogin = findViewById(R.id.btnLogin);\n        cvPronunciation = findViewById(R.id.cvPronunciation);\n        cvGrammar = findViewById(R.id.cvGrammar);\n        cvVocabulary = findViewById(R.id.cvVocabulary);\n        tvDayStreak = findViewById(R.id.tvDayStreak);\n        tvXPPoint = findViewById(R.id.tvXPPoint);\n        tvWelcome = findViewById(R.id.tvWelcome);\n\n        ivPronunciation = findViewById(R.id.ivPronunciation);\n        iconPronunciation = new IconDrawable(this, Iconify.IconValue.zmdi_volume_up)\n                .colorRes(R.color.real_purple)  // Set color\n                .sizeDp(48); // Set size\n        iconPronunciation.setStyle(Paint.Style.FILL);\n        ivPronunciation.setImageDrawable(iconPronunciation);\n\n        profileImage = findViewById(R.id.profileImage);\n        iconProfile = new IconDrawable(this, Iconify.IconValue.zmdi_account_circle)\n                .colorRes(R.color.gray)  // Set color\n                .sizeDp(70); // Set size\n        iconProfile.setStyle(Paint.Style.FILL);\n        profileImage.setImageDrawable(iconProfile);\n\n    }\n\n    private void loadUserProgress() {\n        if (username != null) {\n            Cursor cursor = databaseHelper.getUserProgress(username);\n            if (cursor != null && cursor.moveToFirst()) {\n                try {\n                    int xp = cursor.getInt(cursor.getColumnIndexOrThrow(\"xp_points\"));\n                    int streak = cursor.getInt(cursor.getColumnIndexOrThrow(\"day_streak\"));\n\n                    // Convert to String when setting text\n                    tvXPPoint.setText(String.valueOf(xp));\n                    tvDayStreak.setText(String.valueOf(streak));\n                } catch (Exception e) {\n                    e.printStackTrace();\n                } finally {\n                    cursor.close();\n                }\n            }\n        }\n    }\n\n    private void setupSpeechToTextButton() {\n        cvPronunciation.setOnClickListener(v -> {\n            if (sessionManager.isLoggedIn()) {\n                Intent intent = new Intent(MainActivity.this, SpeechToText.class);\n                startActivity(intent);\n            } else {\n                navigateToLogin();\n            }\n        });\n    }\n\n    private void setupGrammarButton() {\n        cvGrammar.setOnClickListener(v -> {\n            if (sessionManager.isLoggedIn()) {\n                Intent intent = new Intent(MainActivity.this, SpeechToText.class);\n                startActivity(intent);\n            } else {\n                navigateToLogin();\n            }\n        });\n    }\n\n    private void setupVocabularyButton() {\n        cvVocabulary.setOnClickListener(v -> {\n            if (sessionManager.isLoggedIn()) {\n                Intent intent = new Intent(MainActivity.this, SpeechToText.class);\n                startActivity(intent);\n            } else {\n                navigateToLogin();\n            }\n        });\n    }\n    \n    public void setupLoginButton() {\n        if(CheckLoginState()) {\n            btnLogin.setText(\"Logout\");\n        }\n        btnLogin.setOnClickListener(v -> {\n            sessionManager.logout();\n            navigateToLogin();\n            finish();\n        });\n    }\n\n    private void navigateToLogin() {\n        Intent intent = new Intent(MainActivity.this, LoginActivity.class);\n        startActivity(intent);\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/elsa_speak_clone/MainActivity.java b/app/src/main/java/com/example/elsa_speak_clone/MainActivity.java
+--- a/app/src/main/java/com/example/elsa_speak_clone/MainActivity.java	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/src/main/java/com/example/elsa_speak_clone/MainActivity.java	(date 1740130763245)
+@@ -1,5 +1,6 @@
+ package com.example.elsa_speak_clone;
+ 
++import android.annotation.SuppressLint;
+ import android.content.Intent;
+ import android.database.Cursor;
+ import android.graphics.Paint;
+@@ -15,9 +16,7 @@
+ // Icon lib
+ import com.malinskiy.materialicons.IconDrawable;
+ import com.malinskiy.materialicons.Iconify;
+-//import com.malinskiy.materialicons.IconValue;
+ 
+-import com.google.firebase.auth.FirebaseAuth;
+ 
+ public class MainActivity extends AppCompatActivity {
+ 
+@@ -60,6 +59,7 @@
+         setupVocabularyButton();
+     }
+ 
++    @SuppressLint("SetTextI18n")
+     private void WelcomeUsername() {
+         tvWelcome.setText("Welcome back " + username + "!");
+     }
+@@ -93,7 +93,7 @@
+ 
+         profileImage = findViewById(R.id.profileImage);
+         iconProfile = new IconDrawable(this, Iconify.IconValue.zmdi_account_circle)
+-                .colorRes(R.color.gray)  // Set color
++                .colorRes(R.color.real_purple)  // Set color
+                 .sizeDp(70); // Set size
+         iconProfile.setStyle(Paint.Style.FILL);
+         profileImage.setImageDrawable(iconProfile);
+@@ -101,15 +101,15 @@
+     }
+ 
+     private void loadUserProgress() {
++        String username = sessionManager.getUsername();
+         if (username != null) {
+-            Cursor cursor = databaseHelper.getUserProgress(username);
++            Cursor cursor = databaseHelper.getUserProgress(getUserId(username));
+             if (cursor != null && cursor.moveToFirst()) {
+                 try {
+-                    int xp = cursor.getInt(cursor.getColumnIndexOrThrow("xp_points"));
+-                    int streak = cursor.getInt(cursor.getColumnIndexOrThrow("day_streak"));
++                    int streak = cursor.getInt(cursor.getColumnIndexOrThrow("Streak"));
++                    int difficultyLevel = cursor.getInt(cursor.getColumnIndexOrThrow("DifficultyLevel"));
+ 
+-                    // Convert to String when setting text
+-                    tvXPPoint.setText(String.valueOf(xp));
++                    tvXPPoint.setText(String.valueOf(difficultyLevel));
+                     tvDayStreak.setText(String.valueOf(streak));
+                 } catch (Exception e) {
+                     e.printStackTrace();
+@@ -120,6 +120,11 @@
+         }
+     }
+ 
++    private int getUserId(String username) {
++        // This method should be implemented in LearningAppDatabase
++        return databaseHelper.getUserId(username);
++    }
++
+     private void setupSpeechToTextButton() {
+         cvPronunciation.setOnClickListener(v -> {
+             if (sessionManager.isLoggedIn()) {
+@@ -153,6 +158,7 @@
+         });
+     }
+     
++    @SuppressLint("SetTextI18n")
+     public void setupLoginButton() {
+         if(CheckLoginState()) {
+             btnLogin.setText("Logout");
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><project version=\"4\">\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_21\" default=\"true\" project-jdk-name=\"jbr-21\" project-jdk-type=\"JavaSDK\">\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\n  </component>\n  <component name=\"ProjectType\">\n    <option name=\"id\" value=\"Android\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/.idea/misc.xml	(date 1740131340986)
+@@ -1,9 +1,5 @@
++<?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="ExternalStorageConfigurationManager" enabled="true" />
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
+-    <output url="file://$PROJECT_DIR$/build/classes" />
+-  </component>
+-  <component name="ProjectType">
+-    <option name="id" value="Android" />
+-  </component>
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="jbr-21" project-jdk-type="JavaSDK" />
+ </project>
+\ No newline at end of file
+Index: .idea/gradle.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"GradleMigrationSettings\" migrationVersion=\"1\" />\n  <component name=\"GradleSettings\">\n    <option name=\"linkedExternalProjectsSettings\">\n      <GradleProjectSettings>\n        <option name=\"testRunner\" value=\"CHOOSE_PER_TEST\" />\n        <option name=\"externalProjectPath\" value=\"$PROJECT_DIR$\" />\n        <option name=\"gradleJvm\" value=\"#GRADLE_LOCAL_JAVA_HOME\" />\n        <option name=\"modules\">\n          <set>\n            <option value=\"$PROJECT_DIR$\" />\n            <option value=\"$PROJECT_DIR$/app\" />\n          </set>\n        </option>\n        <option name=\"resolveExternalAnnotations\" value=\"false\" />\n      </GradleProjectSettings>\n    </option>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/gradle.xml b/.idea/gradle.xml
+--- a/.idea/gradle.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/.idea/gradle.xml	(date 1740131340991)
+@@ -1,6 +1,5 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="GradleMigrationSettings" migrationVersion="1" />
+   <component name="GradleSettings">
+     <option name="linkedExternalProjectsSettings">
+       <GradleProjectSettings>
+Index: gradle.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Project-wide Gradle settings.\n# IDE (e.g. Android Studio) users:\n# Gradle settings configured through the IDE *will override*\n# any settings specified in this file.\n# For more details on how to configure your build environment visit\n# http://www.gradle.org/docs/current/userguide/build_environment.html\n# Specifies the JVM arguments used for the daemon process.\n# The setting is particularly useful for tweaking memory settings.\norg.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\n# When configured, Gradle will run in incubating parallel mode.\n# This option should only be used with decoupled projects. For more details, visit\n# https://developer.android.com/r/tools/gradle-multi-project-decoupled-projects\n# org.gradle.parallel=true\n# AndroidX package structure to make it clearer which packages are bundled with the\n# Android operating system, and which are packaged with your app's APK\n# https://developer.android.com/topic/libraries/support-library/androidx-rn\nandroid.useAndroidX=true\n# Enables namespacing of each library's R class so that its R class includes only the\n# resources declared in the library itself and none from the library's dependencies,\n# thereby reducing the size of the R class for that library\nandroid.nonTransitiveRClass=true\norg.gradle.java.experimental.fork=true\nandroid.enableJetifier=false\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/gradle.properties b/gradle.properties
+--- a/gradle.properties	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/gradle.properties	(date 1740130578244)
+@@ -21,3 +21,4 @@
+ android.nonTransitiveRClass=true
+ org.gradle.java.experimental.fork=true
+ android.enableJetifier=false
++org.gradle.configuration-cache=true
+Index: app/src/main/res/layout/activity_main.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\n    xmlns:tools=\"http://schemas.android.com/tools\"\n    android:id=\"@+id/main\"\n    android:layout_width=\"match_parent\"\n    android:layout_height=\"match_parent\"\n    android:gravity=\"center_horizontal\"\n    android:orientation=\"vertical\"\n    android:padding=\"16dp\">\n\n    <!-- Welcome and Profile Section -->\n\n\n\n    <LinearLayout\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"wrap_content\"\n        android:layout_marginBottom=\"16dp\"\n        android:gravity=\"center_vertical\"\n        android:orientation=\"horizontal\">\n\n        <ImageView\n            android:id=\"@+id/profileImage\"\n            android:layout_width=\"70dp\"\n            android:layout_height=\"70dp\"\n            android:contentDescription=\"Profile picture\" />\n\n        <LinearLayout\n            android:layout_width=\"0dp\"\n            android:layout_height=\"wrap_content\"\n            android:layout_marginStart=\"16dp\"\n            android:layout_weight=\"1\"\n            android:orientation=\"vertical\">\n\n            <TextView\n                android:id=\"@+id/tvWelcome\"\n                android:layout_width=\"wrap_content\"\n                android:layout_height=\"wrap_content\"\n                android:text=\"Welcome back!\"\n                android:textSize=\"24sp\"\n                android:textStyle=\"bold\" />\n\n        </LinearLayout>\n    </LinearLayout>\n\n    <!-- Progress Card -->\n    <androidx.cardview.widget.CardView\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"wrap_content\"\n        android:layout_marginBottom=\"16dp\">\n\n        <LinearLayout\n            android:layout_width=\"match_parent\"\n            android:layout_height=\"wrap_content\"\n            android:orientation=\"horizontal\"\n            android:padding=\"16dp\">\n\n            <LinearLayout\n                android:layout_width=\"0dp\"\n                android:layout_height=\"wrap_content\"\n                android:layout_weight=\"1\"\n                android:gravity=\"center\"\n                android:orientation=\"vertical\">\n\n                <TextView\n                    android:id=\"@+id/tvDayStreak\"\n                    android:layout_width=\"wrap_content\"\n                    android:layout_height=\"wrap_content\"\n                    android:text=\"1\"\n                    android:textSize=\"24sp\"\n                    android:textStyle=\"bold\" />\n\n\n                <TextView\n                    android:layout_width=\"wrap_content\"\n                    android:layout_height=\"wrap_content\"\n                    android:text=\"Day Streak\" />\n            </LinearLayout>\n\n            <LinearLayout\n                android:layout_width=\"0dp\"\n                android:layout_height=\"wrap_content\"\n                android:layout_weight=\"1\"\n                android:gravity=\"center\"\n                android:orientation=\"vertical\">\n\n                <TextView\n                    android:id=\"@+id/tvXPPoint\"\n                    android:layout_width=\"wrap_content\"\n                    android:layout_height=\"wrap_content\"\n                    android:text=\"0\"\n                    android:textSize=\"24sp\"\n                    android:textStyle=\"bold\" />\n\n                <TextView\n                    android:layout_width=\"wrap_content\"\n                    android:layout_height=\"wrap_content\"\n                    android:text=\"XP Points\" />\n            </LinearLayout>\n        </LinearLayout>\n    </androidx.cardview.widget.CardView>\n\n    <!-- Learning Categories -->\n    <TextView\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"wrap_content\"\n        android:layout_marginBottom=\"8dp\"\n        android:text=\"What should we do today?\"\n        android:textSize=\"20sp\"\n        android:textStyle=\"bold\" />\n\n    <LinearLayout\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"wrap_content\"\n        android:layout_marginBottom=\"16dp\"\n        android:orientation=\"vertical\">\n\n        <androidx.cardview.widget.CardView\n            android:id=\"@+id/cvVocabulary\"\n            android:layout_width=\"match_parent\"\n            android:layout_height=\"wrap_content\"\n            android:layout_margin=\"8dp\"\n            android:clickable=\"true\"\n            android:focusable=\"true\">\n\n            <LinearLayout\n                android:layout_width=\"match_parent\"\n                android:layout_height=\"wrap_content\"\n                android:gravity=\"center\"\n                android:orientation=\"vertical\"\n                android:padding=\"16dp\">\n\n                <ImageView\n                    android:layout_width=\"48dp\"\n                    android:layout_height=\"48dp\"\n                    android:contentDescription=\"Vocabulary icon\"\n                    android:src=\"@drawable/ic_vocabulary\" />\n\n                <TextView\n                    android:layout_width=\"wrap_content\"\n                    android:layout_height=\"wrap_content\"\n                    android:layout_marginTop=\"8dp\"\n                    android:text=\"Vocabulary\" />\n            </LinearLayout>\n        </androidx.cardview.widget.CardView>\n\n        <androidx.cardview.widget.CardView\n            android:id=\"@+id/cvGrammar\"\n            android:layout_width=\"match_parent\"\n            android:layout_height=\"wrap_content\"\n            android:layout_margin=\"8dp\"\n            android:clickable=\"true\"\n            android:focusable=\"true\">\n\n            <LinearLayout\n                android:layout_width=\"match_parent\"\n                android:layout_height=\"wrap_content\"\n                android:gravity=\"center\"\n                android:orientation=\"vertical\"\n                android:padding=\"16dp\">\n\n                <ImageView\n                    android:layout_width=\"48dp\"\n                    android:layout_height=\"48dp\"\n                    android:contentDescription=\"Grammar icon\"\n                    android:src=\"@drawable/ic_grammar\" />\n\n                <TextView\n                    android:layout_width=\"wrap_content\"\n                    android:layout_height=\"wrap_content\"\n                    android:layout_marginTop=\"8dp\"\n                    android:text=\"Grammar\" />\n            </LinearLayout>\n        </androidx.cardview.widget.CardView>\n\n        <androidx.cardview.widget.CardView\n            android:id=\"@+id/cvPronunciation\"\n            android:layout_width=\"match_parent\"\n            android:layout_height=\"wrap_content\"\n            android:layout_margin=\"8dp\"\n            android:clickable=\"true\"\n            android:focusable=\"true\">\n\n            <LinearLayout\n                android:layout_width=\"match_parent\"\n                android:layout_height=\"wrap_content\"\n                android:gravity=\"center\"\n                android:orientation=\"vertical\"\n                android:padding=\"16dp\">\n\n                <ImageView\n                    android:id=\"@+id/ivPronunciation\"\n                    android:layout_width=\"48dp\"\n                    android:layout_height=\"48dp\"\n                    android:backgroundTint=\"#FFEB3B\"\n                    android:contentDescription=\"Pronunciation icon\" />\n\n                <TextView\n                    android:layout_width=\"wrap_content\"\n                    android:layout_height=\"wrap_content\"\n                    android:layout_marginTop=\"8dp\"\n                    android:text=\"Pronunciation\" />\n            </LinearLayout>\n        </androidx.cardview.widget.CardView>\n    </LinearLayout>\n\n    <!-- Keeping your existing buttons -->\n    <Button\n        android:id=\"@+id/btnLogin\"\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"wrap_content\"\n        android:layout_marginBottom=\"8dp\"\n        android:text=\"Login\"\n        android:theme=\"@style/Theme.AppCompat.Light.NoActionBar\" />\n\n    <com.google.android.material.bottomnavigation.BottomNavigationView\n        android:id=\"@+id/bottom_navigation\"\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"39dp\"\n        android:layout_gravity=\"bottom\"\n        android:background=\"?android:attr/windowBackground\"\n        app:menu=\"@menu/bottom_navigation\" />\n    <androidx.appcompat.widget.Toolbar\n        android:layout_width=\"434dp\"\n        android:layout_height=\"wrap_content\"\n        android:theme=\"?attr/actionBarTheme\"\n        android:background=\"?attr/colorPrimary\"\n        android:minHeight=\"?attr/actionBarSize\"/>\n</LinearLayout>\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_main.xml b/app/src/main/res/layout/activity_main.xml
+--- a/app/src/main/res/layout/activity_main.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/src/main/res/layout/activity_main.xml	(date 1740121099741)
+@@ -9,9 +9,6 @@
+     android:padding="16dp">
+ 
+     <!-- Welcome and Profile Section -->
+-
+-
+-
+     <LinearLayout
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+Index: app/src/main/java/com/example/elsa_speak_clone/RegisterActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.elsa_speak_clone;\n\nimport android.annotation.SuppressLint;\nimport android.content.Intent;\nimport android.graphics.Typeface;\nimport android.os.Bundle;\nimport android.text.InputType;\nimport android.text.TextUtils;\nimport android.view.View;\nimport android.widget.Button;\nimport android.widget.EditText;\nimport android.widget.ImageButton;\nimport android.widget.LinearLayout;\nimport android.widget.TextView;\nimport android.widget.Toast;\nimport androidx.appcompat.app.AppCompatActivity;\n\nimport com.google.firebase.auth.FirebaseAuth;\nimport com.google.firebase.auth.FirebaseUser;\n\nimport java.util.Objects;\n\npublic class RegisterActivity extends AppCompatActivity {\n    private EditText etNewUsername;\n    private EditText etNewPassword;\n    private EditText etRewritePassword;\n    private Button btnRegisterUser;\n    private ImageButton btnTogglePassword;\n    private ImageButton btnToggleRewritePassword;\n    private LinearLayout btnGoogleRegister;\n    private TextView btnLogin;\n    private TextView tvPassword;\n    private GoogleSignInHelper googleSignInHelper;\n    private TextView tvRewritePassword;\n    private TextView tvUsername;\n    private UserSessionManager sessionManager;\n    private LearningAppDatabase dbHelper;\n\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_register);\n\n        sessionManager = new UserSessionManager(this);\n        initializeViews();\n        dbHelper = new LearningAppDatabase(this);\n        setupRegisterButton();\n        setupLoginButton();\n        setupShowPasswordButton(etNewPassword, btnTogglePassword);\n        setupShowPasswordButton(etRewritePassword, btnToggleRewritePassword);\n        initializeGoogleRegister();\n        setupGoogleRegisterButton();\n    }\n\n    private void initializeViews() {\n        etNewUsername = findViewById(R.id.etUsername);\n        etNewPassword = findViewById(R.id.etPassword);\n        etRewritePassword = findViewById(R.id.etRewritePassword);\n        tvPassword = findViewById(R.id.tvPassword);\n        tvRewritePassword = findViewById(R.id.tvRewritePassword);\n        tvUsername = findViewById(R.id.tvUsername);\n        btnRegisterUser = findViewById(R.id.btnRegisterUser);\n        btnLogin = findViewById(R.id.btnLogin);\n        btnTogglePassword = findViewById(R.id.btnTogglePassword);\n        btnToggleRewritePassword = findViewById(R.id.btnToggleLoginPassword);\n        btnGoogleRegister = findViewById(R.id.btnGoogleRegister);\n    }\n\n    private void setupLoginButton() {\n        btnLogin.setOnClickListener(v -> {\n            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);\n            startActivity(intent);\n            finish();\n        });\n    }\n\n    @SuppressLint(\"ClickableViewAccessibility\")\n    private void setupShowPasswordButton(EditText editText, ImageButton imageButton) {\n        imageButton.setOnClickListener(new View.OnClickListener() {\n            boolean isPasswordVisible = false;\n\n            @Override\n            public void onClick(View v) {\n                if (isPasswordVisible) {\n                    // Hide Password\n                    editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);\n                    imageButton.setImageResource(R.drawable.ic_eye_closed); // Change to closed eye icon\n                    editText.setTypeface(null, Typeface.NORMAL); // Set to default font\n                } else {\n                    // Show Passwordk\n                    editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);\n                    imageButton.setImageResource(R.drawable.ic_eye_open); // Change to open eye icon\n                    editText.setTypeface(null, Typeface.NORMAL); // Set to default font\n                }\n                isPasswordVisible = !isPasswordVisible;\n                editText.setSelection(editText.getText().length()); // Move cursor to the end\n            }\n        });\n    }\n\n private void setupGoogleRegisterButton() {\n    btnGoogleRegister.setOnClickListener(v -> {\n        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();\n        if(currentUser != null || googleSignInHelper.CheckGoogleLoginState()) {\n            String email = currentUser.getEmail();\n            sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);\n            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);\n            showToast(\"Register successfully\");\n            startActivity(intent);\n            finish();\n        } else {\n            googleSignInHelper.signIn();\n        }\n    });\n}\n    private void initializeGoogleRegister() {\n        googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {\n            @Override\n            public void onSuccess(FirebaseUser user) {\n                String email = user.getEmail();\n                sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);\n                Toast.makeText(RegisterActivity.this, \"Signed in as: \" + email, Toast.LENGTH_SHORT).show();\n                navigateToMain();\n                finish();\n            }\n\n            @Override\n            public void onError(String message) {\n                Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_SHORT).show();\n            }\n        });\n    }\n    private void navigateToMain() {\n        Intent intent = new Intent(RegisterActivity.this, MainActivity.class);\n        startActivity(intent);\n        finish();\n    }\n\n    private void setupRegisterButton() {\n        btnRegisterUser.setOnClickListener(v -> {\n            String username = etNewUsername.getText().toString().trim();\n            String password = etNewPassword.getText().toString().trim();\n            String rewritePassword = etRewritePassword.getText().toString().trim();\n\n            if (validateInput(username, password, rewritePassword)) {\n                if (registerUser(username, password)) {\n                    showToast(\"Registration Successful\");\n                    navigateToMainActivity();\n                } else {\n                    showToast(\"Registration Failed\");\n                }\n            }\n        });\n    }\n\n    private boolean validateInput(String username, String password, String rewritePassword) {\n        // Validate username first\n        if (!validateUsername(username)) {\n            return false;\n        }\n        else {\n            hideTvUsername();\n        }\n        // Validate password and rewritePassword\n        if (!validatePassword(password, rewritePassword)) {\n            return false;\n        }\n        else {\n            hideTvPassword();\n            hideTvRewritePassword();\n        }\n       return true;\n    }\n\n\n    private boolean validateUsername(String username) {\n        if (TextUtils.isEmpty(username)) {\n            setTvUsername(\"Please enter a username.\");\n            return false;\n        }\n\n        if (username.length() < 6 || username.length() > 32) {\n            setTvUsername(\"Username must be between 6 and 32 characters.\");\n            return false;\n        }\n\n        // Check for valid characters (letters, numbers, underscore, hyphen)\n        if (!username.matches(\"^[a-zA-Z0-9_-]*$\")) {\n            setTvUsername(\"Username can only contain letters, numbers, underscore and hyphen.\");\n            return false;\n        }\n\n        // Must start with a letter\n        if (!username.matches(\"^[a-zA-Z].*\")) {\n            setTvUsername(\"Username must start with a letter.\");\n            return false;\n        }\n\n        // Check for consecutive special characters\n        if (username.contains(\"__\") || username.contains(\"--\") || username.contains(\"-_\") || username.contains(\"_-\")) {\n            setTvUsername(\"Username cannot contain consecutive special characters.\");\n            return false;\n        }\n\n        if (!dbHelper.isUsernameAvailable(username)) {\n            showToast(\"Username already exists.\");\n            return false;\n        }\n\n        return true;\n    }\n\n    private boolean validatePassword(String password, String rewritePassword) {\n        if (TextUtils.isEmpty(password)) {\n            setTvPassword(\"Please enter a password.\");\n            return false;\n        }\n\n        // Check for minimum requirements\n        boolean hasUpperCase = password.matches(\".*[A-Z].*\");\n        boolean hasLowerCase = password.matches(\".*[a-z].*\");\n        boolean hasNumber = password.matches(\".*\\\\d.*\");\n        boolean hasSpecialChar = password.matches(\".*[!@#$%^&*()\\\\-_=+\\\\[\\\\]{};:'\\\",.<>/?].*\");\n        boolean hasMinLength = password.length() >= 8;\n\n        // Build error message based on missing requirements\n        StringBuilder errorMessage = new StringBuilder(\"Password must \");\n        boolean hasError = false;\n\n        if (!hasMinLength) {\n            errorMessage.append(\"be at least 8 characters\");\n            hasError = true;\n        }\n\n        if (!hasNumber || !hasUpperCase || !hasLowerCase || !hasSpecialChar) {\n            if (hasError) {\n                errorMessage.append(\" and \");\n            }\n            errorMessage.append(\"contain \");\n            \n            boolean isFirst = true;\n            if (!hasUpperCase) {\n                errorMessage.append(\"an uppercase letter\");\n                isFirst = false;\n            }\n            if (!hasLowerCase) {\n                if (!isFirst) errorMessage.append(\", \");\n                errorMessage.append(\"a lowercase letter\");\n                isFirst = false;\n            }\n            if (!hasNumber) {\n                if (!isFirst) errorMessage.append(\", \");\n                errorMessage.append(\"a number\");\n                isFirst = false;\n            }\n            if (!hasSpecialChar) {\n                if (!isFirst) errorMessage.append(\", \");\n                errorMessage.append(\"a special character\");\n            }\n            hasError = true;\n        }\n\n        if (hasError) {\n            setTvPassword(errorMessage + \".\");\n            return false;\n        }\n        else {\n            hideTvPassword();\n        }\n\n        if (!Objects.equals(password, rewritePassword)) {\n            setTvRewritePassword();\n            return false;\n        }\n        else {\n            hideTvRewritePassword();\n        }\n\n        return true;\n    }\n\n\n    private void navigateToMainActivity() {\n        Intent intent = new Intent(RegisterActivity.this, MainActivity.class);\n        startActivity(intent);\n        finish();\n    }\n\n    private boolean registerUser(String username, String password) {\n        boolean success = dbHelper.registerUser(username, password);\n        if (success) {\n            sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);\n        }\n        return success;\n    }\n\n    private void showToast(String message) {\n        Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_SHORT).show();\n    }\n\n    // Showing and hiding user input error messages\n    private void setTvUsername(String message) {\n        tvUsername.setText(message);\n        tvUsername.setVisibility(View.VISIBLE);\n    }\n\n    private void hideTvUsername() {\n        tvUsername.setText(\"\");\n        tvUsername.setVisibility(View.GONE);\n    }\n\n    private void setTvPassword(String message) {\n        tvPassword.setText(message);\n        tvPassword.setVisibility(View.VISIBLE);\n    }\n\n    @SuppressLint(\"SetTextI18n\")\n    private void setTvRewritePassword() {\n        tvRewritePassword.setText(\"Password do not match\");\n        tvRewritePassword.setVisibility(View.VISIBLE);\n    }\n\n    private void hideTvPassword() {\n        tvPassword.setText(\"\");\n        tvPassword.setVisibility(View.GONE);\n    }\n\n    private void hideTvRewritePassword() {\n        tvRewritePassword.setText(\"\");\n        tvRewritePassword.setVisibility(View.GONE);\n    }\n   \n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/elsa_speak_clone/RegisterActivity.java b/app/src/main/java/com/example/elsa_speak_clone/RegisterActivity.java
+--- a/app/src/main/java/com/example/elsa_speak_clone/RegisterActivity.java	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/app/src/main/java/com/example/elsa_speak_clone/RegisterActivity.java	(date 1740125476062)
+@@ -98,21 +98,26 @@
+         });
+     }
+ 
+- private void setupGoogleRegisterButton() {
+-    btnGoogleRegister.setOnClickListener(v -> {
+-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+-        if(currentUser != null || googleSignInHelper.CheckGoogleLoginState()) {
+-            String email = currentUser.getEmail();
+-            sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
+-            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+-            showToast("Register successfully");
+-            startActivity(intent);
+-            finish();
+-        } else {
+-            googleSignInHelper.signIn();
+-        }
+-    });
+-}
++    private void setupGoogleRegisterButton() {
++        btnGoogleRegister.setOnClickListener(v -> {
++            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
++            if(currentUser != null) {
++                String email = currentUser.getEmail();
++                String name = currentUser.getDisplayName() != null ? 
++                    currentUser.getDisplayName() : email.split("@")[0];
++                
++                if(dbHelper.registerUser(email, name)) {
++                    sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
++                    navigateToMain();
++                } else {
++                    showToast("Registration failed");
++                }
++            } else {
++                googleSignInHelper.signIn();
++            }
++        });
++    }
++
+     private void initializeGoogleRegister() {
+         googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
+             @Override
+@@ -130,6 +135,7 @@
+             }
+         });
+     }
++
+     private void navigateToMain() {
+         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+         startActivity(intent);
+@@ -139,13 +145,13 @@
+     private void setupRegisterButton() {
+         btnRegisterUser.setOnClickListener(v -> {
+             String username = etNewUsername.getText().toString().trim();
+-            String password = etNewPassword.getText().toString().trim();
+-            String rewritePassword = etRewritePassword.getText().toString().trim();
+-
+-            if (validateInput(username, password, rewritePassword)) {
+-                if (registerUser(username, password)) {
++            String name = username; // Using username as name for local auth
++            
++            if (validateInput(username)) {
++                if (dbHelper.registerUser(username, name)) {
++                    sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
+                     showToast("Registration Successful");
+-                    navigateToMainActivity();
++                    navigateToMain();
+                 } else {
+                     showToast("Registration Failed");
+                 }
+Index: .idea/material_theme_project_new.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"MaterialThemeProjectNewConfig\">\n    <option name=\"metadata\">\n      <MTProjectMetadataState>\n        <option name=\"migrated\" value=\"true\" />\n        <option name=\"pristineConfig\" value=\"false\" />\n        <option name=\"userId\" value=\"6009d9d7:1950cc1e2ea:-7ffe\" />\n      </MTProjectMetadataState>\n    </option>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/material_theme_project_new.xml b/.idea/material_theme_project_new.xml
+--- a/.idea/material_theme_project_new.xml	(revision ca6ecab965ac6b3a3c2e146f826cbce9f37b61a0)
++++ b/.idea/material_theme_project_new.xml	(date 1740131322549)
+@@ -3,9 +3,7 @@
+   <component name="MaterialThemeProjectNewConfig">
+     <option name="metadata">
+       <MTProjectMetadataState>
+-        <option name="migrated" value="true" />
+-        <option name="pristineConfig" value="false" />
+-        <option name="userId" value="6009d9d7:1950cc1e2ea:-7ffe" />
++        <option name="userId" value="3f3e7386:19527e8619b:-7ffa" />
+       </MTProjectMetadataState>
+     </option>
+   </component>

@@ -76,16 +76,13 @@ public class GoogleSignInHelper {
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(activity, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            authCallback.onSuccess(user);
-                        } else {
-                            authCallback.onError("Authentication failed: " + 
-                                    (task.getException() != null ? task.getException().getMessage() : ""));
-                        }
+                .addOnCompleteListener(activity, task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        authCallback.onSuccess(user);
+                    } else {
+                        authCallback.onError("Authentication failed: " +
+                                (task.getException() != null ? task.getException().getMessage() : ""));
                     }
                 });
     }
