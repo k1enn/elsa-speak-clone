@@ -20,6 +20,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     private static final String COLUMN_GMAIL = "Gmail";
     private static final String COLUMN_NAME = "Name";
     private static final String COLUMN_JOIN_DATE = "JoinDate";
+    private static final String COLUMN_PASSWORD = "Password";
 
     // Lessons Table
     private static final String TABLE_LESSONS = "Lessons";
@@ -64,11 +65,12 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Create Users Table
+        // Create Users Table with password
         String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_USERS + " (" +
                 COLUMN_USER_ID + " INTEGER NOT NULL, " +
                 COLUMN_GMAIL + " TEXT NOT NULL, " +
                 COLUMN_NAME + " TEXT NOT NULL, " +
+                COLUMN_PASSWORD + " TEXT, " +
                 COLUMN_JOIN_DATE + " DATE NOT NULL, " +
                 "PRIMARY KEY (" + COLUMN_USER_ID + "))";
         db.execSQL(CREATE_USERS_TABLE);
@@ -153,18 +155,77 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    // Register a User
-    public boolean registerUser(String gmail, String name) {
+    // For local SQLite authentication
+    // Check if user exist
+    public boolean authenticateUser(String username, String password) {
+        if (username == null || password == null) return false;
+        
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_NAME, COLUMN_PASSWORD},  // Get both username and password
+            COLUMN_NAME + "=?",
+            new String[]{username},
+            null,
+            null,
+            null
+        );
+        
+        boolean isAuthenticated = false;
+        if (cursor != null && cursor.moveToFirst()) {
+            String storedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
+            // Check if both username and password match
+            isAuthenticated = storedPassword != null && storedPassword.equals(password);
+            cursor.close();
+        }
+        return isAuthenticated;
+    }
+
+    // For Firebase authentication
+    public boolean doesUserGmailExist(String gmail) {
+        if (gmail == null) return false;
+        
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_GMAIL},
+            COLUMN_GMAIL + "=?",  // Only check Gmail for Firebase auth
+            new String[]{gmail},
+            null,
+            null,
+            null
+        );
+        
+        boolean exists = false;
+        if (cursor != null) {
+            exists = cursor.getCount() > 0;
+            cursor.close();
+        }
+        return exists;
+    }
+
+    // Register a new user (works for both local and Firebase)
+    public boolean registerUser(String identifier, String name, String password) {
+        if (identifier == null || name == null) return false;
+        
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
-        // Generate unique ID
         int userId = generateUniqueId(db);
-
-        // Add values to columns
         values.put(COLUMN_USER_ID, userId);
-        values.put(COLUMN_GMAIL, gmail);
-        values.put(COLUMN_NAME, name);
+        
+        if (identifier.contains("@")) {
+            // Google account registration
+            values.put(COLUMN_GMAIL, identifier);
+            values.put(COLUMN_NAME, name);
+            values.put(COLUMN_PASSWORD, "");  // No password for Google accounts
+        } else {
+            // Local account registration
+            values.put(COLUMN_NAME, identifier);
+            values.put(COLUMN_GMAIL, "");
+            values.put(COLUMN_PASSWORD, password);  // Store password for local accounts
+        }
+        
         values.put(COLUMN_JOIN_DATE, getCurrentDate());
 
         long result = db.insert(TABLE_USERS, null, values);
@@ -183,56 +244,6 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             userId = 10000 + random.nextInt(90000); // Generates a 5-digit random number
         } while (doesUserIdExist(db, userId));
         return userId;
-    }
-
-    private boolean doesUserIdExist(SQLiteDatabase db, int userId) {
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ID + "=?",
-                new String[]{String.valueOf(userId)});
-        boolean exists = cursor.getCount() > 0;
-        cursor.close();
-        return exists;
-    }
-
-    // For local SQLite authentication
-    public boolean authenticateUser(String username, String password) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(
-            TABLE_USERS,
-            new String[]{COLUMN_GMAIL, COLUMN_NAME},
-            COLUMN_NAME + "=?",  // Only check username for local auth
-            new String[]{username},
-            null,
-            null,
-            null
-        );
-        
-        boolean isAuthenticated = false;
-        if (cursor != null) {
-            isAuthenticated = cursor.getCount() > 0;
-            cursor.close();
-        }
-        return isAuthenticated;
-    }
-
-    // For Firebase authentication
-    public boolean doesUserGmailExist(String gmail) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(
-            TABLE_USERS,
-            new String[]{COLUMN_GMAIL},
-            COLUMN_GMAIL + "=?",  // Only check Gmail for Firebase auth
-            new String[]{gmail},
-            null,
-            null,
-            null
-        );
-        
-        boolean exists = false;
-        if (cursor != null) {
-            exists = cursor.getCount() > 0;
-            cursor.close();
-        }
-        return exists;
     }
 
     // Add Lesson Progress
@@ -386,5 +397,25 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             cursor.close();
         }
         return exists;
+    }
+
+    public boolean isUsernameAvailable(String username) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+            TABLE_USERS,
+            new String[]{COLUMN_NAME},
+            COLUMN_NAME + "=? OR " + COLUMN_GMAIL + "=?",  // Check both name and gmail
+            new String[]{username, username},
+            null,
+            null,
+            null
+        );
+        
+        boolean isAvailable = true;  // Username is available by default
+        if (cursor != null) {
+            isAvailable = cursor.getCount() == 0;  // Available if no matches found
+            cursor.close();
+        }
+        return isAvailable;
     }
 }
