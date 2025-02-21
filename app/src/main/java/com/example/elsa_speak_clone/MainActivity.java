@@ -32,7 +32,8 @@ public class MainActivity extends AppCompatActivity {
     ImageView profileImage;
     private LearningAppDatabase databaseHelper;
     private UserSessionManager sessionManager;
-    int username;
+    int user_id;
+    String username;
     IconDrawable iconPronunciation;
     IconDrawable iconProfile;
     boolean loginCheck;
@@ -67,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         databaseHelper = new LearningAppDatabase(this);
         // Use for testing
         // databaseHelper.injectProgress("github_k1enn", 69, 69);
-        username = sessionManager.getUserId();
+        username = sessionManager.getUsername();
         loginCheck = getIntent().getBooleanExtra("logged", false);
     }
     private boolean CheckLoginState() {
@@ -99,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadUserProgress() {
-        if (username >= 0) {
-            Cursor cursor = databaseHelper.getUserProgress(username);
+        if (user_id >= 0) {
+            Cursor cursor = databaseHelper.getUserProgress(user_id);
             if (cursor != null && cursor.moveToFirst()) {
                 try {
                     int xp = cursor.getInt(cursor.getColumnIndexOrThrow("xp_points"));

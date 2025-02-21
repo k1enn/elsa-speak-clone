@@ -111,6 +111,7 @@ public class LoginActivity extends AppCompatActivity {
                     dbHelper.registerUser(email, name);
                 }
                 sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
+                Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                 navigateToMain();
                 finish();
             }
@@ -127,14 +128,19 @@ public class LoginActivity extends AppCompatActivity {
             String username = etUsername.getText().toString();
             String password = etPassword.getText().toString();
 
-               if (dbHelper.authenticateUser(username, password)) {
-                   sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
-                   Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                   navigateToMain();
-                   finish();
-               } else {
-                   Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
-               } 
+            if (username.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (dbHelper.authenticateUser(username, password)) {
+                sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
+                Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+                navigateToMain();
+                finish();
+            } else {
+                Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
