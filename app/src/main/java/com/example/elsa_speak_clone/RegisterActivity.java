@@ -87,7 +87,7 @@ public class RegisterActivity extends AppCompatActivity {
                     imageButton.setImageResource(R.drawable.ic_eye_closed); // Change to closed eye icon
                     editText.setTypeface(null, Typeface.NORMAL); // Set to default font
                 } else {
-                    // Show Passwordk
+                    // Show Password
                     editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
                     imageButton.setImageResource(R.drawable.ic_eye_open); // Change to open eye icon
                     editText.setTypeface(null, Typeface.NORMAL); // Set to default font
