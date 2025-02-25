@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupSpeechToTextButton() {
         cvPronunciation.setOnClickListener(v -> {
             if (sessionManager.isLoggedIn()) {
-                Intent intent = new Intent(MainActivity.this, SpeechToText.class);
+                Intent intent = new Intent(MainActivity.this, TestingActivity.class);
                 startActivity(intent);
             } else {
                 navigateToLogin();
