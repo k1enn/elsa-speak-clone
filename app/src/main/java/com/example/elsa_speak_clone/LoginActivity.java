@@ -32,6 +32,7 @@ public class LoginActivity extends AppCompatActivity {
     private LearningAppDatabase dbHelper;
     private GoogleSignInHelper googleSignInHelper;
     private UserSessionManager sessionManager;
+    private static final String emptyString = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,7 +109,8 @@ public class LoginActivity extends AppCompatActivity {
                 if (!dbHelper.doesUserGmailExist(email)) {
                     String name = user.getDisplayName() != null ? 
                         user.getDisplayName() : Objects.requireNonNull(email).split("@")[0];
-                    dbHelper.registerUser(email, name);
+                    // Use empty because Google doesn't need password
+                    dbHelper.registerUser(name, emptyString);
                 }
                 sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
                 Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
