@@ -207,7 +207,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
     // Register a new user (works for both local and Firebase)
     public boolean registerUser(String name, String password) {
-        if (identifier == null || name == null) return false;
+        if (name == null || password == null) return false;
         
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
