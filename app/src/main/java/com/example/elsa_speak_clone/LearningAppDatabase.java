@@ -13,6 +13,7 @@ import java.util.Random;
 public class LearningAppDatabase extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "elsa_speak_clone.db";
     private static final int DATABASE_VERSION = 1;
+    private static final String emptyString = "";
 
     // Users Table
     private static final String TABLE_USERS = "Users";
@@ -205,7 +206,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     }
 
     // Register a new user (works for both local and Firebase)
-    public boolean registerUser(String identifier, String name, String password) {
+    public boolean registerUser(String name, String password) {
         if (identifier == null || name == null) return false;
         
         SQLiteDatabase db = this.getWritableDatabase();
@@ -214,15 +215,16 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         int userId = generateUniqueId(db);
         values.put(COLUMN_USER_ID, userId);
         
-        if (identifier.contains("@")) {
+        if (name.contains("@")) {
+            String username = name.substring(0, name.indexOf("@"));
             // Google account registration
-            values.put(COLUMN_GMAIL, identifier);
-            values.put(COLUMN_NAME, name);
-            values.put(COLUMN_PASSWORD, "");  // No password for Google accounts
+            values.put(COLUMN_GMAIL, name); // Put user's mail in GMAIL
+            values.put(COLUMN_NAME, username); // Put username by only take characters before "@"
+            values.put(COLUMN_PASSWORD, emptyString);  // No password for Google accounts
         } else {
             // Local account registration
-            values.put(COLUMN_NAME, identifier);
-            values.put(COLUMN_GMAIL, "");
+            values.put(COLUMN_NAME, name);
+            values.put(COLUMN_GMAIL, emptyString);
             values.put(COLUMN_PASSWORD, password);  // Store password for local accounts
         }
         
