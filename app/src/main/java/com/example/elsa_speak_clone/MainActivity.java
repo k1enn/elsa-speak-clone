@@ -1,9 +1,11 @@
 package com.example.elsa_speak_clone;
 
+
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -60,15 +62,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void WelcomeUsername() {
-        tvWelcome.setText("Welcome back " + username + "!");
+        if(getUserStreak() <= 0) {
+            tvWelcome.setText("Welcome " + username + "!");
+        } else {
+            tvWelcome.setText("Welcome back " + username + "!");
+        }
     }
 
     private void initializeVariables() {
         sessionManager = new UserSessionManager(this);
-        databaseHelper = new LearningAppDatabase(this);
-        // Use for testing
-        // databaseHelper.injectProgress("github_k1enn", 69, 69);
         username = sessionManager.getUsername();
+        Log.d("Username", username);
+
+        databaseHelper = new LearningAppDatabase(this);
+        user_id = databaseHelper.getUserId(username);
+        Log.d("UserId", "This is USER ID = " + user_id);
+        // Use for testing
+        databaseHelper.injectUserStreak(user_id, 9999);
+
+        // Create variable to check if logged in
         loginCheck = getIntent().getBooleanExtra("logged", false);
     }
     private boolean CheckLoginState() {
@@ -119,10 +131,44 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private int getUserXp() {
+        int xp = 0;
+
+        if (user_id >= 0) {
+            Cursor cursor = databaseHelper.getUserProgress(user_id);
+            if (cursor != null && cursor.moveToFirst()) {
+                try {
+                    xp = cursor.getInt(cursor.getColumnIndexOrThrow("xp_points"));
+                  } catch (Exception e) {
+                e.printStackTrace();
+                } finally {
+                cursor.close();
+                }
+            }
+        }
+        return xp;
+    }
+    private int getUserStreak() {
+        int streak = 0;
+
+        if (user_id >= 0) {
+            Cursor cursor = databaseHelper.getUserProgress(user_id);
+            if (cursor != null && cursor.moveToFirst()) {
+                try {
+                    streak = cursor.getInt(cursor.getColumnIndexOrThrow("COLUMN_STREAK"));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    cursor.close();
+                }
+            }
+        }
+        return streak;
+    }
     private void setupSpeechToTextButton() {
         cvPronunciation.setOnClickListener(v -> {
             if (sessionManager.isLoggedIn()) {
-                Intent intent = new Intent(MainActivity.this, TestingActivity.class);
+                Intent intent = new Intent(MainActivity.this, SpeechToText.class);
                 startActivity(intent);
             } else {
                 navigateToLogin();
