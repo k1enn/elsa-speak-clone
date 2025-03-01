@@ -138,6 +138,9 @@ public class LoginActivity extends AppCompatActivity {
             if (dbHelper.authenticateUser(username, password)) {
                 sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
                 Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+
+                // Update streak everytime Login
+                dbHelper.updateUserStreak(dbHelper.getUserId(username));
                 navigateToMain();
                 finish();
             } else {
