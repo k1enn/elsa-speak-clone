@@ -6,6 +6,7 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -146,6 +147,7 @@ public class RegisterActivity extends AppCompatActivity {
             String rewritePassword = etRewritePassword.getText().toString().trim();
 
             if (validateInput(username, password, rewritePassword)) {
+                Log.d("ValidateInput", "Success");
                 if (registerUser(username, password)) {
                     showToast("Registration Successful");
                     navigateToMainActivity();
@@ -288,13 +290,9 @@ public class RegisterActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-
+    
     private boolean registerUser(String username, String password) {
-        boolean success = dbHelper.registerUser(username, password);
-        if (success) {
-            sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
-        }
-        return success;
+        return dbHelper.registerUser(username, password);
     }
 
     private void showToast(String message) {
