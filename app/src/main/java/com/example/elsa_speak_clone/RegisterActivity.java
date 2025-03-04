@@ -290,13 +290,9 @@ public class RegisterActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-
+    
     private boolean registerUser(String username, String password) {
-        boolean success = dbHelper.registerUser(username, password);
-        if (success) {
-            sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
-        }
-        return success;
+        return dbHelper.registerUser(username, password);
     }
 
     private void showToast(String message) {
