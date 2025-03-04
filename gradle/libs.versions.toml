@@ -1,6 +1,7 @@
 [versions]
 agp = "8.8.0"
 asyncHttpClient = "2.12.3"
+bcrypt = "0.10.2"
 converterGson = "2.9.0"
 facebookAndroidSdk = "18.0.1"
 firebaseBom = "33.8.0"
@@ -23,6 +24,7 @@ firebaseStorage = "21.0.1"
 
 [libraries]
 async-http-client = { module = "org.asynchttpclient:async-http-client", version.ref = "asyncHttpClient" }
+bcrypt = { module = "at.favre.lib:bcrypt", version.ref = "bcrypt" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 facebook-android-sdk = { module = "com.facebook.android:facebook-android-sdk", version.ref = "facebookAndroidSdk" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }

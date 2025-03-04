@@ -73,4 +73,5 @@ dependencies {
     implementation libs.converter.gson
     implementation 'com.github.bumptech.glide:glide:4.12.0' // For downloading audio files
     implementation libs.async.http.client
+    implementation 'org.mindrot:jbcrypt:0.4'
 }

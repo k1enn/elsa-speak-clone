@@ -1,6 +1,9 @@
 package com.example.elsa_speak_clone;
-import java.util.concurrent.TimeUnit;
 
+
+import android.content.SharedPreferences;
+import java.util.concurrent.TimeUnit;
+import android.content.SharedPreferences;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -11,6 +14,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 import android.util.Log;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class LearningAppDatabase extends SQLiteOpenHelper {
     private Context context;
@@ -71,14 +75,14 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         this.context = context;
         Log.d(TAG, "LearningAppDatabase");
     }
+
     // Create Users Table with password
-    private String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_USERS + " (" +
-            COLUMN_USER_ID + " INTEGER NOT NULL, " +
+    private static final String CREATE_USERS_TABLE = "CREATE TABLE " + TABLE_USERS + " (" +
+            COLUMN_USER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
             COLUMN_GMAIL + " TEXT, " +
             COLUMN_NAME + " TEXT NOT NULL, " +
             COLUMN_PASSWORD + " TEXT, " +
-            COLUMN_JOIN_DATE + " DATE NOT NULL, " +
-            "PRIMARY KEY (" + COLUMN_USER_ID + "))";
+            COLUMN_JOIN_DATE + " DATE NOT NULL)";
 
     // Create Lessons Table
     private String CREATE_LESSONS_TABLE = "CREATE TABLE " + TABLE_LESSONS + " (" +
@@ -102,7 +106,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             COLUMN_PROGRESS_ID + " INTEGER NOT NULL, " +
             COLUMN_DIFFICULTY_LEVEL + " INTEGER NOT NULL, " +
             COLUMN_COMPLETION_TIME + " DATE NOT NULL, " +
-            COLUMN_STREAK + " INTEGER NOT NULL, " +
+            COLUMN_STREAK + " INTEGER, " +
             COLUMN_XP + " INTEGER, " +
             COLUMN_LAST_STUDY_DATE + " DATE NOT NULL, " +
             COLUMN_USER_ID + " INTEGER NOT NULL, " +
@@ -175,41 +179,97 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
       Log.d(TAG, "onUpgrade");
-
-      if(oldVersion < 2)
+      if (oldVersion < 2) {
+         db.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN last_login DATETIME");
+      }
       dropAllTables(db);
     }
 
-    // For local SQLite authentication
-    // Check if user exist
+    /**
+     * Authenticate a user with username and password
+     * @param username The username to check
+     * @param password The password to verify
+     * @return true if authentication is successful, false otherwise
+     * So it basically Login function
+     */
+
     public boolean authenticateUser(String username, String password) {
-        if (username == null || password == null) return false;
-        
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(
-            TABLE_USERS,
-            new String[]{COLUMN_NAME, COLUMN_PASSWORD},  // Get both username and password
-            COLUMN_NAME + "=?",
-            new String[]{username},
-            null,
-            null,
-            null
-        );
-        
-        boolean isAuthenticated = false;
-        if (cursor != null && cursor.moveToFirst()) {
-            String storedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
-            // Check if both username and password match
-            isAuthenticated = storedPassword != null && storedPassword.equals(password);
-            cursor.close();
+        if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+            return false;
         }
-        return isAuthenticated;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        String hashedPassword = null;
+
+        try (Cursor cursor = db.query(
+                TABLE_USERS,
+                new String[]{COLUMN_USER_ID, COLUMN_PASSWORD},
+                COLUMN_NAME + "=?",
+                new String[]{username},
+                null, null, null)) {
+            if (cursor.moveToFirst()) {
+                String authenticateHashedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
+                return BCrypt.checkpw(password, authenticateHashedPassword);
+            }
+            return false;
+
+        }
+         catch (Exception e) {
+            Log.e(TAG, "Error authenticating user: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean logOut(Context context) {
+        try {
+            SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+
+            String currentUsername = prefs.getString("username", null);
+            int currentUserId = prefs.getInt("userId", -1);
+
+            // Check if user logged in
+            if (!loginCheck(currentUsername, currentUserId)) {
+                Log.d(TAG, "No user is currently logged in.");
+                return false;
+            }
+
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.remove("username");
+            editor.remove("userId");
+            editor.apply();
+
+            Log.d(TAG, "Logout successul");
+            return true;
+
+        } catch (Exception e) {
+            Log.d(TAG, "Logout failed");
+            return false;
+        }
+    }
+
+    public void saveUserSession(String username) {
+        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("username", username);
+        editor.putInt("userId", getUserId(username));
+        editor.apply();
+    }
+
+    public boolean loginCheck(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+
+        // Same thing as below
+        return (prefs.getString("username", null) == null || prefs.getInt("userId", -1) == -1);
+    }
+    public boolean loginCheck(String username, int userId) {
+        // Check if user logged in
+        return (username == null || userId == -1);
     }
 
     // For Firebase authentication
     public boolean doesUserGmailExist(String gmail) {
         if (gmail == null) return false;
-        
+
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.query(
             TABLE_USERS,
@@ -220,7 +280,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             null,
             null
         );
-        
+
         boolean exists = false;
         if (cursor != null) {
             exists = cursor.getCount() > 0;
@@ -232,26 +292,42 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     // Register a new user (works for both local and Firebase)
     public boolean registerUser(String name, String password) {
         if (name == null || password == null) return false;
-        
+
+
+
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
-        int userId = generateUniqueId(db);
-        values.put(COLUMN_USER_ID, userId);
-        
-        if (name.contains("@")) {
-            String username = name.substring(0, name.indexOf("@"));
-            // Google account registration
-            values.put(COLUMN_GMAIL, name); // Put user's mail in GMAIL
-            values.put(COLUMN_NAME, username); // Put username by only take characters before "@"
-            values.put(COLUMN_PASSWORD, emptyString);  // No password for Google accounts
-        } else {
-            // Local account registration
-            values.put(COLUMN_NAME, name);
-            values.put(COLUMN_GMAIL, emptyString);
-            values.put(COLUMN_PASSWORD, password);  // Store password for local accounts
+        try {
+            int userId = generateUniqueId(db);
+            values.put(COLUMN_USER_ID, userId);
+        } catch (Exception e) {
+            Log.e(TAG, "Can not generate unique user id");
         }
-        
+
+        if (name.contains("@")) {
+            try {
+                String username = name.substring(0, name.indexOf("@"));
+                // Google account registration
+                values.put(COLUMN_GMAIL, name); // Put user's mail in GMAIL
+                values.put(COLUMN_NAME, username); // Put username by only take characters before "@"
+                values.put(COLUMN_PASSWORD, emptyString);  // No password for Google accounts
+            } catch (Exception e) {
+                Log.d(TAG, "Can not register GMAIL user.");
+            }
+        } else {
+            try {
+                String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+                // Local account registration
+                values.put(COLUMN_NAME, name);
+                values.put(COLUMN_GMAIL, emptyString);
+                values.put(COLUMN_PASSWORD, hashedPassword);
+                Log.d(TAG, "Hased password" + hashedPassword);
+            } catch (Exception e) {
+                Log.d(TAG, "Can not register LOCAL user.");
+            }
+        }
+
         values.put(COLUMN_JOIN_DATE, getCurrentDate());
 
         long result = db.insert(TABLE_USERS, null, values);
@@ -303,7 +379,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     }
 
     private boolean doesProgressIdExist(SQLiteDatabase db, int progressId) {
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USER_PROGRESS + 
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_USER_PROGRESS +
                 " WHERE " + COLUMN_PROGRESS_ID + "=?",
                 new String[]{String.valueOf(progressId)});
         boolean exists = cursor.getCount() > 0;
@@ -351,7 +427,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     public Cursor getUserProgress(int userId) {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.rawQuery(
-            "SELECT l.Topic up.DifficultyLevel, up.CompletionTime, up.Streak " +
+            "SELECT l.Topic, up.DifficultyLevel, up.CompletionTime, up.Streak, up.LastStudyDate, up.Xp " +
             "FROM " + TABLE_USER_PROGRESS + " up " +
             "JOIN " + TABLE_LESSONS + " l ON up.LessonId = l.LessonId " +
             "WHERE up.UserId = ?",
@@ -398,6 +474,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             new String[]{String.valueOf(userId)}
         );
     }
+
 
     public int getUserId(String emailOrUsername) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -501,6 +578,8 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
                 {"5", "Academic Vocabulary", "Explore advanced vocabulary commonly used in academic settings, research papers, and scholarly discussions. This lesson will help improve your formal writing and comprehension of academic texts.", "3"}
         };
 
+        try {
+            db.beginTransaction();
         // Insert each lesson
         for (String[] lesson : lessonsData) {
             ContentValues values = new ContentValues();
@@ -509,6 +588,12 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             values.put(COLUMN_LESSON_CONTENT, lesson[2]);
             values.put(COLUMN_DIFFICULTY_LEVEL, Integer.parseInt(lesson[3]));
             db.insert(TABLE_LESSONS, null, values);
+            db.setTransactionSuccessful();
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Error on insertDefaultLesson: ", e);
+        } finally {
+            db.endTransaction();
         }
     }
 
@@ -544,7 +629,26 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     }
 
     // Update User's streak everytime login/.
-    public void updateUserStreak(int userId) {
+    /**
+     * Update user's streak based on login date
+     * @param context The application context to access SharedPreferences
+     */
+    public void updateUserStreak(Context context) {
+        // Get current user ID from SharedPreferences
+        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String currentUsername = prefs.getString("username", null);
+
+        if (currentUsername == null) {
+            Log.e(TAG, "Cannot update streak: No logged-in user found");
+            return;
+        }
+
+        int userId = getUserId(currentUsername);
+        if (userId < 0) {
+            Log.e(TAG, "Cannot update streak: Invalid user ID");
+            return;
+        }
+
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = getUserProgress(userId);
 
@@ -559,12 +663,17 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
                 // Convert last study date to Date object
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                Date lastStudyDate = sdf.parse(lastStudyDateStr);
+                Date lastStudyDate = null;
+                try {
+                    lastStudyDate = sdf.parse(lastStudyDateStr);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error data parsing in updateUserStreak");
+                    return;
+                }
                 Date today = sdf.parse(todayStr);
 
                 // Calculate difference in days
-                long diff;
-                diff = TimeUnit.DAYS.convert(today.getTime() - lastStudyDate.getTime(), TimeUnit.MILLISECONDS);
+                long diff = TimeUnit.DAYS.convert(today.getTime() - lastStudyDate.getTime(), TimeUnit.MILLISECONDS);
 
                 if (diff == 1) {
                     // Studied yesterday → Increment streak
@@ -581,13 +690,124 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
                 db.update(TABLE_USER_PROGRESS, values, COLUMN_USER_ID + " = ?", new String[]{String.valueOf(userId)});
 
+                // Optionally update SharedPreferences with new streak value
+                prefs.edit().putInt("user_streak", currentStreak).apply();
+
             } catch (Exception e) {
+                Log.e(TAG, "Error updating streak: " + e.getMessage());
                 e.printStackTrace();
             } finally {
                 cursor.close();
             }
+        } else {
+            // No progress record exists yet, create one with streak of 1
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_USER_ID, userId);
+            values.put(COLUMN_STREAK, 1);
+            values.put(COLUMN_LAST_STUDY_DATE, getCurrentDate());
+            values.put(COLUMN_PROGRESS_ID, generateUniqueProgressId(db));
+            // Add other required fields with default values
+            values.put(COLUMN_DIFFICULTY_LEVEL, 1);
+            values.put(COLUMN_COMPLETION_TIME, getCurrentDate());
+            values.put(COLUMN_XP, 0);
+            values.put(COLUMN_LESSON_ID, 1); // Default lesson ID
+
+            db.insert(TABLE_USER_PROGRESS, null, values);
+            Log.d(TAG, "Created new streak record for user: " + userId);
         }
     }
 
+    public int getUserXp(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        int userId = prefs.getInt("userId", -1);
+        if (userId >= 0) {
+            Cursor cursor = this.getUserProgress(userId);
+            if (cursor != null && cursor.moveToFirst()) {
+                try {
+                    return cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_XP));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    cursor.close();
+                }
+            }
+        }
+        return -1;
+    }
+    public int getUserStreak(Context context) {
+         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        int userId = prefs.getInt("userId", -1);
+        if (userId >= 0) {
+            Cursor cursor = this.getUserProgress(userId);
+            if (cursor != null && cursor.moveToFirst()) {
+                try {
+                    return cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_STREAK));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    cursor.close();
+                }
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Get the current user's username from SharedPreferences
+     * @param context The application context
+     * @return The current username or null if not logged in
+     */
+    public String getCurrentUsername(Context context) {
+        // Get the stored user ID from SharedPreferences
+        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        int currentUserId = prefs.getInt("current_user_id", -1);
+
+        if (currentUserId == -1) {
+            Log.d(TAG, "Can not get user id");
+            return null; // No user is logged in
+        }
+
+        // Use the existing method to get username by ID
+        SQLiteDatabase db = this.getReadableDatabase();
+        String username = null;
+
+        Cursor cursor = db.query(
+                TABLE_USERS,
+                new String[]{COLUMN_NAME},
+                COLUMN_USER_ID + "=?",
+                new String[]{String.valueOf(currentUserId)},
+                null,
+                null,
+                null
+        );
+
+        if (cursor != null && cursor.moveToFirst()) {
+            username = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME));
+            cursor.close();
+        } else {
+            Log.d(TAG, "Username cursor is NULL");
+        }
+
+        return username;
+    }
+   public String getUsernameById(int userId) {
+       SQLiteDatabase db = this.getReadableDatabase();
+       Cursor cursor = db.query(
+           TABLE_USERS,
+           new String[]{COLUMN_NAME},
+           COLUMN_USER_ID + "=?",
+           new String[]{String.valueOf(userId)},
+           null,
+           null,
+           null
+       );
+
+       String username = null;
+       if (cursor != null && cursor.moveToFirst()) {
+           username = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME));
+           cursor.close();
+       }
+       return username;
+   }
 
 }
