@@ -17,6 +17,8 @@
     <color name="whiteCardColor">#fff</color>
 
     <color name="purple">#8692f7</color>
+    <color name="purple_500">#8692f7</color>
+    <color name="purple_700">#8692f7</color>
 
 
     <color name="hint_color_fade">#80CCCCCC</color> <!-- Adjust the alpha value for fading -->

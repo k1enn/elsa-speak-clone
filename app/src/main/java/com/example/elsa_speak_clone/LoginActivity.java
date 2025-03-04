@@ -10,6 +10,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.content.Intent;
 import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -31,7 +32,6 @@ public class LoginActivity extends AppCompatActivity {
     private LinearLayout googleLoginButton;
     private LearningAppDatabase dbHelper;
     private GoogleSignInHelper googleSignInHelper;
-    private UserSessionManager sessionManager;
     private static final String emptyString = "";
 
     @Override
@@ -44,16 +44,6 @@ public class LoginActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-
-        // Initialize sessionManager first
-        sessionManager = new UserSessionManager(this);
-
-        // Check if already logged in
-        if (sessionManager.isLoggedIn()) {
-            navigateToMain();
-            finish();
-            return;
-        }
 
         initializeUI();
         initializeDatabase();
@@ -106,16 +96,22 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onSuccess(FirebaseUser user) {
                 String email = user.getEmail();
+                try {
                 if (!dbHelper.doesUserGmailExist(email)) {
                     String name = user.getDisplayName() != null ? 
                         user.getDisplayName() : Objects.requireNonNull(email).split("@")[0];
                     // Use empty because Google doesn't need password
                     dbHelper.registerUser(name, emptyString);
+                } else {
+                    dbHelper.saveUserSession(email);
+                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                    navigateToMain();
+                    finish();
                 }
-                sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
-                Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
-                navigateToMain();
-                finish();
+                } catch (Exception e) {
+                    Log.d("LoginActivity", "Can not initialize Google login", e);
+
+                }
             }
 
             @Override
@@ -125,18 +121,15 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+
+
     private void setupLoginButton() {
         btnLogin.setOnClickListener(v -> {
             String username = etUsername.getText().toString();
             String password = etPassword.getText().toString();
 
-            if (username.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
             if (dbHelper.authenticateUser(username, password)) {
-                sessionManager.saveUserSession(username, UserSessionManager.AUTH_TYPE_LOCAL);
+                dbHelper.saveUserSession(username);  // Save the user ID
                 Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
                 navigateToMain();
                 finish();
@@ -167,6 +160,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToMain() {
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.putExtra("IS_LOGGED_IN", true);
         startActivity(intent);
         finish();
     }
