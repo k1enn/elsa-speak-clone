@@ -1,7 +1,9 @@
 package com.example.elsa_speak_clone;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
@@ -22,6 +24,7 @@ import com.google.firebase.auth.FirebaseUser;
 import java.util.Objects;
 
 public class RegisterActivity extends AppCompatActivity {
+    private Context context;
     private EditText etNewUsername;
     private EditText etNewPassword;
     private EditText etRewritePassword;
@@ -34,7 +37,6 @@ public class RegisterActivity extends AppCompatActivity {
     private GoogleSignInHelper googleSignInHelper;
     private TextView tvRewritePassword;
     private TextView tvUsername;
-    private UserSessionManager sessionManager;
     private LearningAppDatabase dbHelper;
 
     @Override
@@ -42,7 +44,6 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        sessionManager = new UserSessionManager(this);
         initializeViews();
         dbHelper = new LearningAppDatabase(this);
         setupRegisterButton();
@@ -104,7 +105,7 @@ public class RegisterActivity extends AppCompatActivity {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             String email = currentUser.getEmail();
-            sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
+            dbHelper.registerUser(email, "");
             Toast.makeText(RegisterActivity.this, "Welcome back: " + email, Toast.LENGTH_SHORT).show();
             navigateToMain();
             finish();
@@ -122,7 +123,7 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onSuccess(FirebaseUser user) {
                 String email = user.getEmail();
-                sessionManager.saveUserSession(email, UserSessionManager.AUTH_TYPE_FIREBASE);
+                dbHelper.authenticateUser(email, "");
                 Toast.makeText(RegisterActivity.this, "Signed in as: " + email, Toast.LENGTH_SHORT).show();
                 navigateToMain();
                 finish();
