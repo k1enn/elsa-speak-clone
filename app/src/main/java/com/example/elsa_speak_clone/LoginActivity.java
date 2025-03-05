@@ -160,9 +160,10 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToMain() {
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-        intent.putExtra("IS_LOGGED_IN", true);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+
     }
 
     // Handle Google Sign-In Result
