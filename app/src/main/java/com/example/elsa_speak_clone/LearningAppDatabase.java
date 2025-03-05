@@ -810,4 +810,20 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
        return username;
    }
 
+    // Other methods and database setup...
+
+    public String getLessonTitle(Context context) {
+        // Query the database to get the lesson title
+        return "Sample Lesson Title"; // Replace with actual query result
+    }
+
+    public String getLessonDescription(Context context) {
+        // Query the database to get the lesson description
+        return "Sample Lesson Description"; // Replace with actual query result
+    }
+
+    public String getLessonContent(Context context) {
+        // Query the database to get the lesson content
+        return "Sample Lesson Content"; // Replace with actual query result
+    }
 }
