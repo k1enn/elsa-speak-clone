@@ -249,11 +249,17 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
     public void saveUserSession(String username) {
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("username", username);
-        editor.putInt("userId", getUserId(username));
-        editor.apply();
+        int userId = getUserId(username);
+
+        if(userId != -1) {
+            prefs.edit()
+                    .putString("username", username)
+                    .putInt("userId", userId)
+                    .apply(); // Use apply() for asynchronous save
+            Log.d(TAG, "Session saved - User: " + username + " ID: " + userId);
+        }
     }
+
 
     public boolean loginCheck(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
@@ -289,11 +295,24 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         return exists;
     }
 
+    private void handleGoogleRegistration(ContentValues values, String email) {
+        try {
+            String username = email.split("@")[0];
+            values.put(COLUMN_GMAIL, email);
+            values.put(COLUMN_NAME, username);
+            values.put(COLUMN_PASSWORD, ""); // Empty password for social
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+    }
+
     // Register a new user (works for both local and Firebase)
     public boolean registerUser(String name, String password) {
         if (name == null || password == null) return false;
 
 
+        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
 
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -301,29 +320,27 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         try {
             int userId = generateUniqueId(db);
             values.put(COLUMN_USER_ID, userId);
+            editor.putInt("userId", userId);
         } catch (Exception e) {
             Log.e(TAG, "Can not generate unique user id");
         }
 
-        if (name.contains("@")) {
-            try {
-                String username = name.substring(0, name.indexOf("@"));
-                // Google account registration
-                values.put(COLUMN_GMAIL, name); // Put user's mail in GMAIL
-                values.put(COLUMN_NAME, username); // Put username by only take characters before "@"
-                values.put(COLUMN_PASSWORD, emptyString);  // No password for Google accounts
-            } catch (Exception e) {
-                Log.d(TAG, "Can not register GMAIL user.");
-            }
-        } else {
-            try {
-                String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-                // Local account registration
-                values.put(COLUMN_NAME, name);
-                values.put(COLUMN_GMAIL, emptyString);
-                values.put(COLUMN_PASSWORD, hashedPassword);
-                Log.d(TAG, "Hased password" + hashedPassword);
-            } catch (Exception e) {
+
+                if(name.contains("@")) {
+                    handleGoogleRegistration(values, name);
+                }
+
+         else {
+try {
+    String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+    // Local account registration
+    values.put(COLUMN_NAME, name);
+    values.put(COLUMN_GMAIL, emptyString);
+    values.put(COLUMN_PASSWORD, hashedPassword);
+    editor.putString("username", name);
+    saveUserSession(name);
+    Log.d(TAG, "Hased password" + hashedPassword);
+}catch (Exception e) {
                 Log.d(TAG, "Can not register LOCAL user.");
             }
         }
@@ -331,7 +348,13 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         values.put(COLUMN_JOIN_DATE, getCurrentDate());
 
         long result = db.insert(TABLE_USERS, null, values);
-        return result != -1;
+
+if(result != -1) {
+        editor.apply();
+        return true;
+    } else{
+        return false;
+    }
     }
 
     private String getCurrentDate() {
@@ -790,6 +813,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
         return username;
     }
+
    public String getUsernameById(int userId) {
        SQLiteDatabase db = this.getReadableDatabase();
        Cursor cursor = db.query(

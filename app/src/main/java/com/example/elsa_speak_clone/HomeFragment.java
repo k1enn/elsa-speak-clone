@@ -1,6 +1,8 @@
 package com.example.elsa_speak_clone;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.Log;
@@ -154,8 +156,8 @@ public class HomeFragment extends Fragment {
 
     private void initializeVariables() {
         try {
-            isLoggedIn = requireActivity().getIntent().getBooleanExtra("IS_LOGGED_IN", false);
             databaseHelper = new LearningAppDatabase(requireContext());
+            isLoggedIn = databaseHelper.loginCheck(requireContext());
         } catch (Exception e) {
             Log.e(TAG, "Error in initializeVariables: ", e);
         }
@@ -272,6 +274,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void navigateToSpeechToText() {
+//        SharedPreferences prefs = getContext().getSharedPreferences("SpeechToText", Context.MODE_PRIVATE);
+//        SharedPreferences.Editor editor = prefs.edit();
+//        editor.putBoolean()
         Intent intent = new Intent(requireContext(), SpeechToText.class);
         startActivity(intent);
     }
