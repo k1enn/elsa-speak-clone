@@ -125,17 +125,22 @@ public class LoginActivity extends AppCompatActivity {
 
     private void setupLoginButton() {
         btnLogin.setOnClickListener(v -> {
-            String username = etUsername.getText().toString();
-            String password = etPassword.getText().toString();
+            String username = etUsername.getText().toString().trim();
+            String password = etPassword.getText().toString().trim();
 
-            if (dbHelper.authenticateUser(username, password)) {
-                dbHelper.saveUserSession(username);  // Save the user ID
-                Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                navigateToMain();
-                finish();
-            } else {
-                Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
-            }
+           try {
+               if (dbHelper.authenticateUser(username, password)) {
+                   dbHelper.saveUserSession(username);  // Save the username
+                   Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+                   navigateToMain();
+                   finish();
+               } else {
+                   Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
+               }
+           } catch (Exception e) {
+              Log.d("LoginActivity", "Login failed: ", e);
+           }
+
         });
     }
 
@@ -160,10 +165,11 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToMain() {
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-        intent.putExtra("IS_LOGGED_IN", true);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
+
 
     // Handle Google Sign-In Result
     @Override

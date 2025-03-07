@@ -1,0 +1,33 @@
+<!-- fragment_learn.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/backgroundColor"
+    android:fitsSystemWindows="true"
+    android:padding="16dp">
+
+    <!-- Title TextView -->
+    <TextView
+        android:layout_marginTop="45dp"
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="What would you choose today?"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/primaryTextColor"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerLessons"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        tools:ignore="SpeakableTextPresentCheck"
+        tools:listitem="@layout/item_lesson" />
+
+</LinearLayout>
