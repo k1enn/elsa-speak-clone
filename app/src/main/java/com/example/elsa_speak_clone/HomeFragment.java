@@ -43,6 +43,8 @@ public class HomeFragment extends Fragment {
 
     private BottomNavigationView bottomNavigationView;
     private boolean isLoggedIn;
+    private String username;
+    private int userId;
     private int userStreak;
     private Button btnLogin;
     private CardView cvVocabulary;
@@ -98,15 +100,16 @@ public class HomeFragment extends Fragment {
         initializeUI(view);
         initializeVariables();
 
-        try {
-            if (databaseHelper.getCurrentUsername(requireContext()) != null) {
-                WelcomeUsername();
-                updateUserStreak();
-            } else {
-                Log.d(TAG, "Username is NULL");
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Error in WelcomeUsername or updateUserStreak: ", e);
+        // Retrieve user session data
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        int userId = prefs.getInt("userId", -1);
+        String username = prefs.getString("username", null);
+
+        if (userId == -1 || username == null) {
+            navigateToLogin();
+        } else {
+            // Use the userId and username
+            tvWelcome.setText("Welcome back, " + username + "!");
         }
 
         setupSpeechToTextButton();
@@ -158,6 +161,13 @@ public class HomeFragment extends Fragment {
         try {
             databaseHelper = new LearningAppDatabase(requireContext());
             isLoggedIn = databaseHelper.loginCheck(requireContext());
+            // Retrieve user session data
+            Context context = getContext();
+            if (context != null) {
+                SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+                userId = prefs.getInt("userId", -1);
+                username = prefs.getString("username", null);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error in initializeVariables: ", e);
         }
@@ -166,9 +176,9 @@ public class HomeFragment extends Fragment {
     private void WelcomeUsername() {
         try {
             if (userStreak <= 0) {
-                tvWelcome.setText("Welcome " + databaseHelper.getCurrentUsername(requireContext()) + "!");
+                tvWelcome.setText("Welcome " + username + "!");
             } else {
-                tvWelcome.setText("Welcome back " + databaseHelper.getCurrentUsername(requireContext()) + "!");
+                tvWelcome.setText("Welcome back " + username + "!");
             }
         } catch (Exception e) {
             Log.d(TAG, "Error on WelcomeUsername" + e.getMessage());
@@ -213,7 +223,7 @@ public class HomeFragment extends Fragment {
         cvPronunciation.setOnClickListener(v -> {
             checkLogin();
             try {
-                if (databaseHelper.getCurrentUsername(requireContext()) != null) {
+                if (username != null) {
                     try {
                         navigateToSpeechToText();
                     } catch (Exception e) {
@@ -274,16 +284,14 @@ public class HomeFragment extends Fragment {
     }
 
     private void navigateToSpeechToText() {
-//        SharedPreferences prefs = getContext().getSharedPreferences("SpeechToText", Context.MODE_PRIVATE);
-//        SharedPreferences.Editor editor = prefs.edit();
-//        editor.putBoolean()
-        Intent intent = new Intent(requireContext(), SpeechToText.class);
+        Intent intent = new Intent(requireActivity(), SpeechToText.class);
         startActivity(intent);
     }
 
     private void navigateToLogin() {
-        Intent intent = new Intent(requireContext(), LoginActivity.class);
+        Intent intent = new Intent(requireActivity(), LoginActivity.class);
         startActivity(intent);
+        requireActivity().finish(); // Optional: finish the activity to prevent returning to it
     }
 
     private final NavigationBarView.OnItemSelectedListener navListener = item -> {

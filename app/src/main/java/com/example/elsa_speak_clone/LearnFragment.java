@@ -5,40 +5,64 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class LearnFragment extends Fragment {
 
-    private TextView tvLessonTitle, tvLessonDescription, tvLessonContent;
-    private LearningAppDatabase databaseHelper;
+
+    private RecyclerView recyclerLessons;
+    private LearningAppDatabase db;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_learn, container, false);
 
-        tvLessonTitle = view.findViewById(R.id.tvLessonTitle);
-        tvLessonDescription = view.findViewById(R.id.tvLessonDescription);
-        tvLessonContent = view.findViewById(R.id.tvLessonContent);
+        recyclerLessons = view.findViewById(R.id.recyclerLessons);
 
-        databaseHelper = new LearningAppDatabase(requireContext());
+        db = new LearningAppDatabase(requireContext());
 
-        loadLessonData();
+        loadLessons();
 
         return view;
     }
 
-    private void loadLessonData() {
-        // Assuming you have methods to get lesson data
-        String lessonTitle = databaseHelper.getLessonTitle(requireContext());
-        String lessonDescription = databaseHelper.getLessonDescription(requireContext());
-        String lessonContent = databaseHelper.getLessonContent(requireContext());
+    private void loadLessons() {
 
-        tvLessonTitle.setText(lessonTitle);
-        tvLessonDescription.setText(lessonDescription);
-        tvLessonContent.setText(lessonContent);
+        List<Lesson> lessonsList = new ArrayList<>();
+
+        // Assuming you have lesson IDs from 1 to N (Change as needed)
+        for (int i = 1; i <= 9; i++) {
+            Lesson lesson = db.getLesson(requireContext(), i);
+            if (lesson != null) lessonsList.add(lesson);
+        }
+
+        LessonAdapter adapter = new LessonAdapter(lessonsList, db, lesson -> {
+            // Handle lesson click (navigate to detail fragment/activity)
+            Toast.makeText(requireContext(), "Clicked " + lesson.getTopic(), Toast.LENGTH_SHORT).show();
+
+            // Example navigation logic here:
+            // Bundle args = new Bundle();
+            // args.putInt("lessonId", lesson.getLessonId());
+            // Navigation.findNavController(getView()).navigate(R.id.action_to_lessonDetailFragment, args);
+
+        });
+
+        recyclerLessons.setLayoutManager(new LinearLayoutManager(requireContext()));
+
+        recyclerLessons.setAdapter(adapter);
+
     }
 }

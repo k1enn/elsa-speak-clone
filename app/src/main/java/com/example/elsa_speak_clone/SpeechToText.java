@@ -58,6 +58,14 @@ public class SpeechToText extends AppCompatActivity {
         setupVoiceRecognizer();
         setupSpeakButton();
     }
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        Intent intent = new Intent(SpeechToText.this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
+    }
 
     private void initializeUI() {
         tvPrompt = findViewById(R.id.tvPrompt);

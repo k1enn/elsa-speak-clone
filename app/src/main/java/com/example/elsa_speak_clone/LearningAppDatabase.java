@@ -2,8 +2,12 @@ package com.example.elsa_speak_clone;
 
 
 import android.content.SharedPreferences;
+
+import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import android.content.SharedPreferences;
+import java.util.ArrayList;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -209,9 +213,19 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
                 null, null, null)) {
             if (cursor.moveToFirst()) {
                 String authenticateHashedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
-                return BCrypt.checkpw(password, authenticateHashedPassword);
+                try {
+                    boolean passwordValidate = BCrypt.checkpw(password, authenticateHashedPassword);
+                    if (passwordValidate) {
+                        saveUserSession(username);
+                        return true;
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Can not authenticate password", e);
+                }
+
             }
             return false;
+
 
         }
          catch (Exception e) {
@@ -249,15 +263,8 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
     public void saveUserSession(String username) {
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        int userId = getUserId(username);
-
-        if(userId != -1) {
-            prefs.edit()
-                    .putString("username", username)
-                    .putInt("userId", userId)
-                    .apply(); // Use apply() for asynchronous save
-            Log.d(TAG, "Session saved - User: " + username + " ID: " + userId);
-        }
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt("userId", this.getUserId(username)).putString("username", username).apply();
     }
 
 
@@ -310,17 +317,12 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     public boolean registerUser(String name, String password) {
         if (name == null || password == null) return false;
 
-
-        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
         try {
             int userId = generateUniqueId(db);
             values.put(COLUMN_USER_ID, userId);
-            editor.putInt("userId", userId);
         } catch (Exception e) {
             Log.e(TAG, "Can not generate unique user id");
         }
@@ -337,8 +339,6 @@ try {
     values.put(COLUMN_NAME, name);
     values.put(COLUMN_GMAIL, emptyString);
     values.put(COLUMN_PASSWORD, hashedPassword);
-    editor.putString("username", name);
-    saveUserSession(name);
     Log.d(TAG, "Hased password" + hashedPassword);
 }catch (Exception e) {
                 Log.d(TAG, "Can not register LOCAL user.");
@@ -350,7 +350,6 @@ try {
         long result = db.insert(TABLE_USERS, null, values);
 
 if(result != -1) {
-        editor.apply();
         return true;
     } else{
         return false;
@@ -850,4 +849,236 @@ if(result != -1) {
         // Query the database to get the lesson content
         return "Sample Lesson Content"; // Replace with actual query result
     }
+
+    public void insertVocabulary(SQLiteDatabase db, String word, String pronunciation, int wordId, int lessonId) {
+        try {
+            db.beginTransaction();
+
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_WORD, word);
+            values.put(COLUMN_PRONUNCIATION, pronunciation);
+            values.put(COLUMN_WORD_ID, wordId);
+            values.put(COLUMN_LESSON_ID, lessonId);
+
+            long result = db.insert(TABLE_VOCABULARY, null, values);
+
+            if (result == -1) {
+                throw new SQLException("Failed to insert vocabulary: " + word);
+            }
+
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.d(TAG, "Error on insertVocabulary: word=" + word + ", wordId=" + wordId, e);
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void initializeLessonAndVocabulary(SQLiteDatabase db) {
+        ContentValues lessonValues = new ContentValues();
+
+        // Lesson 1: Basic Greetings
+        lessonValues.put(COLUMN_LESSON_ID, 1);
+        lessonValues.put(COLUMN_TOPIC, "Basic Greetings");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Learn common greeting phrases for daily use.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 2: Daily Activities
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 2);
+        lessonValues.put(COLUMN_TOPIC, "Daily Activities");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Vocabulary for everyday actions and routines.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 3: Travel
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 3);
+        lessonValues.put(COLUMN_TOPIC, "Travel");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Essential words for traveling and navigation.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 4: Business Meetings
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 4);
+        lessonValues.put(COLUMN_TOPIC, "Business Meetings");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Terms used in professional meeting settings.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 5: Research
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 5);
+        lessonValues.put(COLUMN_TOPIC, "Research");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Vocabulary for academic and research purposes.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 3);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 6: Numbers
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 6);
+        lessonValues.put(COLUMN_TOPIC, "Numbers");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Basic counting and number-related terms.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 7: Colors
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 7);
+        lessonValues.put(COLUMN_TOPIC, "Colors");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Common colors and their names.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 8: Family Members
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 8);
+        lessonValues.put(COLUMN_TOPIC, "Family Members");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Words for family relationships.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Lesson 9: Food Items
+        lessonValues.clear();
+        lessonValues.put(COLUMN_LESSON_ID, 9);
+        lessonValues.put(COLUMN_TOPIC, "Food Items");
+        lessonValues.put(COLUMN_LESSON_CONTENT, "Everyday food and drink vocabulary.");
+        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
+        db.insert(TABLE_LESSONS, null, lessonValues);
+
+        // Vocabulary for Lesson 1: Basic Greetings
+        insertVocabulary(db, "Hello", "/həˈloʊ/", 1, 1);
+        insertVocabulary(db, "Goodbye", "/ɡʊdˈbaɪ/", 2, 1);
+        insertVocabulary(db, "Thank you", "/θæŋk juː/", 3, 1);
+        insertVocabulary(db, "Excuse me", "/ɪkˈskjuːz miː/", 4, 1);
+        insertVocabulary(db, "Good morning", "/ɡʊd ˈmɔːrnɪŋ/", 5, 1);
+        insertVocabulary(db, "How are you?", "/haʊ ɑr juː/", 6, 1);
+
+        // Vocabulary for Lesson 2: Daily Activities
+        insertVocabulary(db, "Eat", "/iːt/", 7, 2);
+        insertVocabulary(db, "Sleep", "/sliːp/", 8, 2);
+        insertVocabulary(db, "Work", "/wɜːrk/", 9, 2);
+        insertVocabulary(db, "Study", "/ˈstʌdi/", 10, 2);
+        insertVocabulary(db, "Play", "/pleɪ/", 11, 2);
+
+        // Vocabulary for Lesson 3: Travel
+        insertVocabulary(db, "Airport", "/ˈɛrpɔːrt/", 12, 3);
+        insertVocabulary(db, "Hotel", "/hoʊˈtɛl/", 13, 3);
+        insertVocabulary(db, "Taxi", "/ˈtæksi/", 14, 3);
+        insertVocabulary(db, "Restaurant", "/ˈrɛstərɒnt/", 15, 3);
+
+        // Vocabulary for Lesson 4: Business Meetings
+        insertVocabulary(db, "Meeting", "/ˈmiːtɪŋ/", 16, 4);
+        insertVocabulary(db, "Presentation", "/ˌprezənˈteɪʃən/", 17, 4);
+        insertVocabulary(db, "Conference", "/ˈkɒnfərəns/", 18, 4);
+
+        // Vocabulary for Lesson 5: Research
+        insertVocabulary(db, "Research", "/rɪˈsɜːrtʃ/", 19, 5);
+        insertVocabulary(db, "Analysis", "/əˈnæləsɪs/", 20, 5);
+
+        // Vocabulary for Lesson 6: Numbers
+        insertVocabulary(db, "One", "/wʌn/", 21, 6);
+        insertVocabulary(db, "Two", "/tuː/", 22, 6);
+        insertVocabulary(db, "Three", "/θriː/", 23, 6);
+        insertVocabulary(db, "Four", "/fɔːr/", 24, 6);
+        insertVocabulary(db, "Five", "/faɪv/", 25, 6);
+
+        // Vocabulary for Lesson 7: Colors
+        insertVocabulary(db, "Red", "/rɛd/", 26, 7);
+        insertVocabulary(db, "Blue", "/bluː/", 27, 7);
+        insertVocabulary(db, "Green", "/ɡriːn/", 28, 7);
+        insertVocabulary(db, "Yellow", "/ˈjɛloʊ/", 29, 7);
+        insertVocabulary(db, "Black", "/blæk/", 30, 7);
+
+        // Vocabulary for Lesson 8: Family Members
+        insertVocabulary(db, "Mother", "/ˈmʌðər/", 31, 8);
+        insertVocabulary(db, "Father", "/ˈfɑːðər/", 32, 8);
+        insertVocabulary(db, "Brother", "/ˈbrʌðər/", 33, 8);
+        insertVocabulary(db, "Sister", "/ˈsɪstər/", 34, 8);
+        insertVocabulary(db, "Grandmother", "/ˈɡrænmʌðər/", 35, 8);
+
+        // Vocabulary for Lesson 9: Food Items
+        insertVocabulary(db, "Apple", "/ˈæpl/", 36, 9);
+        insertVocabulary(db, "Bread", "/brɛd/", 37, 9);
+        insertVocabulary(db, "Water", "/ˈwɔːtər/", 38, 9);
+        insertVocabulary(db, "Rice", "/raɪs/", 39, 9);
+        insertVocabulary(db, "Chicken", "/ˈtʃɪkɪn/", 40, 9);
+    }
+
+    public Lesson getLesson(Context context, int lessonId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Lesson lesson = null;
+
+        Cursor cursor = null;
+        try {
+            cursor = db.query(
+                    TABLE_LESSONS,
+                    new String[]{COLUMN_LESSON_ID, COLUMN_TOPIC, COLUMN_LESSON_CONTENT, COLUMN_DIFFICULTY_LEVEL},
+                    COLUMN_LESSON_ID + "=?",
+                    new String[]{String.valueOf(lessonId)},
+                    null,
+                    null,
+                    null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LESSON_ID));
+                String topic = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TOPIC));
+                String content = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LESSON_CONTENT));
+                int difficultyLevel = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DIFFICULTY_LEVEL));
+
+                lesson = new Lesson(id, topic, content, difficultyLevel);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error retrieving lesson with ID: " + lessonId, e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+
+        return lesson;
+    }
+    // LearningAppDatabase.java
+    public List<String> getVocabularyByLessonId(int lessonId) {
+        List<String> vocabularyList;
+        vocabularyList = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+
+        try {
+            cursor = db.query(
+                    TABLE_VOCABULARY,
+                    new String[]{COLUMN_WORD},
+                    COLUMN_LESSON_ID + "=?",
+                    new String[]{String.valueOf(lessonId)},
+                    null,
+                    null,
+                    COLUMN_WORD_ID
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    String word = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_WORD));
+                    vocabularyList.add(word);
+                } while (cursor.moveToNext());
+            }
+
+            Log.d(TAG, "Get vocabulary successful for lessonId: " + lessonId);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Cannot get vocabulary for lessonId: " + lessonId, e);
+            return null;
+
+        } finally {
+            if (cursor != null) cursor.close();
+            db.close();
+        }
+
+        return vocabularyList;
+    }
+
 }
