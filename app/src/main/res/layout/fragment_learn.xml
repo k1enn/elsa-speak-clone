@@ -1,51 +1,31 @@
-<?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- fragment_learn.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/backgroundColor"
     android:padding="16dp">
 
-    <LinearLayout
+    <!-- Title TextView -->
+    <TextView
+        android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:text="What would you choose today?"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/primaryTextColor"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
 
-        <TextView
-            android:id="@+id/tvLessonTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lesson Title"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@color/primaryTextColor"
-            android:layout_marginBottom="16dp" />
+    <!-- RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerLessons"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        tools:ignore="SpeakableTextPresentCheck"
+        tools:listitem="@layout/item_lesson" />
 
-        <TextView
-            android:id="@+id/tvLessonDescription"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lesson Description"
-            android:textSize="16sp"
-            android:textColor="@color/secondaryTextColor"
-            android:layout_marginBottom="16dp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/secondaryTextColor"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Add more lesson details here -->
-        <TextView
-            android:id="@+id/tvLessonContent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lesson Content"
-            android:textSize="16sp"
-            android:textColor="@color/primaryTextColor"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Add more fields as needed -->
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

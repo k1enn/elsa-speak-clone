@@ -11,10 +11,14 @@ import com.example.elsa_speak_clone.SettingsFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 public class MainActivity extends AppCompatActivity {
-
+    Context context;
+    SharedPreferences prefs;
     private BottomNavigationView bottomNavigationView;
     private int currentPosition = 1;
 
@@ -23,12 +27,32 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
         initializeVariable();
-        if (savedInstanceState == null) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_home);
-            loadFragment(new HomeFragment(), currentPosition);
+        initializeSharedPreferences();
+
+        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        loadFragment(new HomeFragment(), currentPosition);
+
+    }
+    @Override
+    public void onBackPressed() {
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
+        } else {
+            super.onBackPressed();
         }
+    }
+
+    private void initializeSharedPreferences() {
+        String username = getIntent().getStringExtra("username");
+        int userId = getIntent().getIntExtra("userId", -1);
+
+        if (username != null && userId != -1) {
+            // Save to SharedPreferences here
+            prefs = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putString("username", username).putInt("userId", userId).apply();
+        }
+
     }
     private void initializeVariable() {
         bottomNavigationView = findViewById(R.id.bottom_navigation);

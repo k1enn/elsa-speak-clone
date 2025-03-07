@@ -37,7 +37,7 @@ public class RegisterActivity extends AppCompatActivity {
     private GoogleSignInHelper googleSignInHelper;
     private TextView tvRewritePassword;
     private TextView tvUsername;
-    private LearningAppDatabase dbHelper;
+    private LearningAppDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +45,7 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_register);
 
         initializeViews();
-        dbHelper = new LearningAppDatabase(this);
+        db = new LearningAppDatabase(this);
         setupRegisterButton();
         setupLoginButton();
         setupShowPasswordButton(etNewPassword, btnTogglePassword);
@@ -105,7 +105,7 @@ public class RegisterActivity extends AppCompatActivity {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             String email = currentUser.getEmail();
-            dbHelper.registerUser(email, "");
+            db.registerUser(email, "");
             Toast.makeText(RegisterActivity.this, "Welcome back: " + email, Toast.LENGTH_SHORT).show();
             navigateToMain();
             finish();
@@ -123,7 +123,7 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onSuccess(FirebaseUser user) {
                 String email = user.getEmail();
-                dbHelper.authenticateUser(email, "");
+                db.authenticateUser(email, "");
                 Toast.makeText(RegisterActivity.this, "Signed in as: " + email, Toast.LENGTH_SHORT).show();
                 navigateToMain();
                 finish();
@@ -151,6 +151,7 @@ public class RegisterActivity extends AppCompatActivity {
                 Log.d("ValidateInput", "Success");
                 if (registerUser(username, password)) {
                     showToast("Registration Successful");
+                    db.saveUserSession(username);
                     navigateToMainActivity();
                 } else {
                     showToast("Registration Failed");
@@ -208,7 +209,7 @@ public class RegisterActivity extends AppCompatActivity {
             return false;
         }
 
-        if (!dbHelper.isUsernameAvailable(username)) {
+        if (!db.isUsernameAvailable(username)) {
             showToast("Username already exists.");
             return false;
         }
@@ -291,9 +292,10 @@ public class RegisterActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-    
+
+
     private boolean registerUser(String username, String password) {
-        return dbHelper.registerUser(username, password);
+        return db.registerUser(username, password);
     }
 
     private void showToast(String message) {
