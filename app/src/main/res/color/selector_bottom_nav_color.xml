@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:tools="http://schemas.android.com/tools" xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Color when item is selected (active) -->
+    <item android:color="#6200EE" android:state_checked="true" tools:ignore="MenuTitle" />
+    <!-- Color when item is not selected (inactive) -->
+    <item android:color="#757575" android:state_checked="false" tools:ignore="MenuTitle" />
+</selector>

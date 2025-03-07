@@ -2,8 +2,12 @@ package com.example.elsa_speak_clone;
 
 
 import android.content.SharedPreferences;
+
+import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import android.content.SharedPreferences;
+import java.util.ArrayList;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -209,9 +213,19 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
                 null, null, null)) {
             if (cursor.moveToFirst()) {
                 String authenticateHashedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
-                return BCrypt.checkpw(password, authenticateHashedPassword);
+                try {
+                    boolean passwordValidate = BCrypt.checkpw(password, authenticateHashedPassword);
+                    if (passwordValidate) {
+                        saveUserSession(username);
+                        return true;
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Can not authenticate password", e);
+                }
+
             }
             return false;
+
 
         }
          catch (Exception e) {
@@ -250,10 +264,9 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     public void saveUserSession(String username) {
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("username", username);
-        editor.putInt("userId", getUserId(username));
-        editor.apply();
+        editor.putInt("userId", this.getUserId(username)).putString("username", username).apply();
     }
+
 
     public boolean loginCheck(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
@@ -289,11 +302,20 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         return exists;
     }
 
+    private void handleGoogleRegistration(ContentValues values, String email) {
+        try {
+            String username = email.split("@")[0];
+            values.put(COLUMN_GMAIL, email);
+            values.put(COLUMN_NAME, username);
+            values.put(COLUMN_PASSWORD, ""); // Empty password for social
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+    }
+
     // Register a new user (works for both local and Firebase)
     public boolean registerUser(String name, String password) {
         if (name == null || password == null) return false;
-
-
 
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -305,25 +327,20 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             Log.e(TAG, "Can not generate unique user id");
         }
 
-        if (name.contains("@")) {
-            try {
-                String username = name.substring(0, name.indexOf("@"));
-                // Google account registration
-                values.put(COLUMN_GMAIL, name); // Put user's mail in GMAIL
-                values.put(COLUMN_NAME, username); // Put username by only take characters before "@"
-                values.put(COLUMN_PASSWORD, emptyString);  // No password for Google accounts
-            } catch (Exception e) {
-                Log.d(TAG, "Can not register GMAIL user.");
-            }
-        } else {
-            try {
-                String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-                // Local account registration
-                values.put(COLUMN_NAME, name);
-                values.put(COLUMN_GMAIL, emptyString);
-                values.put(COLUMN_PASSWORD, hashedPassword);
-                Log.d(TAG, "Hased password" + hashedPassword);
-            } catch (Exception e) {
+
+                if(name.contains("@")) {
+                    handleGoogleRegistration(values, name);
+                }
+
+         else {
+try {
+    String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+    // Local account registration
+    values.put(COLUMN_NAME, name);
+    values.put(COLUMN_GMAIL, emptyString);
+    values.put(COLUMN_PASSWORD, hashedPassword);
+    Log.d(TAG, "Hased password" + hashedPassword);
+}catch (Exception e) {
                 Log.d(TAG, "Can not register LOCAL user.");
             }
         }
@@ -331,7 +348,12 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         values.put(COLUMN_JOIN_DATE, getCurrentDate());
 
         long result = db.insert(TABLE_USERS, null, values);
-        return result != -1;
+
+if(result != -1) {
+        return true;
+    } else{
+        return false;
+    }
     }
 
     private String getCurrentDate() {
@@ -567,67 +589,6 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
         onCreate(db);
     }
-
-    private void insertDefaultLessons(SQLiteDatabase db) {
-        // Define an array of lessons to insert with content
-        String[][] lessonsData = {
-                {"1", "Basic Greetings", "In this lesson, you will learn common English greetings such as 'Hello', 'Good morning', and 'How are you?'. Practice these phrases daily to improve your conversational skills.", "1"},
-                {"2", "Daily Conversations", "This lesson covers everyday conversations including asking for directions, ordering food, and making small talk. These phrases will help you navigate common social situations.", "1"},
-                {"3", "Travel Phrases", "Learn essential phrases for traveling abroad including how to ask for help, book accommodations, and navigate public transportation. This vocabulary is crucial for international travelers.", "2"},
-                {"4", "Business English", "This lesson focuses on professional English used in workplace settings, including email writing, meeting vocabulary, and negotiation phrases. Mastering these terms will enhance your career prospects.", "2"},
-                {"5", "Academic Vocabulary", "Explore advanced vocabulary commonly used in academic settings, research papers, and scholarly discussions. This lesson will help improve your formal writing and comprehension of academic texts.", "3"}
-        };
-
-        try {
-            db.beginTransaction();
-        // Insert each lesson
-        for (String[] lesson : lessonsData) {
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_LESSON_ID, Integer.parseInt(lesson[0]));
-            values.put(COLUMN_TOPIC, lesson[1]);
-            values.put(COLUMN_LESSON_CONTENT, lesson[2]);
-            values.put(COLUMN_DIFFICULTY_LEVEL, Integer.parseInt(lesson[3]));
-            db.insert(TABLE_LESSONS, null, values);
-            db.setTransactionSuccessful();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Error on insertDefaultLesson: ", e);
-        } finally {
-            db.endTransaction();
-        }
-    }
-
-    private void insertDefaultVocabulary(SQLiteDatabase db) {
-        // Define vocabulary data: word, pronunciation, wordId, lessonId
-        String[][] vocabularyData = {
-                {"Hello", "həˈloʊ", "1", "1"},
-                {"Goodbye", "ɡʊdˈbaɪ", "2", "1"},
-                {"Thank you", "θæŋk juː", "3", "1"},
-                {"Excuse me", "ɪkˈskjuːz miː", "4", "1"},
-                {"Good morning", "ɡʊd ˈmɔːrnɪŋ", "5", "1"},
-                {"How are you?", "haʊ ɑr juː", "6", "1"},
-                {"Airport", "ˈɛrpɔːrt", "7", "3"},
-                {"Hotel", "hoʊˈtɛl", "8", "3"},
-                {"Taxi", "ˈtæksi", "9", "3"},
-                {"Restaurant", "ˈrɛstərɒnt", "10", "3"},
-                {"Meeting", "ˈmiːtɪŋ", "11", "4"},
-                {"Presentation", "ˌprezənˈteɪʃən", "12", "4"},
-                {"Conference", "ˈkɒnfərəns", "13", "4"},
-                {"Research", "rɪˈsɜːrtʃ", "14", "5"},
-                {"Analysis", "əˈnæləsɪs", "15", "5"}
-        };
-
-        // Insert each vocabulary item using ContentValues
-        for (String[] vocab : vocabularyData) {
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_WORD, vocab[0]);
-            values.put(COLUMN_PRONUNCIATION, vocab[1]);
-            values.put(COLUMN_WORD_ID, Integer.parseInt(vocab[2]));
-            values.put(COLUMN_LESSON_ID, Integer.parseInt(vocab[3]));
-            db.insert(TABLE_VOCABULARY, null, values);
-        }
-    }
-
     // Update User's streak everytime login/.
     /**
      * Update user's streak based on login date
@@ -790,6 +751,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
         return username;
     }
+
    public String getUsernameById(int userId) {
        SQLiteDatabase db = this.getReadableDatabase();
        Cursor cursor = db.query(
@@ -809,5 +771,178 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
        }
        return username;
    }
+
+    // Other methods and database setup...
+
+    public String getLessonTitle(Context context) {
+        // Query the database to get the lesson title
+        return "Sample Lesson Title"; // Replace with actual query result
+    }
+
+    public String getLessonDescription(Context context) {
+        // Query the database to get the lesson description
+        return "Sample Lesson Description"; // Replace with actual query result
+    }
+
+    public String getLessonContent(Context context) {
+        // Query the database to get the lesson content
+        return "Sample Lesson Content"; // Replace with actual query result
+    }
+
+    public void insertVocabulary(SQLiteDatabase db, String word, String pronunciation, int wordId, int lessonId) {
+        try {
+            db.beginTransaction();
+
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_WORD, word);
+            values.put(COLUMN_PRONUNCIATION, pronunciation);
+            values.put(COLUMN_WORD_ID, wordId);
+            values.put(COLUMN_LESSON_ID, lessonId);
+
+            long result = db.insert(TABLE_VOCABULARY, null, values);
+
+            if (result == -1) {
+                throw new SQLException("Failed to insert vocabulary: " + word);
+            }
+
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.d(TAG, "Error on insertVocabulary: word=" + word + ", wordId=" + wordId, e);
+        } finally {
+            db.endTransaction();
+        }
+    }
+    private void insertDefaultLessons(SQLiteDatabase db) {
+        String[][] lessonsData = {
+                {"1", "Basic Greetings", "Learn common greeting phrases for daily use.", "1"},
+                {"2", "Daily Activities", "Vocabulary for everyday actions and routines.", "1"},
+                {"3", "Travel", "Essential words for traveling and navigation.", "2"},
+                {"4", "Business Meetings", "Terms used in professional meeting settings.", "2"},
+                {"5", "Research", "Vocabulary for academic and research purposes.", "3"}
+        };
+
+        try {
+            db.beginTransaction();
+            for (String[] lesson : lessonsData) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_LESSON_ID, Integer.parseInt(lesson[0]));
+                values.put(COLUMN_TOPIC, lesson[1]);
+                values.put(COLUMN_LESSON_CONTENT, lesson[2]);
+                values.put(COLUMN_DIFFICULTY_LEVEL, Integer.parseInt(lesson[3]));
+                db.insert(TABLE_LESSONS, null, values);
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "Error inserting default lessons: ", e);
+        } finally {
+            db.endTransaction();
+        }
+    }
+    private void insertDefaultVocabulary(SQLiteDatabase db) {
+        String[][] vocabularyData = {
+                {"Hello", "/həˈloʊ/", "1", "1"},
+                {"Goodbye", "/ɡʊdˈbaɪ/", "2", "1"},
+                {"Thank you", "/θæŋk juː/", "3", "1"},
+                {"Airport", "/ˈɛrpɔːrt/", "7", "3"},
+                {"Hotel", "/hoʊˈtɛl/", "8", "3"}
+        };
+
+        try {
+            db.beginTransaction();
+            for (String[] vocab : vocabularyData) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_WORD, vocab[0]);
+                values.put(COLUMN_PRONUNCIATION, vocab[1]);
+                values.put(COLUMN_WORD_ID, Integer.parseInt(vocab[2]));
+                values.put(COLUMN_LESSON_ID, Integer.parseInt(vocab[3]));
+                db.insert(TABLE_VOCABULARY, null, values);
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "Error inserting default vocabulary: ", e);
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void initializeLessonAndVocabulary(SQLiteDatabase db) {
+        insertDefaultLessons(db);
+        insertDefaultVocabulary(db);
+
+    }
+
+    public Lesson getLesson(Context context, int lessonId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Lesson lesson = null;
+
+        Cursor cursor = null;
+        try {
+            cursor = db.query(
+                    TABLE_LESSONS,
+                    new String[]{COLUMN_LESSON_ID, COLUMN_TOPIC, COLUMN_LESSON_CONTENT, COLUMN_DIFFICULTY_LEVEL},
+                    COLUMN_LESSON_ID + "=?",
+                    new String[]{String.valueOf(lessonId)},
+                    null,
+                    null,
+                    null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LESSON_ID));
+                String topic = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TOPIC));
+                String content = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LESSON_CONTENT));
+                int difficultyLevel = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DIFFICULTY_LEVEL));
+
+                lesson = new Lesson(id, topic, content, difficultyLevel);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error retrieving lesson with ID: " + lessonId, e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+
+        return lesson;
+    }
+    // LearningAppDatabase.java
+    public List<String> getVocabularyByLessonId(int lessonId) {
+        List<String> vocabularyList;
+        vocabularyList = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+
+        try {
+            cursor = db.query(
+                    TABLE_VOCABULARY,
+                    new String[]{COLUMN_WORD},
+                    COLUMN_LESSON_ID + "=?",
+                    new String[]{String.valueOf(lessonId)},
+                    null,
+                    null,
+                    COLUMN_WORD_ID
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    String word = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_WORD));
+                    vocabularyList.add(word);
+                } while (cursor.moveToNext());
+            }
+
+            Log.d(TAG, "Get vocabulary successful for lessonId: " + lessonId);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Cannot get vocabulary for lessonId: " + lessonId, e);
+            return null;
+
+        } finally {
+            if (cursor != null) cursor.close();
+            db.close();
+        }
+
+        return vocabularyList;
+    }
 
 }
