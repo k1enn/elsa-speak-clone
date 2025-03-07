@@ -589,67 +589,6 @@ if(result != -1) {
 
         onCreate(db);
     }
-
-    private void insertDefaultLessons(SQLiteDatabase db) {
-        // Define an array of lessons to insert with content
-        String[][] lessonsData = {
-                {"1", "Basic Greetings", "In this lesson, you will learn common English greetings such as 'Hello', 'Good morning', and 'How are you?'. Practice these phrases daily to improve your conversational skills.", "1"},
-                {"2", "Daily Conversations", "This lesson covers everyday conversations including asking for directions, ordering food, and making small talk. These phrases will help you navigate common social situations.", "1"},
-                {"3", "Travel Phrases", "Learn essential phrases for traveling abroad including how to ask for help, book accommodations, and navigate public transportation. This vocabulary is crucial for international travelers.", "2"},
-                {"4", "Business English", "This lesson focuses on professional English used in workplace settings, including email writing, meeting vocabulary, and negotiation phrases. Mastering these terms will enhance your career prospects.", "2"},
-                {"5", "Academic Vocabulary", "Explore advanced vocabulary commonly used in academic settings, research papers, and scholarly discussions. This lesson will help improve your formal writing and comprehension of academic texts.", "3"}
-        };
-
-        try {
-            db.beginTransaction();
-        // Insert each lesson
-        for (String[] lesson : lessonsData) {
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_LESSON_ID, Integer.parseInt(lesson[0]));
-            values.put(COLUMN_TOPIC, lesson[1]);
-            values.put(COLUMN_LESSON_CONTENT, lesson[2]);
-            values.put(COLUMN_DIFFICULTY_LEVEL, Integer.parseInt(lesson[3]));
-            db.insert(TABLE_LESSONS, null, values);
-            db.setTransactionSuccessful();
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Error on insertDefaultLesson: ", e);
-        } finally {
-            db.endTransaction();
-        }
-    }
-
-    private void insertDefaultVocabulary(SQLiteDatabase db) {
-        // Define vocabulary data: word, pronunciation, wordId, lessonId
-        String[][] vocabularyData = {
-                {"Hello", "həˈloʊ", "1", "1"},
-                {"Goodbye", "ɡʊdˈbaɪ", "2", "1"},
-                {"Thank you", "θæŋk juː", "3", "1"},
-                {"Excuse me", "ɪkˈskjuːz miː", "4", "1"},
-                {"Good morning", "ɡʊd ˈmɔːrnɪŋ", "5", "1"},
-                {"How are you?", "haʊ ɑr juː", "6", "1"},
-                {"Airport", "ˈɛrpɔːrt", "7", "3"},
-                {"Hotel", "hoʊˈtɛl", "8", "3"},
-                {"Taxi", "ˈtæksi", "9", "3"},
-                {"Restaurant", "ˈrɛstərɒnt", "10", "3"},
-                {"Meeting", "ˈmiːtɪŋ", "11", "4"},
-                {"Presentation", "ˌprezənˈteɪʃən", "12", "4"},
-                {"Conference", "ˈkɒnfərəns", "13", "4"},
-                {"Research", "rɪˈsɜːrtʃ", "14", "5"},
-                {"Analysis", "əˈnæləsɪs", "15", "5"}
-        };
-
-        // Insert each vocabulary item using ContentValues
-        for (String[] vocab : vocabularyData) {
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_WORD, vocab[0]);
-            values.put(COLUMN_PRONUNCIATION, vocab[1]);
-            values.put(COLUMN_WORD_ID, Integer.parseInt(vocab[2]));
-            values.put(COLUMN_LESSON_ID, Integer.parseInt(vocab[3]));
-            db.insert(TABLE_VOCABULARY, null, values);
-        }
-    }
-
     // Update User's streak everytime login/.
     /**
      * Update user's streak based on login date
@@ -873,138 +812,63 @@ if(result != -1) {
             db.endTransaction();
         }
     }
+    private void insertDefaultLessons(SQLiteDatabase db) {
+        String[][] lessonsData = {
+                {"1", "Basic Greetings", "Learn common greeting phrases for daily use.", "1"},
+                {"2", "Daily Activities", "Vocabulary for everyday actions and routines.", "1"},
+                {"3", "Travel", "Essential words for traveling and navigation.", "2"},
+                {"4", "Business Meetings", "Terms used in professional meeting settings.", "2"},
+                {"5", "Research", "Vocabulary for academic and research purposes.", "3"}
+        };
+
+        try {
+            db.beginTransaction();
+            for (String[] lesson : lessonsData) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_LESSON_ID, Integer.parseInt(lesson[0]));
+                values.put(COLUMN_TOPIC, lesson[1]);
+                values.put(COLUMN_LESSON_CONTENT, lesson[2]);
+                values.put(COLUMN_DIFFICULTY_LEVEL, Integer.parseInt(lesson[3]));
+                db.insert(TABLE_LESSONS, null, values);
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "Error inserting default lessons: ", e);
+        } finally {
+            db.endTransaction();
+        }
+    }
+    private void insertDefaultVocabulary(SQLiteDatabase db) {
+        String[][] vocabularyData = {
+                {"Hello", "/həˈloʊ/", "1", "1"},
+                {"Goodbye", "/ɡʊdˈbaɪ/", "2", "1"},
+                {"Thank you", "/θæŋk juː/", "3", "1"},
+                {"Airport", "/ˈɛrpɔːrt/", "7", "3"},
+                {"Hotel", "/hoʊˈtɛl/", "8", "3"}
+        };
+
+        try {
+            db.beginTransaction();
+            for (String[] vocab : vocabularyData) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_WORD, vocab[0]);
+                values.put(COLUMN_PRONUNCIATION, vocab[1]);
+                values.put(COLUMN_WORD_ID, Integer.parseInt(vocab[2]));
+                values.put(COLUMN_LESSON_ID, Integer.parseInt(vocab[3]));
+                db.insert(TABLE_VOCABULARY, null, values);
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "Error inserting default vocabulary: ", e);
+        } finally {
+            db.endTransaction();
+        }
+    }
 
     private void initializeLessonAndVocabulary(SQLiteDatabase db) {
-        ContentValues lessonValues = new ContentValues();
+        insertDefaultLessons(db);
+        insertDefaultVocabulary(db);
 
-        // Lesson 1: Basic Greetings
-        lessonValues.put(COLUMN_LESSON_ID, 1);
-        lessonValues.put(COLUMN_TOPIC, "Basic Greetings");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Learn common greeting phrases for daily use.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 2: Daily Activities
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 2);
-        lessonValues.put(COLUMN_TOPIC, "Daily Activities");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Vocabulary for everyday actions and routines.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 3: Travel
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 3);
-        lessonValues.put(COLUMN_TOPIC, "Travel");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Essential words for traveling and navigation.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 4: Business Meetings
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 4);
-        lessonValues.put(COLUMN_TOPIC, "Business Meetings");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Terms used in professional meeting settings.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 5: Research
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 5);
-        lessonValues.put(COLUMN_TOPIC, "Research");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Vocabulary for academic and research purposes.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 3);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 6: Numbers
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 6);
-        lessonValues.put(COLUMN_TOPIC, "Numbers");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Basic counting and number-related terms.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 7: Colors
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 7);
-        lessonValues.put(COLUMN_TOPIC, "Colors");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Common colors and their names.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 1);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 8: Family Members
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 8);
-        lessonValues.put(COLUMN_TOPIC, "Family Members");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Words for family relationships.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Lesson 9: Food Items
-        lessonValues.clear();
-        lessonValues.put(COLUMN_LESSON_ID, 9);
-        lessonValues.put(COLUMN_TOPIC, "Food Items");
-        lessonValues.put(COLUMN_LESSON_CONTENT, "Everyday food and drink vocabulary.");
-        lessonValues.put(COLUMN_DIFFICULTY_LEVEL, 2);
-        db.insert(TABLE_LESSONS, null, lessonValues);
-
-        // Vocabulary for Lesson 1: Basic Greetings
-        insertVocabulary(db, "Hello", "/həˈloʊ/", 1, 1);
-        insertVocabulary(db, "Goodbye", "/ɡʊdˈbaɪ/", 2, 1);
-        insertVocabulary(db, "Thank you", "/θæŋk juː/", 3, 1);
-        insertVocabulary(db, "Excuse me", "/ɪkˈskjuːz miː/", 4, 1);
-        insertVocabulary(db, "Good morning", "/ɡʊd ˈmɔːrnɪŋ/", 5, 1);
-        insertVocabulary(db, "How are you?", "/haʊ ɑr juː/", 6, 1);
-
-        // Vocabulary for Lesson 2: Daily Activities
-        insertVocabulary(db, "Eat", "/iːt/", 7, 2);
-        insertVocabulary(db, "Sleep", "/sliːp/", 8, 2);
-        insertVocabulary(db, "Work", "/wɜːrk/", 9, 2);
-        insertVocabulary(db, "Study", "/ˈstʌdi/", 10, 2);
-        insertVocabulary(db, "Play", "/pleɪ/", 11, 2);
-
-        // Vocabulary for Lesson 3: Travel
-        insertVocabulary(db, "Airport", "/ˈɛrpɔːrt/", 12, 3);
-        insertVocabulary(db, "Hotel", "/hoʊˈtɛl/", 13, 3);
-        insertVocabulary(db, "Taxi", "/ˈtæksi/", 14, 3);
-        insertVocabulary(db, "Restaurant", "/ˈrɛstərɒnt/", 15, 3);
-
-        // Vocabulary for Lesson 4: Business Meetings
-        insertVocabulary(db, "Meeting", "/ˈmiːtɪŋ/", 16, 4);
-        insertVocabulary(db, "Presentation", "/ˌprezənˈteɪʃən/", 17, 4);
-        insertVocabulary(db, "Conference", "/ˈkɒnfərəns/", 18, 4);
-
-        // Vocabulary for Lesson 5: Research
-        insertVocabulary(db, "Research", "/rɪˈsɜːrtʃ/", 19, 5);
-        insertVocabulary(db, "Analysis", "/əˈnæləsɪs/", 20, 5);
-
-        // Vocabulary for Lesson 6: Numbers
-        insertVocabulary(db, "One", "/wʌn/", 21, 6);
-        insertVocabulary(db, "Two", "/tuː/", 22, 6);
-        insertVocabulary(db, "Three", "/θriː/", 23, 6);
-        insertVocabulary(db, "Four", "/fɔːr/", 24, 6);
-        insertVocabulary(db, "Five", "/faɪv/", 25, 6);
-
-        // Vocabulary for Lesson 7: Colors
-        insertVocabulary(db, "Red", "/rɛd/", 26, 7);
-        insertVocabulary(db, "Blue", "/bluː/", 27, 7);
-        insertVocabulary(db, "Green", "/ɡriːn/", 28, 7);
-        insertVocabulary(db, "Yellow", "/ˈjɛloʊ/", 29, 7);
-        insertVocabulary(db, "Black", "/blæk/", 30, 7);
-
-        // Vocabulary for Lesson 8: Family Members
-        insertVocabulary(db, "Mother", "/ˈmʌðər/", 31, 8);
-        insertVocabulary(db, "Father", "/ˈfɑːðər/", 32, 8);
-        insertVocabulary(db, "Brother", "/ˈbrʌðər/", 33, 8);
-        insertVocabulary(db, "Sister", "/ˈsɪstər/", 34, 8);
-        insertVocabulary(db, "Grandmother", "/ˈɡrænmʌðər/", 35, 8);
-
-        // Vocabulary for Lesson 9: Food Items
-        insertVocabulary(db, "Apple", "/ˈæpl/", 36, 9);
-        insertVocabulary(db, "Bread", "/brɛd/", 37, 9);
-        insertVocabulary(db, "Water", "/ˈwɔːtər/", 38, 9);
-        insertVocabulary(db, "Rice", "/raɪs/", 39, 9);
-        insertVocabulary(db, "Chicken", "/ˈtʃɪkɪn/", 40, 9);
     }
 
     public Lesson getLesson(Context context, int lessonId) {

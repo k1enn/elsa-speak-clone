@@ -1,6 +1,7 @@
 package com.example.elsa_speak_clone;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import java.util.List;
 
 public class LearnFragment extends Fragment {
 
+    private final String TAG = "LearnFragment";
 
     private RecyclerView recyclerLessons;
     private LearningAppDatabase db;
@@ -35,21 +37,32 @@ public class LearnFragment extends Fragment {
         db = new LearningAppDatabase(requireContext());
 
         loadLessons();
-
         return view;
     }
 
     private void loadLessons() {
 
-        List<Lesson> lessonsList = new ArrayList<>();
+        List<Lesson> vocabList = new ArrayList<>();
 
         // Assuming you have lesson IDs from 1 to N (Change as needed)
         for (int i = 1; i <= 9; i++) {
-            Lesson lesson = db.getLesson(requireContext(), i);
-            if (lesson != null) lessonsList.add(lesson);
+            try {
+                Lesson lesson = db.getLesson(requireContext(), i);
+                if (lesson != null) {
+                    vocabList.add(lesson);
+                }
+                else {
+                    Log.d(TAG,"Lesson " + i + "can not found.");
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "Error in loadLesson()", e);
+            } finally {
+                Log.d(TAG, "Vocabulary get successful");
+            }
+
         }
 
-        LessonAdapter adapter = new LessonAdapter(lessonsList, db, lesson -> {
+        LessonAdapter adapter = new LessonAdapter(vocabList, db, lesson -> {
             // Handle lesson click (navigate to detail fragment/activity)
             Toast.makeText(requireContext(), "Clicked " + lesson.getTopic(), Toast.LENGTH_SHORT).show();
 
