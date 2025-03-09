@@ -204,7 +204,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
         SQLiteDatabase db = this.getReadableDatabase();
         String hashedPassword = null;
-
+        SessionManager sessionManager = new SessionManager(this.context);
         try (Cursor cursor = db.query(
                 TABLE_USERS,
                 new String[]{COLUMN_USER_ID, COLUMN_PASSWORD},
@@ -216,7 +216,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
                 try {
                     boolean passwordValidate = BCrypt.checkpw(password, authenticateHashedPassword);
                     if (passwordValidate) {
-                        saveUserSession(username);
+                        sessionManager.createSession(username, getUserId(username));
                         return true;
                     }
                 } catch (Exception e) {
@@ -234,50 +234,6 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
         }
     }
 
-    public boolean logOut(Context context) {
-        try {
-            SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-
-            String currentUsername = prefs.getString("username", null);
-            int currentUserId = prefs.getInt("userId", -1);
-
-            // Check if user logged in
-            if (!loginCheck(currentUsername, currentUserId)) {
-                Log.d(TAG, "No user is currently logged in.");
-                return false;
-            }
-
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.remove("username");
-            editor.remove("userId");
-            editor.apply();
-
-            Log.d(TAG, "Logout successul");
-            return true;
-
-        } catch (Exception e) {
-            Log.d(TAG, "Logout failed");
-            return false;
-        }
-    }
-
-    public void saveUserSession(String username) {
-        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putInt("userId", this.getUserId(username)).putString("username", username).apply();
-    }
-
-
-    public boolean loginCheck(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-
-        // Same thing as below
-        return (prefs.getString("username", null) == null || prefs.getInt("userId", -1) == -1);
-    }
-    public boolean loginCheck(String username, int userId) {
-        // Check if user logged in
-        return (username == null || userId == -1);
-    }
 
     // For Firebase authentication
     public boolean doesUserGmailExist(String gmail) {
@@ -319,19 +275,19 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
+       SessionManager sessionManager = new SessionManager(this.context);
+        int userId = -1;
 
         try {
-            int userId = generateUniqueId(db);
+            userId = generateUniqueId(db);
             values.put(COLUMN_USER_ID, userId);
         } catch (Exception e) {
             Log.e(TAG, "Can not generate unique user id");
         }
-
-
                 if(name.contains("@")) {
+                    sessionManager.createSession(name, userId);
                     handleGoogleRegistration(values, name);
                 }
-
          else {
 try {
     String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
@@ -339,6 +295,7 @@ try {
     values.put(COLUMN_NAME, name);
     values.put(COLUMN_GMAIL, emptyString);
     values.put(COLUMN_PASSWORD, hashedPassword);
+    sessionManager.createSession(name, userId);
     Log.d(TAG, "Hased password" + hashedPassword);
 }catch (Exception e) {
                 Log.d(TAG, "Can not register LOCAL user.");
@@ -448,14 +405,21 @@ if(result != -1) {
     // Get User Progress
     public Cursor getUserProgress(int userId) {
         SQLiteDatabase db = this.getReadableDatabase();
+        SessionManager sessionManager = new SessionManager(this.context);
+        userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
+
         return db.rawQuery(
-            "SELECT l.Topic, up.DifficultyLevel, up.CompletionTime, up.Streak, up.LastStudyDate, up.Xp " +
-            "FROM " + TABLE_USER_PROGRESS + " up " +
-            "JOIN " + TABLE_LESSONS + " l ON up.LessonId = l.LessonId " +
-            "WHERE up.UserId = ?",
-            new String[]{String.valueOf(userId)}
+                "SELECT up." + COLUMN_PROGRESS_ID + ", l." + COLUMN_TOPIC +
+                        ", up." + COLUMN_DIFFICULTY_LEVEL + ", up." + COLUMN_COMPLETION_TIME +
+                        ", up." + COLUMN_STREAK + ", up." + COLUMN_LAST_STUDY_DATE +
+                        ", up." + COLUMN_XP +
+                        " FROM " + TABLE_USER_PROGRESS + " up " +
+                        "JOIN " + TABLE_LESSONS + " l ON up." + COLUMN_LESSON_ID + " = l." + COLUMN_LESSON_ID +
+                        " WHERE up." + COLUMN_USER_ID + " = ?",
+                new String[]{String.valueOf(userId)}
         );
     }
+
     public void injectUserStreak(int userId, int streak) {
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -595,16 +559,9 @@ if(result != -1) {
      * @param context The application context to access SharedPreferences
      */
     public void updateUserStreak(Context context) {
-        // Get current user ID from SharedPreferences
-        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        String currentUsername = prefs.getString("username", null);
+        SessionManager sessionManager = new SessionManager(this.context);
+        int userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
 
-        if (currentUsername == null) {
-            Log.e(TAG, "Cannot update streak: No logged-in user found");
-            return;
-        }
-
-        int userId = getUserId(currentUsername);
         if (userId < 0) {
             Log.e(TAG, "Cannot update streak: Invalid user ID");
             return;
@@ -651,9 +608,6 @@ if(result != -1) {
 
                 db.update(TABLE_USER_PROGRESS, values, COLUMN_USER_ID + " = ?", new String[]{String.valueOf(userId)});
 
-                // Optionally update SharedPreferences with new streak value
-                prefs.edit().putInt("user_streak", currentStreak).apply();
-
             } catch (Exception e) {
                 Log.e(TAG, "Error updating streak: " + e.getMessage());
                 e.printStackTrace();
@@ -679,39 +633,40 @@ if(result != -1) {
     }
 
     public int getUserXp(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        int userId = prefs.getInt("userId", -1);
-        if (userId >= 0) {
-            Cursor cursor = this.getUserProgress(userId);
-            if (cursor != null && cursor.moveToFirst()) {
-                try {
-                    return cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_XP));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    cursor.close();
-                }
+    SessionManager sessionManager = new SessionManager(context); // Use the passed context
+    int userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
+    if (userId >= 0) {
+        Cursor cursor = this.getUserProgress(userId);
+        if (cursor != null && cursor.moveToFirst()) {
+            try {
+                return cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_XP));
+            } catch (Exception e) {
+                Log.e(TAG, "Can not get user XP", e); // Log the full exception
+            } finally {
+                cursor.close();
             }
         }
-        return -1;
     }
-    public int getUserStreak(Context context) {
-         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        int userId = prefs.getInt("userId", -1);
-        if (userId >= 0) {
-            Cursor cursor = this.getUserProgress(userId);
-            if (cursor != null && cursor.moveToFirst()) {
-                try {
-                    return cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_STREAK));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    cursor.close();
-                }
+    return 0; // Return 0 instead of -1 for better default behavior
+}
+
+public int getUserStreak(Context context) {
+    SessionManager sessionManager = new SessionManager(context); // Use the passed context
+    int userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
+    if (userId >= 0) {
+        Cursor cursor = this.getUserProgress(userId);
+        if (cursor != null && cursor.moveToFirst()) {
+            try {
+                return cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_STREAK));
+            } catch (Exception e) {
+                Log.e(TAG, "Can not get user streak", e); // Log the full exception
+            } finally {
+                cursor.close();
             }
         }
-        return -1;
     }
+    return 0; // Return 0 instead of -1 for better default behavior
+}
 
     /**
      * Get the current user's username from SharedPreferences
