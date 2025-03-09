@@ -6,72 +6,95 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:gravity="center_horizontal">
+    tools:context=".MainActivity">
 
-    <!-- The Lottie AnimationView as a background layer -->
+    <!-- Lottie AnimationView as background -->
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/lottieConfetti"
-        android:layout_width="2000dp"
-        android:layout_height="2000dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:lottie_autoPlay="false"
         app:lottie_loop="false"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Main Content Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardContent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:elevation="8dp"
+        app:cardCornerRadius="16dp"
+        app:cardBackgroundColor="@color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:elevation="1dp" /> <!-- Higher elevation to place it forward other views -->
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    <!-- The content layer above the animation -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="@color/white"
-        android:padding="24dp">
-
-        <TextView
-            android:id="@+id/tvWord"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Say this word:"
-            android:textSize="24sp"
-            android:textColor="@color/black"
-            android:gravity="center"
-            android:padding="16dp" />
+            android:orientation="vertical"
+            android:paddingVertical="32dp"
+            android:paddingHorizontal="24dp">
 
-        <TextView
-            android:id="@+id/tvPrompt"
+            <TextView
+                android:id="@+id/tvWord"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Say this word:"
+                android:textSize="24sp"
+                android:textColor="@color/black"
+                android:textStyle="bold"
+                android:textAlignment="center" />
+
+            <TextView
+                android:id="@+id/tvPrompt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tap Speak Now to start"
+                android:textSize="18sp"
+                android:textColor="@color/charcoal"
+                android:textAlignment="center"
+                android:paddingTop="12dp" />
+
+            <Button
+                android:id="@+id/btnSpeak"
+                style="?attr/materialButtonOutlinedStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Tap Speak Now to start"
-            android:textSize="24sp"
-            android:textColor="@color/black"
-            android:gravity="center"
-            android:padding="16dp" />
+            android:text="Speak Now 🎤"
+            app:strokeColor="@color/colorPrimaryDark"
+            app:rippleColor="@color/colorPrimary"
+            app:strokeWidth="2dp"
+            android:textColor="@color/colorPrimaryDark"
+            android:textSize="16sp"
+            android:minHeight="48dp"
+            android:minWidth="64dp"
+            android:elevation="2dp"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="24dp"
+            android:layout_marginTop="20dp"/>
 
-        <Button
-            android:id="@+id/btnSpeak"
+            <Button
+                android:id="@+id/btnRandomWord"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Speak Now"
-            android:layout_marginBottom="12dp"
-            android:backgroundTint="@color/colorPrimary"
+            android:text="Random Word "
+            app:rippleColor="@color/primaryTextColor"
+            app:elevation="4dp"
             android:textColor="@android:color/white"
-            android:padding="16dp"
-            android:layout_gravity="center" />
+            android:textSize="16sp"
+            android:minHeight="48dp"
+            android:minWidth="64dp"
+            android:elevation="2dp"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="24dp"
+            android:layout_marginTop="12dp"/>
 
-        <Button
-            android:id="@+id/btnRandomWord"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Random Word"
-            android:layout_marginBottom="12dp"
-            android:backgroundTint="@color/colorAccent"
-            android:textColor="@android:color/white"
-            android:padding="16dp"
-            android:layout_gravity="center" />
-
-    </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
