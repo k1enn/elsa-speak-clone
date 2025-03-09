@@ -55,11 +55,12 @@ public class HomeFragment extends Fragment {
     private TextView tvWelcome;
     private ImageView ivPronunciation;
     private ImageView profileImage;
-    private LearningAppDatabase databaseHelper;
+    private LearningAppDatabase db;
     private int user_id;
     private IconDrawable iconPronunciation;
     private IconDrawable iconProfile;
     private boolean loginCheck;
+    private SessionManager sessionManager;
 
     public HomeFragment() {
         // Required empty public constructor
@@ -100,22 +101,11 @@ public class HomeFragment extends Fragment {
         initializeUI(view);
         initializeVariables();
 
-        // Retrieve user session data
-        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        int userId = prefs.getInt("userId", -1);
-        String username = prefs.getString("username", null);
-
-        if (userId == -1 || username == null) {
-            navigateToLogin();
-        } else {
-            // Use the userId and username
-            tvWelcome.setText("Welcome back, " + username + "!");
-        }
-
+        WelcomeUsername();
+        loadUserProgress();
         setupSpeechToTextButton();
         setupGrammarButton();
         setupVocabularyButton();
-        loadUserProgress();
 
         return view;
     }
@@ -159,15 +149,20 @@ public class HomeFragment extends Fragment {
 
     private void initializeVariables() {
         try {
-            databaseHelper = new LearningAppDatabase(requireContext());
-            isLoggedIn = databaseHelper.loginCheck(requireContext());
-            // Retrieve user session data
-            Context context = getContext();
-            if (context != null) {
-                SharedPreferences prefs = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-                userId = prefs.getInt("userId", -1);
-                username = prefs.getString("username", null);
+            db = new LearningAppDatabase(requireContext());
+            db.updateUserStreak(requireContext());
+            // Use SessionManager instead of direct SharedPreferences
+            sessionManager = new SessionManager(requireContext());
+            if (sessionManager.isLoggedIn()) {
+                isLoggedIn = true;
+                username = sessionManager.getUserDetails().get("username");
+                userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
+            } else {
+                isLoggedIn = false;
+                username = null;
+                userId = -1;
             }
+
         } catch (Exception e) {
             Log.e(TAG, "Error in initializeVariables: ", e);
         }
@@ -175,7 +170,7 @@ public class HomeFragment extends Fragment {
 
     private void WelcomeUsername() {
         try {
-            if (userStreak <= 0) {
+            if (userStreak <= 1) {
                 tvWelcome.setText("Welcome " + username + "!");
             } else {
                 tvWelcome.setText("Welcome back " + username + "!");
@@ -186,17 +181,19 @@ public class HomeFragment extends Fragment {
     }
 
 
-    private void updateUserStreak() {
-        // Update streak every time Login
-        databaseHelper.updateUserStreak(requireContext());
-    }
-
     private void loadUserProgress() {
         try {
-            // Set text and convert to String when setting text
-            tvXPPoint.setText(String.valueOf(databaseHelper.getUserXp(requireContext())));
-            tvDayStreak.setText(String.valueOf(databaseHelper.getUserStreak(requireContext())));
-            Log.d(TAG, "Loaded progress");
+            if (tvDayStreak.getText() == "-1" || tvXPPoint.getText() == "-1") {
+                tvXPPoint.setText(String.valueOf(db.getUserXp(requireContext())));
+                tvDayStreak.setText(String.valueOf(db.getUserStreak(requireContext())));
+                Log.d(TAG, "Loaded new progress");
+            } else {
+                tvXPPoint.setText(String.valueOf(db.getUserXp(requireContext())));
+                tvDayStreak.setText(String.valueOf(db.getUserStreak(requireContext())));
+                Log.d(TAG, "Loaded progress");
+            }
+
+
         } catch (Exception e) {
             Log.e(TAG, "Error in loadUserProgress: ", e);
             // Set default values in case of any error
@@ -208,7 +205,8 @@ public class HomeFragment extends Fragment {
     private void setupLoginButton() {
         btnLogin.setOnClickListener(v -> {
             try {
-                if (!databaseHelper.loginCheck(requireContext()) && databaseHelper.logOut(requireContext())) {
+                if (sessionManager.isLoggedIn()) {
+                    sessionManager.logout();
                     navigateToLogin();
                 } else {
                     navigateToLogin();
@@ -244,8 +242,7 @@ public class HomeFragment extends Fragment {
 
     private void setupGrammarButton() {
         cvGrammar.setOnClickListener(v -> {
-            databaseHelper.injectUserStreak(user_id, 9999);
-            databaseHelper.updateUserStreak(requireContext());
+            Toast.makeText(requireContext(), "Grammar button pressed", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -253,11 +250,13 @@ public class HomeFragment extends Fragment {
         cvVocabulary.setOnClickListener(v -> {
             checkLogin();
             try {
-                if (databaseHelper.getCurrentUsername(requireContext()) != null) {
+                if (username != null) {
                     try {
                         navigateToSpeechToText();
                     } catch (Exception e) {
                         Log.d(TAG, "Can not found activity: " + e);
+                    } finally {
+                        Log.d(TAG, "Clicked vocabulary button");
                     }
                 } else {
                     try {
@@ -291,7 +290,7 @@ public class HomeFragment extends Fragment {
     private void navigateToLogin() {
         Intent intent = new Intent(requireActivity(), LoginActivity.class);
         startActivity(intent);
-        requireActivity().finish(); // Optional: finish the activity to prevent returning to it
+        requireActivity().finish();
     }
 
     private final NavigationBarView.OnItemSelectedListener navListener = item -> {

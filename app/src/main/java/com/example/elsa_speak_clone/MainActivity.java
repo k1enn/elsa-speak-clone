@@ -17,7 +17,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 
 public class MainActivity extends AppCompatActivity {
-    Context context;
     SharedPreferences prefs;
     private BottomNavigationView bottomNavigationView;
 
@@ -28,19 +27,13 @@ public class MainActivity extends AppCompatActivity {
 
         initializeVariable();
         initializeSharedPreferences();
+        checkUserLogin();
 
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
 
     }
-    @Override
-    public void onBackPressed() {
-        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-            getSupportFragmentManager().popBackStack();
-        } else {
-            super.onBackPressed();
-        }
-    }
+
 
     private void initializeSharedPreferences() {
         String username = getIntent().getStringExtra("username");
@@ -53,9 +46,31 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+    private void checkUserLogin() {
+
+        // Check if user is already logged in
+        SessionManager sessionManager = new SessionManager(this);
+        if (!sessionManager.isLoggedIn()) {
+            // User is not logged in, go to login activity
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            finish();
+        }
+    }
     private void initializeVariable() {
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(navListener);
+    }
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
+        } else {
+            // Show a confirmation dialog
+            finishAffinity(); // Close all activities
+            System.exit(0); // Exit the app
+        }
     }
 
     private final NavigationBarView.OnItemSelectedListener navListener = item -> {
