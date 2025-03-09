@@ -1,67 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp"
-    android:gravity="center"
-    android:background="#F5F5F5">
+    android:padding="16dp">
 
-    <TextView
-        android:id="@+id/tvQuestion"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Câu hỏi sẽ hiển thị ở đây"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:padding="16dp"
-        android:background="@android:color/white"
-        android:elevation="4dp"/>
+        android:orientation="vertical"
+        android:paddingBottom="16dp">
 
-    <EditText
-        android:id="@+id/etAnswer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Nhập câu trả lời"
-        android:textSize="16sp"
-        android:padding="10dp"
-        android:background="@android:color/white"
-        android:elevation="4dp"
-        android:layout_marginTop="20dp"/>
+        <!-- Tiêu đề -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="English Tenses Quiz"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginTop="80dp"
+            android:textColor="@color/primaryTextColor"
+            android:gravity="center"
+            android:paddingBottom="16dp" />
 
-    <Button
-        android:id="@+id/btnCheckAnswer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="🔍 KIỂM TRA"
-        android:textSize="18sp"
-        android:padding="12dp"
-        android:layout_marginTop="20dp"
-        android:backgroundTint="#2196F3"
-        android:textColor="@android:color/white"/>
+        <!-- CardView chứa câu hỏi -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            android:layout_margin="8dp">
 
-    <TextView
-        android:id="@+id/tvResult"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:padding="10dp"
-        android:layout_marginTop="20dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-    <Button
-        android:id="@+id/btnNextQuestion"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Tiếp tục"
-        android:textSize="18sp"
-        android:padding="12dp"
-        android:layout_marginTop="10dp"
-        android:backgroundTint="#4CAF50"
-        android:textColor="@android:color/white"
-        android:visibility="gone"/>
+                <TextView
+                    android:id="@+id/tvQuestion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Câu hỏi sẽ hiển thị ở đây"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primaryTextColor"
+                    android:gravity="center" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-</LinearLayout>
+        <!-- Ô nhập câu trả lời -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp">
+
+                <EditText
+                    android:id="@+id/etAnswer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nhập câu trả lời của bạn"
+                    android:inputType="text"
+                    android:padding="12dp"
+                    />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Nút kiểm tra câu trả lời -->
+        <Button
+            android:id="@+id/btnCheckAnswer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="KIỂM TRA"
+            android:layout_margin="8dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:padding="12dp"
+            android:textStyle="bold" />
+
+        <!-- Kết quả trả lời -->
+        <TextView
+            android:id="@+id/tvResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="16sp"
+            android:textColor="#FF0000"
+            android:gravity="center"
+            android:padding="10dp" />
+
+        <!-- Nút tiếp tục -->
+        <Button
+            android:id="@+id/btnNextQuestion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tiếp tục"
+            android:visibility="gone"
+            android:layout_margin="8dp"
+            android:textColor="@android:color/white"
+            android:padding="12dp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</ScrollView>
