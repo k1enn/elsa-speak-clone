@@ -103,7 +103,6 @@ public class LoginActivity extends AppCompatActivity {
                     // Use empty because Google doesn't need password
                     dbHelper.registerUser(name, emptyString);
                 } else {
-                    dbHelper.saveUserSession(email);
                     Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                     navigateToMain();
                     finish();
@@ -128,19 +127,22 @@ public class LoginActivity extends AppCompatActivity {
             String username = etUsername.getText().toString().trim();
             String password = etPassword.getText().toString().trim();
 
-           try {
-               if (dbHelper.authenticateUser(username, password)) {
-                   dbHelper.saveUserSession(username);  // Save the username
-                   Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                   navigateToMain();
-                   finish();
-               } else {
-                   Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
-               }
-           } catch (Exception e) {
-              Log.d("LoginActivity", "Login failed: ", e);
-           }
+            try {
+                if (dbHelper.authenticateUser(username, password)) {
+                    // Create session after successful login
+                    SessionManager sessionManager = new SessionManager(LoginActivity.this);
+                    int userId = dbHelper.getUserId(username);
+                    sessionManager.createSession(username, userId);
 
+                    Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+                    navigateToMain();
+                    finish();
+                } else {
+                    Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                Log.d("LoginActivity", "Login failed: ", e);
+            }
         });
     }
 

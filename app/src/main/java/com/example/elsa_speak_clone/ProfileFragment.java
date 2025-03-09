@@ -1,11 +1,18 @@
 package com.example.elsa_speak_clone;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,7 +36,12 @@ public class ProfileFragment extends Fragment {
 
     private ImageView ivProfilePicture;
     private TextView tvUsername, tvEmail, tvUserStreak, tvUserXP;
-    private LearningAppDatabase databaseHelper;
+    private LearningAppDatabase db;
+    private SessionManager sessionManager;
+    private Button btnLogout;
+    private Button btnShare;
+    private Button btnSettings;
+    private final String TAG = "ProfileFragment";
 
     public ProfileFragment() {
         // Required empty public constructor
@@ -60,6 +72,7 @@ public class ProfileFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+
     }
 
     @Nullable
@@ -67,32 +80,89 @@ public class ProfileFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        ivProfilePicture = view.findViewById(R.id.ivProfilePicture);
-        tvUsername = view.findViewById(R.id.tvUsername);
-        tvEmail = view.findViewById(R.id.tvEmail);
-        tvUserStreak = view.findViewById(R.id.tvUserStreak);
-        tvUserXP = view.findViewById(R.id.tvUserXP);
 
-        databaseHelper = new LearningAppDatabase(requireContext());
 
+        db = new LearningAppDatabase(requireContext());
+        initializeUI(view);
         loadUserProfile();
+
+        setupLogoutButton();
+        setupSettingsButton();
+        setupShareProfileButton();
 
         return view;
     }
-
-    private void loadUserProfile() {
-        // Assuming you have methods to get user data
-        String username = databaseHelper.getCurrentUsername(requireContext());
-        String email = "user@example.com"; // Replace with actual method to get email
-        int userStreak = databaseHelper.getUserStreak(requireContext());
-        int userXP = databaseHelper.getUserXp(requireContext());
-
-        tvUsername.setText(username);
-        tvEmail.setText(email);
-        tvUserStreak.setText("Streak: " + userStreak + " days");
-        tvUserXP.setText("XP Points: " + userXP);
-
-        // Load profile picture if available
-        // ivProfilePicture.setImageResource(R.drawable.ic_profile_placeholder); // Example
+    private void initializeUI(View view) {
+        ivProfilePicture = view.findViewById(R.id.ivProfilePicture);
+        tvUsername = view.findViewById(R.id.tvUsername);
+        tvUserStreak = view.findViewById(R.id.tvDayStreak);
+        tvUserXP = view.findViewById(R.id.tvXPPoint);
+        // Initialize the button variables
+        btnLogout = view.findViewById(R.id.btnLogout);
+        btnShare = view.findViewById(R.id.btnShare);
+        btnSettings = view.findViewById(R.id.btnSettings);
+    sessionManager = new SessionManager(requireContext());
     }
+    private void setupShareProfileButton() {
+        btnShare.setOnClickListener(v -> {
+            Toast.makeText(requireContext(), "Share button clicked", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void setupSettingsButton() {
+        btnSettings.setOnClickListener(v -> {
+            Toast.makeText(requireContext(), "Settings button clicked", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void setupLogoutButton() {
+        btnLogout.setOnClickListener(v -> {
+            try {
+                sessionManager.logout();
+                navigateToLogin();
+            } catch (Exception e) {
+                Log.d(TAG, "Logout button error", e);
+            }
+        });
+    }
+
+    private void navigateToLogin() {
+        Activity main = null;
+        try {
+            main = requireActivity();
+            Intent intent = new Intent(main, LoginActivity.class);
+            startActivity(intent);
+            requireActivity().finish(); // Optional: finish the activity to prevent returning to it
+        } catch (NullPointerException e) {
+           Log.d(TAG, "Activity is NULL", e);
+        } finally {
+            Log.d(TAG, "Successful navigate to Login");
+        }
+
+    }
+    private void loadUserProfile() {
+        String username = sessionManager.getUserDetails().get("username");
+        String streak = null;
+        String xp = null;
+
+        try {
+            streak = String.valueOf(db.getUserStreak(requireContext()));
+            xp = String.valueOf(db.getUserXp(requireContext()));
+        } catch (Exception e) {
+            Log.d(TAG, "Error in convert string at loadUserProfile()", e);
+        }
+
+        try {
+            if (username != null) {
+                tvUsername.setText(username);
+                tvUserStreak.setText(streak);
+                tvUserXP.setText(xp);
+            } else {
+                Log.d(TAG, "Username is NULL");
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Error when set text in loadUserProfile()");
+        }
+    }
+
 }
