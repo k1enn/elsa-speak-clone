@@ -12,7 +12,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
@@ -244,8 +243,8 @@ public class HomeFragment extends Fragment {
 
     private void setupGrammarButton() {
         cvGrammar.setOnClickListener(v -> {
-            databaseHelper.injectUserStreak(user_id, 9999);
-            databaseHelper.updateUserStreak(requireContext());
+            Intent intent = new Intent(requireActivity(), QuizActivity.class);
+            startActivity(intent);
         });
     }
 
