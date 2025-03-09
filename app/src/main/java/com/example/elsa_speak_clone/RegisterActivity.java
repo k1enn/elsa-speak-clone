@@ -137,6 +137,7 @@ public class RegisterActivity extends AppCompatActivity {
     }
     private void navigateToMain() {
         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();
     }
@@ -148,10 +149,13 @@ public class RegisterActivity extends AppCompatActivity {
             String rewritePassword = etRewritePassword.getText().toString().trim();
 
             if (validateInput(username, password, rewritePassword)) {
-                Log.d("ValidateInput", "Success");
-                if (registerUser(username, password)) {
+                if (db.registerUser(username, password)) {
+                    // Create session after successful registration
+                    SessionManager sessionManager = new SessionManager(RegisterActivity.this);
+                    int userId = db.getUserId(username);
+                    sessionManager.createSession(username, userId);
+
                     showToast("Registration Successful");
-                    db.saveUserSession(username);
                     navigateToMainActivity();
                 } else {
                     showToast("Registration Failed");
@@ -293,10 +297,6 @@ public class RegisterActivity extends AppCompatActivity {
         finish();
     }
 
-
-    private boolean registerUser(String username, String password) {
-        return db.registerUser(username, password);
-    }
 
     private void showToast(String message) {
         Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_SHORT).show();
