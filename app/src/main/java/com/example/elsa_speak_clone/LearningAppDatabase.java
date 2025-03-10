@@ -769,11 +769,21 @@ public int getUserStreak(Context context) {
     }
     private void insertDefaultLessons(SQLiteDatabase db) {
         String[][] lessonsData = {
-                {"1", "Basic Greetings", "Learn common greeting phrases for daily use.", "1"},
-                {"2", "Daily Activities", "Vocabulary for everyday actions and routines.", "1"},
-                {"3", "Travel", "Essential words for traveling and navigation.", "2"},
-                {"4", "Business Meetings", "Terms used in professional meeting settings.", "2"},
-                {"5", "Research", "Vocabulary for academic and research purposes.", "3"}
+            {"1", "Basic Greetings", "Learn common greeting phrases for daily use.", "1"},
+            {"2", "Daily Activities", "Vocabulary for everyday actions and routines.", "1"},
+            {"3", "Travel", "Essential words for traveling and navigation.", "2"},
+            {"4", "Business Meetings", "Terms used in professional meeting settings.", "2"},
+            {"5", "Research", "Vocabulary for academic and research purposes.", "3"},
+            {"6", "Food and Dining", "Vocabulary related to food, restaurants, and dining.", "1"},
+            {"7", "Shopping", "Words and phrases for shopping and transactions.", "2"},
+            {"8", "Health", "Vocabulary for health, fitness, and medical situations.", "3"},
+            {"9", "Technology", "Terms related to technology and computing.", "2"},
+            {"10", "Hobbies", "Vocabulary for hobbies and leisure activities.", "1"},
+            {"11", "Weather", "Vocabulary for describing weather conditions.", "1"},
+            {"12", "Transportation", "Words related to vehicles and public transport.", "2"},
+            {"13", "Education", "Terms used in schools and educational settings.", "3"},
+            {"14", "Sports", "Vocabulary for sports and physical activities.", "2"},
+            {"15", "Culture", "Words and phrases related to cultural topics.", "3"}
         };
 
         try {
@@ -795,11 +805,110 @@ public int getUserStreak(Context context) {
     }
     private void insertDefaultVocabulary(SQLiteDatabase db) {
         String[][] vocabularyData = {
-                {"Hello", "/həˈloʊ/", "1", "1"},
-                {"Goodbye", "/ɡʊdˈbaɪ/", "2", "1"},
-                {"Thank you", "/θæŋk juː/", "3", "1"},
-                {"Airport", "/ˈɛrpɔːrt/", "7", "3"},
-                {"Hotel", "/hoʊˈtɛl/", "8", "3"}
+            // Lesson 1: Basic Greetings
+            {"Hello", "/həˈloʊ/", "1", "1"},
+            {"Goodbye", "/ɡʊdˈbaɪ/", "2", "1"},
+            {"Thank you", "/θæŋk juː/", "3", "1"},
+            {"Please", "/pliːz/", "4", "1"},
+            {"Excuse me", "/ɪkˈskjuːs miː/", "5", "1"},
+        
+            // Lesson 2: Daily Activities
+            {"Wake up", "/weɪk ʌp/", "6", "2"},
+            {"Brush teeth", "/brʌʃ tiːθ/", "7", "2"},
+            {"Go to work", "/ɡoʊ tuː wɜːrk/", "8", "2"},
+            {"Cook dinner", "/kʊk ˈdɪnər/", "9", "2"},
+            {"Watch TV", "/wɒtʃ ˌtiːˈviː/", "10", "2"},
+        
+            // Lesson 3: Travel
+            {"Airport", "/ˈɛrpɔːrt/", "11", "3"},
+            {"Hotel", "/hoʊˈtɛl/", "12", "3"},
+            {"Passport", "/ˈpæspɔːrt/", "13", "3"},
+            {"Suitcase", "/ˈsuːtkeɪs/", "14", "3"},
+            {"Ticket", "/ˈtɪkɪt/", "15", "3"},
+        
+            // Lesson 4: Business Meetings
+            {"Agenda", "/əˈdʒɛndə/", "16", "4"},
+            {"Presentation", "/ˌprɛzənˈteɪʃən/", "17", "4"},
+            {"Deadline", "/ˈdɛdlaɪn/", "18", "4"},
+            {"Budget", "/ˈbʌdʒɪt/", "19", "4"},
+            {"Negotiation", "/nɪˌɡoʊʃiˈeɪʃən/", "20", "4"},
+        
+            // Lesson 5: Research
+            {"Hypothesis", "/haɪˈpɒθɪsɪs/", "21", "5"},
+            {"Experiment", "/ɪkˈspɛrɪmənt/", "22", "5"},
+            {"Data", "/ˈdeɪtə/", "23", "5"},
+            {"Analysis", "/əˈnælɪsɪs/", "24", "5"},
+            {"Conclusion", "/kənˈkluːʒən/", "25", "5"},
+        
+            // Lesson 6: Food and Dining
+            {"Menu", "/ˈmɛnjuː/", "26", "6"},
+            {"Appetizer", "/ˈæpɪtaɪzər/", "27", "6"},
+            {"Dessert", "/dɪˈzɜːrt/", "28", "6"},
+            {"Beverage", "/ˈbɛvərɪdʒ/", "29", "6"},
+            {"Bill", "/bɪl/", "30", "6"},
+        
+            // Lesson 7: Shopping
+            {"Discount", "/ˈdɪskaʊnt/", "31", "7"},
+            {"Receipt", "/rɪˈsiːt/", "32", "7"},
+            {"Cashier", "/kæˈʃɪə/", "33", "7"},
+            {"Bargain", "/ˈbɑːrɡɪn/", "34", "7"},
+            {"Refund", "/ˈriːfʌnd/", "35", "7"},
+        
+            // Lesson 8: Health
+            {"Doctor", "/ˈdɒktə/", "36", "8"},
+            {"Hospital", "/ˈhɒspɪtəl/", "37", "8"},
+            {"Medicine", "/ˈmɛdɪsɪn/", "38", "8"},
+            {"Appointment", "/əˈpɔɪntmənt/", "39", "8"},
+            {"Symptoms", "/ˈsɪmptəmz/", "40", "8"},
+        
+            // Lesson 9: Technology
+            {"Computer", "/kəmˈpjuːtə/", "41", "9"},
+            {"Smartphone", "/ˈsmɑːrtfoʊn/", "42", "9"},
+            {"Software", "/ˈsɒftwɛə/", "43", "9"},
+            {"Internet", "/ˈɪntərnɛt/", "44", "9"},
+            {"Battery", "/ˈbætəri/", "45", "9"},
+        
+            // Lesson 10: Hobbies
+            {"Photography", "/fəˈtɒɡrəfi/", "46", "10"},
+            {"Painting", "/ˈpeɪntɪŋ/", "47", "10"},
+            {"Gardening", "/ˈɡɑːrdnɪŋ/", "48", "10"},
+            {"Reading", "/ˈriːdɪŋ/", "49", "10"},
+            {"Cooking", "/ˈkʊkɪŋ/", "50", "10"},
+        
+            // Lesson 11: Weather
+            {"Sunny", "/ˈsʌni/", "51", "11"},
+            {"Rainy", "/ˈreɪni/", "52", "11"},
+            {"Cloudy", "/ˈklaʊdi/", "53", "11"},
+            {"Windy", "/ˈwɪndi/", "54", "11"},
+            {"Snowy", "/ˈsnoʊi/", "55", "11"},
+        
+            // Lesson 12: Transportation
+            {"Bus", "/bʌs/", "56", "12"},
+            {"Train", "/treɪn/", "57", "12"},
+            {"Bicycle", "/ˈbaɪsɪkəl/", "58", "12"},
+            {"Taxi", "/ˈtæksi/", "59", "12"},
+            {"Subway", "/ˈsʌbweɪ/", "60", "12"},
+        
+            // Lesson 13: Education
+            {"Teacher", "/ˈtiːtʃər/", "61", "13"},
+            {"Student", "/ˈstjuːdənt/", "62", "13"},
+            {"Classroom", "/ˈklɑːsruːm/", "63", "13"},
+            {"Homework", "/ˈhoʊmwɜːrk/", "64", "13"},
+            {"Exam", "/ɪɡˈzæm/", "65", "13"},
+        
+            // Lesson 14: Sports
+            {"Football", "/ˈfʊtbɔːl/", "66", "14"},
+            {"Basketball", "/ˈbɑːskɪtbɔːl/", "67", "14"},
+            {"Swimming", "/ˈswɪmɪŋ/", "68", "14"},
+            {"Running", "/ˈrʌnɪŋ/", "69", "14"},
+            {"Tennis", "/ˈtɛnɪs/", "70", "14"},
+        
+            // Lesson 15: Culture
+            {"Tradition", "/trəˈdɪʃən/", "71", "15"},
+            {"Festival", "/ˈfɛstɪvəl/", "72", "15"},
+            {"Custom", "/ˈkʌstəm/", "73", "15"},
+            {"Art", "/ɑːrt/", "74", "15"},
+            {"History", "/ˈhɪstəri/", "75", "15"}
         };
 
         try {
