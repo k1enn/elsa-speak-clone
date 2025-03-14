@@ -1,10 +1,11 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.database;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.widget.Toast;
 
 
+import com.example.elsa_speak_clone.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;

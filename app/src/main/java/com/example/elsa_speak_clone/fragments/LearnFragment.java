@@ -1,11 +1,11 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -13,6 +13,12 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.elsa_speak_clone.classes.Lesson;
+import com.example.elsa_speak_clone.classes.LessonAdapter;
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.activities.SpeechToText;
+import com.example.elsa_speak_clone.database.LearningAppDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,11 +71,9 @@ public class LearnFragment extends Fragment {
         LessonAdapter adapter = new LessonAdapter(vocabList, db, lesson -> {
             // Handle lesson click (navigate to detail fragment/activity)
             Toast.makeText(requireContext(), "Clicked " + lesson.getTopic(), Toast.LENGTH_SHORT).show();
-
-            // Example navigation logic here:
-            // Bundle args = new Bundle();
-            // args.putInt("lessonId", lesson.getLessonId());
-            // Navigation.findNavController(getView()).navigate(R.id.action_to_lessonDetailFragment, args);
+            Intent intent = new Intent(requireActivity(), SpeechToText.class);
+            intent.putExtra("LESSON_ID", lesson.getLessonId());
+            startActivity(intent);
 
         });
 

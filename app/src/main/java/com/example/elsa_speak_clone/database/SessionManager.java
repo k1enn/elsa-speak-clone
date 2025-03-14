@@ -1,8 +1,10 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.database;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+
+import com.example.elsa_speak_clone.activities.LoginActivity;
 
 import java.util.HashMap;
 

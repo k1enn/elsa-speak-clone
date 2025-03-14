@@ -1,14 +1,12 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.activities;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,6 +16,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.GoogleSignInHelper;
+import com.example.elsa_speak_clone.database.LearningAppDatabase;
+import com.example.elsa_speak_clone.database.SessionManager;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 

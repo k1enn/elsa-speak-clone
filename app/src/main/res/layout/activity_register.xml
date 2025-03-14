@@ -8,7 +8,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    tools:context=".RegisterActivity"
+    tools:context=".activities.RegisterActivity"
     android:id="@+id/main">
 
     <androidx.cardview.widget.CardView

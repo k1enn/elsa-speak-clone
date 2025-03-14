@@ -1,8 +1,6 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.fragments;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,6 +15,12 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
+import com.example.elsa_speak_clone.activities.LoginActivity;
+import com.example.elsa_speak_clone.activities.QuizActivity;
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.activities.SpeechToText;
+import com.example.elsa_speak_clone.database.LearningAppDatabase;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.malinskiy.materialicons.IconDrawable;

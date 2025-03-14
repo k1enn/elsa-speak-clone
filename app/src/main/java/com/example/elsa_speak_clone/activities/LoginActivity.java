@@ -1,4 +1,4 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.activities;
 
 import android.annotation.SuppressLint;
 import android.graphics.Typeface;
@@ -20,6 +20,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.GoogleSignInHelper;
+import com.example.elsa_speak_clone.database.LearningAppDatabase;
+import com.example.elsa_speak_clone.database.SessionManager;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Objects;

@@ -1,4 +1,4 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.database;
 
 
 import android.content.SharedPreferences;
@@ -18,6 +18,9 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 import android.util.Log;
+
+import com.example.elsa_speak_clone.classes.Lesson;
+
 import org.mindrot.jbcrypt.BCrypt;
 
 public class LearningAppDatabase extends SQLiteOpenHelper {
@@ -172,6 +175,8 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
         db.execSQL(CREATE_QUIZZES_TABLE);
         Log.d(TAG, "Create QUIZZES");
+        insertDefaultQuizzes(db);
+        Log.d(TAG, "Insert QUIZZES");
 
         db.execSQL(CREATE_USER_SCORES_TABLE);
         Log.d(TAG, "Create USER SCORES");
@@ -770,10 +775,14 @@ public int getUserStreak(Context context) {
     private void insertDefaultLessons(SQLiteDatabase db) {
         String[][] lessonsData = {
                 {"1", "Basic Greetings", "Learn common greeting phrases for daily use.", "1"},
-                {"2", "Daily Activities", "Vocabulary for everyday actions and routines.", "1"},
-                {"3", "Travel", "Essential words for traveling and navigation.", "2"},
-                {"4", "Business Meetings", "Terms used in professional meeting settings.", "2"},
-                {"5", "Research", "Vocabulary for academic and research purposes.", "3"}
+                {"2", "Family Members", "Vocabulary related to family relationships.", "1"},
+                {"3", "Food & Dining", "Essential words for ordering and discussing food.", "1"},
+                {"4", "Travel Essentials", "Common phrases and words for travelers.", "2"},
+                {"5", "Shopping", "Vocabulary for shopping and transactions.", "2"},
+                {"6", "Weather & Seasons", "Terms for describing weather conditions and seasons.", "2"},
+                {"7", "Business Communication", "Professional vocabulary for workplace settings.", "3"},
+                {"8", "Academic Language", "Terms used in educational and research contexts.", "3"},
+                {"9", "Technology & Internet", "Modern vocabulary for digital communication.", "3"}
         };
 
         try {
@@ -793,13 +802,116 @@ public int getUserStreak(Context context) {
             db.endTransaction();
         }
     }
+
     private void insertDefaultVocabulary(SQLiteDatabase db) {
         String[][] vocabularyData = {
+                // Lesson 1: Basic Greetings
                 {"Hello", "/həˈloʊ/", "1", "1"},
                 {"Goodbye", "/ɡʊdˈbaɪ/", "2", "1"},
                 {"Thank you", "/θæŋk juː/", "3", "1"},
-                {"Airport", "/ˈɛrpɔːrt/", "7", "3"},
-                {"Hotel", "/hoʊˈtɛl/", "8", "3"}
+                {"Please", "/pliːz/", "4", "1"},
+                {"Good morning", "/ɡʊd ˈmɔːrnɪŋ/", "5", "1"},
+                {"Good evening", "/ɡʊd ˈiːvnɪŋ/", "6", "1"},
+                {"How are you", "/haʊ ɑːr juː/", "7", "1"},
+                {"Nice to meet you", "/naɪs tuː miːt juː/", "8", "1"},
+                {"Excuse me", "/ɪkˈskjuːz miː/", "9", "1"},
+                {"Sorry", "/ˈsɒri/", "10", "1"},
+
+                // Lesson 2: Family Members
+                {"Mother", "/ˈmʌðər/", "11", "2"},
+                {"Father", "/ˈfɑːðər/", "12", "2"},
+                {"Sister", "/ˈsɪstər/", "13", "2"},
+                {"Brother", "/ˈbrʌðər/", "14", "2"},
+                {"Grandmother", "/ˈɡrænˌmʌðər/", "15", "2"},
+                {"Grandfather", "/ˈɡrænˌfɑːðər/", "16", "2"},
+                {"Aunt", "/ænt/", "17", "2"},
+                {"Uncle", "/ˈʌŋkəl/", "18", "2"},
+                {"Cousin", "/ˈkʌzən/", "19", "2"},
+                {"Child", "/tʃaɪld/", "20", "2"},
+
+                // Lesson 3: Food & Dining
+                {"Restaurant", "/ˈrestərɑːnt/", "21", "3"},
+                {"Menu", "/ˈmenjuː/", "22", "3"},
+                {"Breakfast", "/ˈbrekfəst/", "23", "3"},
+                {"Lunch", "/lʌntʃ/", "24", "3"},
+                {"Dinner", "/ˈdɪnər/", "25", "3"},
+                {"Delicious", "/dɪˈlɪʃəs/", "26", "3"},
+                {"Water", "/ˈwɔːtər/", "27", "3"},
+                {"Bill", "/bɪl/", "28", "3"},
+                {"Vegetarian", "/ˌvedʒəˈteriən/", "29", "3"},
+                {"Spicy", "/ˈspaɪsi/", "30", "3"},
+
+                // Lesson 4: Travel Essentials
+                {"Airport", "/ˈɛrpɔːrt/", "31", "4"},
+                {"Passport", "/ˈpæspɔːrt/", "32", "4"},
+                {"Hotel", "/hoʊˈtɛl/", "33", "4"},
+                {"Ticket", "/ˈtɪkɪt/", "34", "4"},
+                {"Luggage", "/ˈlʌɡɪdʒ/", "35", "4"},
+                {"Reservation", "/ˌrezərˈveɪʃən/", "36", "4"},
+                {"Departure", "/dɪˈpɑːrtʃər/", "37", "4"},
+                {"Arrival", "/əˈraɪvəl/", "38", "4"},
+                {"Tourist", "/ˈtʊrɪst/", "39", "4"},
+                {"Direction", "/dəˈrɛkʃən/", "40", "4"},
+
+                // Lesson 5: Shopping
+                {"Store", "/stɔːr/", "41", "5"},
+                {"Price", "/praɪs/", "42", "5"},
+                {"Discount", "/ˈdɪskaʊnt/", "43", "5"},
+                {"Size", "/saɪz/", "44", "5"},
+                {"Cash", "/kæʃ/", "45", "5"},
+                {"Credit card", "/ˈkrɛdɪt kɑːrd/", "46", "5"},
+                {"Receipt", "/rɪˈsiːt/", "47", "5"},
+                {"Sale", "/seɪl/", "48", "5"},
+                {"Try on", "/traɪ ɒn/", "49", "5"},
+                {"Expensive", "/ɪkˈspɛnsɪv/", "50", "5"},
+
+                // Lesson 6: Weather & Seasons
+                {"Sunny", "/ˈsʌni/", "51", "6"},
+                {"Rainy", "/ˈreɪni/", "52", "6"},
+                {"Cloudy", "/ˈklaʊdi/", "53", "6"},
+                {"Snow", "/snoʊ/", "54", "6"},
+                {"Temperature", "/ˈtɛmprətʃər/", "55", "6"},
+                {"Forecast", "/ˈfɔːrkæst/", "56", "6"},
+                {"Summer", "/ˈsʌmər/", "57", "6"},
+                {"Winter", "/ˈwɪntər/", "58", "6"},
+                {"Autumn", "/ˈɔːtəm/", "59", "6"},
+                {"Spring", "/sprɪŋ/", "60", "6"},
+
+                // Lesson 7: Business Communication
+                {"Meeting", "/ˈmiːtɪŋ/", "61", "7"},
+                {"Presentation", "/ˌprezənˈteɪʃən/", "62", "7"},
+                {"Deadline", "/ˈdɛdˌlaɪn/", "63", "7"},
+                {"Conference", "/ˈkɒnfərəns/", "64", "7"},
+                {"Negotiate", "/nɪˈɡoʊʃieɪt/", "65", "7"},
+                {"Contract", "/ˈkɒntrækt/", "66", "7"},
+                {"Colleague", "/ˈkɒliːɡ/", "67", "7"},
+                {"Schedule", "/ˈʃɛdjuːl/", "68", "7"},
+                {"Budget", "/ˈbʌdʒɪt/", "69", "7"},
+                {"Report", "/rɪˈpɔːrt/", "70", "7"},
+
+                // Lesson 8: Academic Language
+                {"Research", "/rɪˈsɜːrtʃ/", "71", "8"},
+                {"Thesis", "/ˈθiːsɪs/", "72", "8"},
+                {"Analysis", "/əˈnæləsɪs/", "73", "8"},
+                {"Theory", "/ˈθɪəri/", "74", "8"},
+                {"Bibliography", "/ˌbɪbliˈɒɡrəfi/", "75", "8"},
+                {"Citation", "/saɪˈteɪʃən/", "76", "8"},
+                {"Hypothesis", "/haɪˈpɒθəsɪs/", "77", "8"},
+                {"Methodology", "/ˌmɛθəˈdɒlədʒi/", "78", "8"},
+                {"Conclusion", "/kənˈkluːʒən/", "79", "8"},
+                {"Abstract", "/ˈæbstrækt/", "80", "8"},
+
+                // Lesson 9: Technology & Internet
+                {"Website", "/ˈwɛbˌsaɪt/", "81", "9"},
+                {"Download", "/ˌdaʊnˈloʊd/", "82", "9"},
+                {"Password", "/ˈpæsˌwɜːrd/", "83", "9"},
+                {"Software", "/ˈsɒftˌwɛr/", "84", "9"},
+                {"Hardware", "/ˈhɑːrdˌwɛr/", "85", "9"},
+                {"Wireless", "/ˈwaɪərləs/", "86", "9"},
+                {"Database", "/ˈdeɪtəˌbeɪs/", "87", "9"},
+                {"Algorithm", "/ˈælɡəˌrɪðəm/", "88", "9"},
+                {"Encryption", "/ɪnˈkrɪpʃən/", "89", "9"},
+                {"Cloud", "/klaʊd/", "90", "9"}
         };
 
         try {
@@ -819,6 +931,7 @@ public int getUserStreak(Context context) {
             db.endTransaction();
         }
     }
+
 
     private void initializeLessonAndVocabulary(SQLiteDatabase db) {
         insertDefaultLessons(db);
@@ -899,5 +1012,136 @@ public int getUserStreak(Context context) {
 
         return vocabularyList;
     }
+    private void insertDefaultQuizzes(SQLiteDatabase db) {
+        String[][] quizzesData = {
+                // Format: {"QuizId", "Question", "Answer", "LessonId"}
+                // Lesson 1: Basic Greetings
+                {"1", "How ___ you?", "are", "1"},
+                {"2", "What ___ your name?", "is", "1"},
+                {"3", "Good ___, how are you?", "morning", "1"},
+                {"4", "I'm ___ to meet you.", "pleased", "1"},
+                {"5", "You should greet Dr. Smith ___ when meeting for the first time.", "formally", "1"},
+                {"6", "When meeting someone for the first time, you should use a ___ greeting.", "formal", "1"},
+                {"7", "It's appropriate to use ___ titles when greeting professionals.", "professional", "1"},
+                {"8", "Good ___ is a formal greeting used in the evening.", "evening", "1"},
+                {"9", "When greeting a female with unknown marital status, use ___.", "Ms", "1"},
+                {"10", "___ you later is an informal way to say goodbye.", "See", "1"},
+
+                // Lesson 2: Family Members
+                {"11", "My mother's daughter is my ___.", "sister", "2"},
+                {"12", "My mother's mother is my ___.", "grandmother", "2"},
+                {"13", "My father's son is my ___.", "brother", "2"},
+                {"14", "My aunt's children are my ___.", "cousins", "2"},
+                {"15", "My sister's husband is my ___.", "brother-in-law", "2"},
+                {"16", "My brother's daughter is my ___.", "niece", "2"},
+                {"17", "My dad's brother is my ___.", "uncle", "2"},
+                {"18", "My grandpa's father is my ___.", "great grandpa", "2"},
+                {"19", "My female spouse is my ___.", "wife", "2"},
+                {"20", "My step-mother's son is my ___.", "step-brother", "2"},
+
+                // Lesson 3: Food & Dining
+                {"21", "A place where you buy bread and cakes is called a ___.", "bakery", "3"},
+                {"22", "The ___ shows all available food options in a restaurant.", "menu", "3"},
+                {"23", "The first meal of the day is called ___.", "breakfast", "3"},
+                {"24", "When food tastes very good, it is ___.", "delicious", "3"},
+                {"25", "A person who doesn't eat meat is called a ___.", "vegetarian", "3"},
+                {"26", "Food with a hot, pungent flavor is described as ___.", "spicy", "3"},
+                {"27", "The ___ is what you ask for when you want to pay in a restaurant.", "bill", "3"},
+                {"28", "The evening meal is commonly called ___.", "dinner", "3"},
+                {"29", "The midday meal is called ___.", "lunch", "3"},
+                {"30", "A ___ is a place where you buy food and household items.", "grocery store", "3"},
+
+                // Lesson 4: Travel Essentials
+                {"31", "I need to ___ a flight for my vacation.", "book", "4"},
+                {"32", "The plane ___ at 3 PM.", "departs", "4"},
+                {"33", "Can I have a window ___?", "seat", "4"},
+                {"34", "Where is the baggage ___?", "claim", "4"},
+                {"35", "You need a ___ to travel internationally.", "passport", "4"},
+                {"36", "A ___ is a place where planes land and take off.", "airport", "4"},
+                {"37", "You need to make a ___ to secure your hotel room.", "reservation", "4"},
+                {"38", "Your ___ contains your clothes and personal items for travel.", "luggage", "4"},
+                {"39", "The ___ is the tallest mountain in the world.", "Mount Everest", "4"},
+                {"40", "The Nile is the ___ river in the world.", "longest", "4"},
+
+                // Lesson 5: Shopping
+                {"41", "A ___ is a shop where you buy medicine.", "pharmacy", "4"},
+                {"42", "A ___ store is where you buy computers and TVs.", "electronics", "5"},
+                {"43", "A place to buy rings and necklaces is a ___ store.", "jewelry", "5"},
+                {"44", "The ___ of this item is too high.", "price", "5"},
+                {"45", "Can I get a ___ on this item?", "discount", "5"},
+                {"46", "I need to ___ these clothes before buying them.", "try on", "5"},
+                {"47", "This item is on ___, so it costs less than usual.", "sale", "5"},
+                {"48", "I'll pay with my ___ card instead of cash.", "credit", "5"},
+                {"49", "Please give me a ___ for my purchase.", "receipt", "5"},
+                {"50", "This product is very ___; it costs a lot of money.", "expensive", "5"},
+
+                // Lesson 6: Weather & Seasons
+                {"51", "Today is a ___ day with no clouds in the sky.", "sunny", "6"},
+                {"52", "Don't forget your umbrella, it's a ___ day.", "rainy", "6"},
+                {"53", "The sky is ___ today, we can't see the sun.", "cloudy", "6"},
+                {"54", "In winter, we often see ___ falling from the sky.", "snow", "6"},
+                {"55", "The ___ today is 25 degrees Celsius.", "temperature", "6"},
+                {"56", "The weather ___ says it will rain tomorrow.", "forecast", "6"},
+                {"57", "The hottest season of the year is ___.", "summer", "6"},
+                {"58", "The coldest season of the year is ___.", "winter", "6"},
+                {"59", "Another name for fall is ___.", "autumn", "6"},
+                {"60", "The season that comes after winter is ___.", "spring", "6"},
+
+                // Lesson 7: Business Communication
+                {"61", "Let's ___ the meeting at 9 AM.", "schedule", "7"},
+                {"62", "Could you ___ the presentation with the team?", "share", "7"},
+                {"63", "We need to ___ this issue in our meeting.", "discuss", "7"},
+                {"64", "The ___ will be sent after the meeting.", "minutes", "7"},
+                {"65", "We need to meet the project ___ by Friday.", "deadline", "7"},
+                {"66", "I'll prepare a ___ for the board meeting.", "presentation", "7"},
+                {"67", "We should ___ with the client about the terms.", "negotiate", "7"},
+                {"68", "Please sign the ___ before we proceed.", "contract", "7"},
+                {"69", "My ___ will attend the meeting in my place.", "colleague", "7"},
+                {"70", "We need to stay within the ___ for this project.", "budget", "7"},
+
+                // Lesson 8: Academic Language
+                {"71", "The ___ shows interesting results.", "data", "8"},
+                {"72", "We need to ___ more sources in our paper.", "cite", "8"},
+                {"73", "This research ___ was published last year.", "paper", "8"},
+                {"74", "The ___ supported our hypothesis.", "findings", "8"},
+                {"75", "We should ___ the methodology carefully.", "review", "8"},
+                {"76", "A ___ is the main argument of your research paper.", "thesis", "8"},
+                {"77", "The ___ section summarizes your research paper.", "abstract", "8"},
+                {"78", "We conducted an ___ of the experimental results.", "analysis", "8"},
+                {"79", "The ___ lists all sources used in your paper.", "bibliography", "8"},
+                {"80", "A ___ is an educated guess that can be tested.", "hypothesis", "8"},
+
+                // Lesson 9: Technology & Internet
+                {"81", "I need to ___ this file to my computer.", "download", "9"},
+                {"82", "Create a strong ___ for your online accounts.", "password", "9"},
+                {"83", "The company's ___ provides information about their services.", "website", "9"},
+                {"84", "Computer programs are also called ___.", "software", "9"},
+                {"85", "Physical computer components are called ___.", "hardware", "9"},
+                {"86", "A ___ connection doesn't need cables.", "wireless", "9"},
+                {"87", "A collection of organized information is called a ___.", "database", "9"},
+                {"88", "An ___ is a step-by-step procedure for calculations.", "algorithm", "9"},
+                {"89", "___ protects your data from unauthorized access.", "encryption", "9"},
+                {"90", "Data stored on the ___ can be accessed from anywhere.", "cloud", "9"}
+        };
+
+        try {
+            db.beginTransaction();
+            for (String[] quiz : quizzesData) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_QUIZ_ID, Integer.parseInt(quiz[0]));
+                values.put(COLUMN_QUESTION, quiz[1]);
+                values.put(COLUMN_ANSWER, quiz[2]);
+                values.put(COLUMN_LESSON_ID, Integer.parseInt(quiz[3]));
+                db.insert(TABLE_QUIZZES, null, values);
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "Error inserting default quizzes: ", e);
+        } finally {
+            Log.e(TAG, "Successful inserting default quizzes");
+            db.endTransaction();
+        }
+    }
+
 
 }
