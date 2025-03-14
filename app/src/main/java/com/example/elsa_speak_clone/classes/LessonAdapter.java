@@ -1,4 +1,4 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.classes;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,6 +7,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.LearningAppDatabase;
 
 import java.util.List;
 

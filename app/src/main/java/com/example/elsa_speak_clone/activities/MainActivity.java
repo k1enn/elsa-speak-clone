@@ -1,13 +1,15 @@
 
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.activities;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.example.elsa_speak_clone.HomeFragment;
-import com.example.elsa_speak_clone.ProfileFragment;
-import com.example.elsa_speak_clone.SettingsFragment;
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.fragments.HomeFragment;
+import com.example.elsa_speak_clone.fragments.LearnFragment;
+import com.example.elsa_speak_clone.fragments.ProfileFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 

@@ -1,4 +1,4 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.activities;
 
 import android.Manifest;
 import android.content.Intent;
@@ -21,6 +21,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.airbnb.lottie.LottieAnimationView;
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.classes.VoiceRecognizer;
+import com.example.elsa_speak_clone.database.LearningAppDatabase;
 
 import java.util.Locale;
 
@@ -93,10 +96,22 @@ public class SpeechToText extends AppCompatActivity {
     }
 
     private void setupVoiceRecognizer() {
-        voiceRecognizer = new VoiceRecognizer(tvPrompt, tvWord, btnSpeak, btnRandomWord, speechRecognizer, lottieConfetti);
+        // Get database instance
+        LearningAppDatabase db = new LearningAppDatabase(this);
+
+        // Pass database to VoiceRecognizer
+        voiceRecognizer = new VoiceRecognizer(tvPrompt, tvWord, btnSpeak, btnRandomWord,
+                speechRecognizer, lottieConfetti, db);
         voiceRecognizer.setupRandomWordButton();
         voiceRecognizer.startListening();
+
+        Intent intent = getIntent();
+        if (intent.hasExtra("LESSON_ID")) {
+            int lessonId = intent.getIntExtra("LESSON_ID", 1);
+            voiceRecognizer.setCurrentLessonId(lessonId);
+        }
     }
+
 
     private void setupSpeakButton() {
         btnSpeak.setOnClickListener(v -> startSpeechRecognition());

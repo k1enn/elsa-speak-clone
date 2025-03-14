@@ -1,4 +1,4 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.classes;
 
 public class Lesson {
     private int lessonId;

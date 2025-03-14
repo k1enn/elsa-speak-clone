@@ -1,9 +1,7 @@
-package com.example.elsa_speak_clone;
+package com.example.elsa_speak_clone.fragments;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -17,6 +15,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import com.example.elsa_speak_clone.activities.LoginActivity;
+import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.LearningAppDatabase;
 
 /**
  * A simple {@link Fragment} subclass.
