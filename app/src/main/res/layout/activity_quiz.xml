@@ -16,13 +16,13 @@
             android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="English Tenses Quiz"
-            android:textSize="24sp"
-            android:textStyle="bold"
             android:layout_marginTop="80dp"
-            android:textColor="@color/primaryTextColor"
             android:gravity="center"
-            android:paddingBottom="16dp" />
+            android:paddingBottom="16dp"
+            android:text="Quiz"
+            android:textColor="@color/primaryTextColor"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
         <!-- CardView chứa câu hỏi -->
         <androidx.cardview.widget.CardView

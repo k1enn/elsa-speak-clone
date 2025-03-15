@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,8 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
 import android.media.MediaPlayer;
 
 import com.example.elsa_speak_clone.R;
@@ -44,8 +47,7 @@ public class QuizActivity extends AppCompatActivity {
         initialize();
         loadNextQuestion();
 
-        btnCheckAnswer.setOnClickListener(v -> checkAnswer());
-        btnNextQuestion.setOnClickListener(v -> loadNextQuestion());
+        returnCheckAnswerButton();
     }
 
     private void initialize() {
@@ -64,6 +66,7 @@ public class QuizActivity extends AppCompatActivity {
         correctSoundPlayer = MediaPlayer.create(this, R.raw.correct_sound);
     }
     private void loadNextQuestion() {
+        returnCheckAnswerButton();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         // Modified query to exclude already shown questions
@@ -176,13 +179,16 @@ public class QuizActivity extends AppCompatActivity {
     private void checkAnswer() {
         String userAnswer = etAnswer.getText().toString().trim().replaceAll("\\s+", " ");
 
+        // If user correct
         if (userAnswer.equalsIgnoreCase(correctAnswer.replaceAll("\\s+", " "))) {
             tvResult.setText("✅ Correct!");
             tvResult.setTextColor(Color.GREEN);
 
             // Play the "ting ting" sound
-            if (correctSoundPlayer != null) {
+            try {
                 correctSoundPlayer.start();
+            } catch (NullPointerException e) {
+                Log.d("QuizActivity", "Correct sound is NULL");
             }
 
             // Optional: Update user score in database
@@ -190,12 +196,24 @@ public class QuizActivity extends AppCompatActivity {
             int userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
             // Get the quiz ID (you would need to store this when loading the question)
             // dbHelper.addQuizScore(userId, quizId, 1);
+            changeCheckAnswerButton();
+
         } else {
             tvResult.setText("❌ Incorrect! The correct answer is: " + correctAnswer);
             tvResult.setTextColor(Color.RED);
         }
 
-        btnNextQuestion.setVisibility(Button.VISIBLE);
+    }
+    private void changeCheckAnswerButton() {
+        btnCheckAnswer.setText("Tiếp tục");
+        btnCheckAnswer.setBackground(ContextCompat.getDrawable(this, R.drawable.rounded_button_green));
+        btnCheckAnswer.setOnClickListener(v -> loadNextQuestion());
+    }
+
+    private void returnCheckAnswerButton() {
+        btnCheckAnswer.setText("Kiểm tra");
+        btnCheckAnswer.setBackground(ContextCompat.getDrawable(this, R.drawable.rounded_button));
+        btnCheckAnswer.setOnClickListener(v -> checkAnswer());
     }
 
     @Override

@@ -11,12 +11,12 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Congratulations!"
-        android:textSize="24sp"
-        android:textStyle="bold"
+        android:layout_marginBottom="10dp"
         android:gravity="center"
+        android:text="Congratulations!"
         android:textColor="#4CAF50"
-        android:layout_marginBottom="10dp"/>
+        android:textSize="48sp"
+        android:textStyle="bold" />
 
     <TextView
         android:layout_width="match_parent"

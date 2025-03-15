@@ -34,6 +34,7 @@
     <color name="purple_700">#8692f7</color>
 
 
+    <color name="green">#019D35</color>
     <color name="hint_color_fade">#80CCCCCC</color> <!-- Adjust the alpha value for fading -->
     <color name="real_purple">#FFEB3BFF</color>
 
