@@ -6,6 +6,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,7 +35,6 @@ public class DictionaryActivity extends AppCompatActivity {
 
     private TextView resultTextView;
     private EditText wordEditText;
-    private Button searchButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +43,7 @@ public class DictionaryActivity extends AppCompatActivity {
 
         resultTextView = findViewById(R.id.resultTextView);
         wordEditText = findViewById(R.id.wordEditText);
-        searchButton = findViewById(R.id.searchButton);
+        ImageView searchButton = (ImageView)findViewById(R.id.searchButton);
 
         // Set click listener for search button
         searchButton.setOnClickListener(new View.OnClickListener() {
