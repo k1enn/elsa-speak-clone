@@ -286,6 +286,7 @@ public class HomeFragment extends Fragment {
         }
     }
 
+
     private void navigateToSpeechToText() {
         Intent intent = new Intent(requireActivity(), SpeechToText.class);
         startActivity(intent);
