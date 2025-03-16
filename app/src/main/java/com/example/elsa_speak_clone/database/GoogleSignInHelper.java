@@ -45,7 +45,7 @@ public class GoogleSignInHelper {
                 .requestEmail()
                 .build();
 
-        mGoogleSignInClient = GoogleSignIn.getClient(this.activity, gso);
+        mGoogleSignInClient = GoogleSignIn.getClient(activity, gso);
     }
 
     // It will return true if have an account already signed in

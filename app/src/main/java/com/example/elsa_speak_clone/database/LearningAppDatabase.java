@@ -92,7 +92,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             COLUMN_GMAIL + " TEXT, " +
             COLUMN_NAME + " TEXT NOT NULL, " +
             COLUMN_PASSWORD + " TEXT, " +
-            COLUMN_IS_GOOGLE_USER + "INTEGER, " +
+            COLUMN_IS_GOOGLE_USER + " INTEGER, " +
             COLUMN_JOIN_DATE + " DATE NOT NULL)";
 
     // Create Lessons Table
@@ -282,14 +282,76 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
 
 
     public boolean authenticateGoogleUser(String email) {
-        return authenticateUser(email, "", true);
+        SQLiteDatabase db = this.getReadableDatabase();
+        SessionManager sessionManager = new SessionManager(this.context);
+        Cursor cursor = null;
+
+        try {
+            String selection = COLUMN_GMAIL + "=?";
+            String[] selectionArgs = {email};
+
+            cursor = db.query(
+                    TABLE_USERS,
+                    new String[]{COLUMN_USER_ID, COLUMN_NAME, "google"},
+                    selection,
+                    selectionArgs,
+                    null, null, null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                @SuppressLint("Range") int userId = cursor.getInt(cursor.getColumnIndex(COLUMN_USER_ID));
+                @SuppressLint("Range") String username = cursor.getString(cursor.getColumnIndex(COLUMN_NAME));
+                @SuppressLint("Range") int isGoogleUser = cursor.getInt(cursor.getColumnIndex("google"));
+
+                if (isGoogleUser == 1) {
+                    // Create Google session
+                    sessionManager.createGoogleSession(username, userId);
+                    return true;
+                } else {
+                    // This email exists but not as a Google user
+                    Log.d(TAG, "Email exists but not as Google account: " + email);
+                    return false;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            Log.e(TAG, "Error authenticating Google user", e);
+            return false;
+        } finally {
+            if (cursor != null) cursor.close();
+            db.close();
+        }
     }
+
     public boolean authenticateLocalUser(String email, String password) {
         return authenticateUser(email, password, false);
     }
     public boolean registerGoogleUser(String email) {
-        return registerUser(email, "", true);
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        try {
+            // Extract username from email
+            String username = email.split("@")[0];
+
+            values.put(COLUMN_GMAIL, email);
+            values.put(COLUMN_NAME, username);
+            values.put(COLUMN_PASSWORD, ""); // Empty password for Google users
+            values.put("google", 1); // Mark as Google user
+            values.put(COLUMN_JOIN_DATE, getCurrentDate());
+
+            long result = db.insert(TABLE_USERS, null, values);
+            db.close();
+
+            return result != -1;
+        } catch (Exception e) {
+            Log.e("DB_ERROR", "Failed to register Google user: " + e.getMessage());
+            db.close();
+            return false;
+        }
     }
+
+
 
     public boolean registerLocalUser(String username, String password) {
         return registerUser(username, password, false);
@@ -1312,11 +1374,6 @@ public int getUserStreak(Context context) {
             Log.e(TAG, "Error adding google column: " + e.getMessage(), e);
         }
     }
-    /**
-     * Get user ID by email
-     * @param email The user's email
-     * @return The user ID, or -1 if not found
-     */
     public int getUserIdByEmail(String email) {
         SQLiteDatabase db = this.getReadableDatabase();
         int userId = -1;
@@ -1324,7 +1381,7 @@ public int getUserStreak(Context context) {
 
         try {
             String[] columns = {"UserId"};
-            String selection = "Gmail = ?"; // Changed from "Gmail" to "Email" (common column name)
+            String selection = "Gmail = ?"; // This is correct based on your DB schema
             String[] selectionArgs = {email};
 
             cursor = db.query(
@@ -1344,7 +1401,7 @@ public int getUserStreak(Context context) {
                 }
             }
         } catch (Exception e) {
-            Log.e("DB_ERROR", "Error getting user ID", e);
+            Log.e("DB_ERROR", "Error getting user ID for email: " + email, e);
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -1353,5 +1410,6 @@ public int getUserStreak(Context context) {
         }
         return userId;
     }
+
 
 }

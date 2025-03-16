@@ -70,9 +70,7 @@ public class RegisterActivity extends AppCompatActivity {
         setupShowPasswordButton(etRewritePassword, btnToggleRewritePassword);
         initializeGoogleRegister();
         setupGoogleRegisterButton();
-        if(googleSignInHelper.CheckGoogleLoginState()) {
-            navigateToMain();
-        }
+
     }
 
     private void initializeViews() {
@@ -121,47 +119,78 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == GoogleSignInHelper.RC_SIGN_IN) {
+            googleSignInHelper.handleActivityResult(requestCode, resultCode, data);
+        }
+    }
+
     private void setupGoogleRegisterButton() {
         btnGoogleRegister.setOnClickListener(v -> googleSignInHelper.signIn());
     }
 
-
-   private void initializeGoogleRegister() {
+    private void initializeGoogleRegister() {
         googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
-                String email = user.getEmail();
-                try {
+                Log.d("GoogleSignIn", "onSuccess called with user: " + (user != null ? user.getEmail() : "null"));
 
-                        String name = user.getDisplayName() != null ?
-                                user.getDisplayName() : Objects.requireNonNull(email).split("@")[0];
-                        // Register the new Google user
-                        if (db.registerGoogleUser(name)) {
+                if (user == null || user.getEmail() == null) {
+                    Toast.makeText(RegisterActivity.this, "Failed to get user data", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String email = user.getEmail();
+                String displayName = user.getDisplayName() != null ?
+                        user.getDisplayName() : email.split("@")[0];
+
+                // Check if user already exists
+                int userId = db.getUserIdByEmail(email);
+
+                if (userId != -1) {
+                    Log.d("GoogleSignIn", "User exists with ID: " + userId);
+                    Toast.makeText(RegisterActivity.this, "Account already exists, logging in...", Toast.LENGTH_SHORT).show();
+
+                    // Create session for existing user
+                    SessionManager sessionManager = new SessionManager(RegisterActivity.this);
+                    sessionManager.createGoogleSession(displayName, userId);
+                    navigateToMain();
+                } else {
+                    Log.d("GoogleSignIn", "Registering new user with email: " + email);
+                    // New user - register
+                    if (db.registerGoogleUser(email)) {
+                        // Get the newly created user ID
+                        userId = db.getUserIdByEmail(email);
+                        if (userId != -1) {
+                            // Create session
+                            SessionManager sessionManager = new SessionManager(RegisterActivity.this);
+                            sessionManager.createGoogleSession(displayName, userId);
                             Toast.makeText(RegisterActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
                             navigateToMain();
-                            finish();
                         } else {
-                            Toast.makeText(RegisterActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(RegisterActivity.this, "Failed to create user account", Toast.LENGTH_SHORT).show();
                         }
-
-                } catch (Exception e) {
-                    Log.d("RegisterActivity", "Cannot initialize Google login", e);
-                    Toast.makeText(RegisterActivity.this, "Login Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(RegisterActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
-
             @Override
             public void onError(String message) {
-                Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_SHORT).show();
+                Log.e("GoogleSignIn", "Error: " + message);
+                Toast.makeText(RegisterActivity.this, "Google Sign-In Error: " + message, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-
-      private void navigateToMain() {
+    private void navigateToMain() {
         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
     }
