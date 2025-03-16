@@ -101,21 +101,24 @@ public class LoginActivity extends AppCompatActivity {
             public void onSuccess(FirebaseUser user) {
                 String email = user.getEmail();
                 try {
-                if (!dbHelper.doesUserGmailExist(email)) {
-                    String name = user.getDisplayName() != null ? 
-                        user.getDisplayName() : Objects.requireNonNull(email).split("@")[0];
-                    // Use empty because Google doesn't need password
-                    dbHelper.registerUser(name, emptyString);
-                } else {
-                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
-                    navigateToMain();
-                    finish();
-                }
-                } catch (Exception e) {
-                    Log.d("LoginActivity", "Can not initialize Google login", e);
 
+                        String name = user.getDisplayName() != null ?
+                                user.getDisplayName() : Objects.requireNonNull(email).split("@")[0];
+                        // Register the new Google user
+                        if (dbHelper.registerGoogleUser(name)) {
+                            Toast.makeText(LoginActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                            navigateToMain();
+                            finish();
+                        } else {
+                            Toast.makeText(LoginActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
+                        }
+
+                } catch (Exception e) {
+                    Log.d("LoginActivity", "Cannot initialize Google login", e);
+                    Toast.makeText(LoginActivity.this, "Login Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
+
 
             @Override
             public void onError(String message) {
@@ -132,7 +135,7 @@ public class LoginActivity extends AppCompatActivity {
             String password = etPassword.getText().toString().trim();
 
             try {
-                if (dbHelper.authenticateUser(username, password)) {
+                if (dbHelper.authenticateLocalUser(username, password)) {
                     // Create session after successful login
                     SessionManager sessionManager = new SessionManager(LoginActivity.this);
                     int userId = dbHelper.getUserId(username);

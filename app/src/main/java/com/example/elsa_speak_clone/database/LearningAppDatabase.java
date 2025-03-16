@@ -1,9 +1,11 @@
 package com.example.elsa_speak_clone.database;
 
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     private static final String COLUMN_GMAIL = "Gmail";
     private static final String COLUMN_NAME = "Name";
     private static final String COLUMN_JOIN_DATE = "JoinDate";
+    private static final String COLUMN_IS_GOOGLE_USER = "google";
     private static final String COLUMN_PASSWORD = "Password";
 
     // Lessons Table
@@ -89,6 +92,7 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
             COLUMN_GMAIL + " TEXT, " +
             COLUMN_NAME + " TEXT NOT NULL, " +
             COLUMN_PASSWORD + " TEXT, " +
+            COLUMN_IS_GOOGLE_USER + "INTEGER, " +
             COLUMN_JOIN_DATE + " DATE NOT NULL)";
 
     // Create Lessons Table
@@ -192,131 +196,169 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
          db.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN last_login DATETIME");
       }
       dropAllTables(db);
+      addGoogleColumnIfNeeded(db);
     }
+
+      /**
+     * Authenticate a user for login
+     * @param usernameOrEmail The username (local auth) or email (Google auth)
+     * @param password Password (not used for Google auth)
+     * @param isGoogleAuth Flag indicating if this is a Google authentication attempt
+     * @return True if authentication was successful
+     */
+      public boolean authenticateUser(String usernameOrEmail, String password, boolean isGoogleAuth) {
+          if (usernameOrEmail == null || usernameOrEmail.isEmpty()) {
+              return false;
+          }
+
+          // For Google auth, password can be empty
+          if (!isGoogleAuth && (password == null || password.isEmpty())) {
+              return false;
+          }
+
+          SQLiteDatabase db = this.getReadableDatabase();
+          SessionManager sessionManager = new SessionManager(this.context);
+
+          try {
+              String selection;
+              String[] selectionArgs;
+
+              if (isGoogleAuth) {
+                  // For Google auth, we check by email
+                  selection = COLUMN_GMAIL + "=?";
+                  selectionArgs = new String[]{usernameOrEmail};
+              } else {
+                  // For local auth, we check by username
+                  selection = COLUMN_NAME + "=?";
+                  selectionArgs = new String[]{usernameOrEmail};
+              }
+
+              try (Cursor cursor = db.query(
+                      TABLE_USERS,
+                      new String[]{COLUMN_USER_ID, COLUMN_PASSWORD, COLUMN_NAME, COLUMN_GMAIL, "google"},
+                      selection,
+                      selectionArgs,
+                      null, null, null)) {
+
+                  if (cursor.moveToFirst()) {
+                      int userId = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_USER_ID));
+                      String storedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
+                      String username = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME));
+                      String email = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_GMAIL));
+                      int isGoogleUser = cursor.getInt(cursor.getColumnIndexOrThrow("google"));
+
+                      if (isGoogleAuth) {
+                          // For Google auth, we just check if the user exists
+                          if (isGoogleUser == 1) {
+                              // Create Google session
+                              sessionManager.createGoogleSession(username, userId);
+                              return true;
+                          } else {
+                              // This email exists but not as a Google user
+                              Log.d(TAG, "Attempt to use Google auth for non-Google account");
+                              return false;
+                          }
+                      } else {
+                          // For local auth, we check password
+                          try {
+                              boolean passwordValidate = BCrypt.checkpw(password, storedPassword);
+                              if (passwordValidate) {
+                                  // Create local session
+                                  sessionManager.createSession(username, userId);
+                                  return true;
+                              }
+                          } catch (Exception e) {
+                              Log.d(TAG, "Can not authenticate password", e);
+                          }
+                      }
+                  }
+                  return false;
+              }
+          } catch (Exception e) {
+              Log.e(TAG, "Error authenticating user: " + e.getMessage(), e);
+              return false;
+          }
+      }
+
+
+    public boolean authenticateGoogleUser(String email) {
+        return authenticateUser(email, "", true);
+    }
+    public boolean authenticateLocalUser(String email, String password) {
+        return authenticateUser(email, password, false);
+    }
+    public boolean registerGoogleUser(String email) {
+        return registerUser(email, "", true);
+    }
+
+    public boolean registerLocalUser(String username, String password) {
+        return registerUser(username, password, false);
+    }
+
 
     /**
-     * Authenticate a user with username and password
-     * @param username The username to check
-     * @param password The password to verify
-     * @return true if authentication is successful, false otherwise
-     * So it basically Login function
+     * Register a new user with proper differentiation between local and Google accounts
+     * @param username The username (or email for Google users)
+     * @param password Password (empty for Google users)
+     * @param isGoogleUser Boolean flag to identify Google authentication
+     * @return True if registration was successful
      */
-
-    public boolean authenticateUser(String username, String password) {
-        if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-            return false;
-        }
-
-        SQLiteDatabase db = this.getReadableDatabase();
-        String hashedPassword = null;
-        SessionManager sessionManager = new SessionManager(this.context);
-        try (Cursor cursor = db.query(
-                TABLE_USERS,
-                new String[]{COLUMN_USER_ID, COLUMN_PASSWORD},
-                COLUMN_NAME + "=?",
-                new String[]{username},
-                null, null, null)) {
-            if (cursor.moveToFirst()) {
-                String authenticateHashedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD));
-                try {
-                    boolean passwordValidate = BCrypt.checkpw(password, authenticateHashedPassword);
-                    if (passwordValidate) {
-                        sessionManager.createSession(username, getUserId(username));
-                        return true;
-                    }
-                } catch (Exception e) {
-                    Log.d(TAG, "Can not authenticate password", e);
-                }
-
-            }
-            return false;
-
-
-        }
-         catch (Exception e) {
-            Log.e(TAG, "Error authenticating user: " + e.getMessage());
-            return false;
-        }
-    }
-
-
-    // For Firebase authentication
-    public boolean doesUserGmailExist(String gmail) {
-        if (gmail == null) return false;
-
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(
-            TABLE_USERS,
-            new String[]{COLUMN_GMAIL},
-            COLUMN_GMAIL + "=?",  // Only check Gmail for Firebase auth
-            new String[]{gmail},
-            null,
-            null,
-            null
-        );
-
-        boolean exists = false;
-        if (cursor != null) {
-            exists = cursor.getCount() > 0;
-            cursor.close();
-        }
-        return exists;
-    }
-
-    private void handleGoogleRegistration(ContentValues values, String email) {
-        try {
-            String username = email.split("@")[0];
-            values.put(COLUMN_GMAIL, email);
-            values.put(COLUMN_NAME, username);
-            values.put(COLUMN_PASSWORD, ""); // Empty password for social
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid email format");
-        }
-    }
-
-    // Register a new user (works for both local and Firebase)
-    public boolean registerUser(String name, String password) {
-        if (name == null || password == null) return false;
+    public boolean registerUser(String username, String password, boolean isGoogleUser) {
+        if (username == null) return false;
 
         SQLiteDatabase db = this.getWritableDatabase();
+
+        // First ensure the google column exists
+        addGoogleColumnIfNeeded(db);
+
         ContentValues values = new ContentValues();
-       SessionManager sessionManager = new SessionManager(this.context);
         int userId = -1;
 
         try {
             userId = generateUniqueId(db);
             values.put(COLUMN_USER_ID, userId);
-        } catch (Exception e) {
-            Log.e(TAG, "Can not generate unique user id");
-        }
-                if(name.contains("@")) {
-                    sessionManager.createSession(name, userId);
-                    handleGoogleRegistration(values, name);
-                }
-         else {
-try {
-    String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-    // Local account registration
-    values.put(COLUMN_NAME, name);
-    values.put(COLUMN_GMAIL, emptyString);
-    values.put(COLUMN_PASSWORD, hashedPassword);
-    sessionManager.createSession(name, userId);
-    Log.d(TAG, "Hased password" + hashedPassword);
-}catch (Exception e) {
-                Log.d(TAG, "Can not register LOCAL user.");
+            Log.d(TAG, "User ID = " + userId);
+
+            if (isGoogleUser) {
+                // Google authentication
+                String displayName = username.split("@")[0]; // Extract username from email
+                values.put(COLUMN_GMAIL, username); // Store full email
+                values.put(COLUMN_NAME, displayName);
+                values.put(COLUMN_PASSWORD, ""); // Empty password for Google users
+                values.put("google", 1); // Use the actual column name in the database
+            } else {
+                // Local authentication
+                String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+                values.put(COLUMN_NAME, username);
+                values.put(COLUMN_GMAIL, emptyString);
+                values.put(COLUMN_PASSWORD, hashedPassword);
+                values.put("google", 0); // Use the actual column name in the database
             }
+
+            values.put(COLUMN_JOIN_DATE, getCurrentDate());
+
+            long result = db.insert(TABLE_USERS, null, values);
+
+            if (result != -1) {
+                // Only create session after successful database insertion
+                SessionManager sessionManager = new SessionManager(this.context);
+                if (isGoogleUser) {
+                    sessionManager.createGoogleSession(username.split("@")[0], userId);
+                } else {
+                    sessionManager.createSession(username, userId);
+                }
+                return true;
+            } else {
+                Log.e(TAG, "Failed to insert user into database");
+                return false;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering user: " + e.getMessage(), e);
+            return false;
         }
-
-        values.put(COLUMN_JOIN_DATE, getCurrentDate());
-
-        long result = db.insert(TABLE_USERS, null, values);
-
-if(result != -1) {
-        return true;
-    } else{
-        return false;
     }
-    }
+
+
 
     private String getCurrentDate() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -558,84 +600,141 @@ if(result != -1) {
 
         onCreate(db);
     }
-    // Update User's streak everytime login/.
     /**
      * Update user's streak based on login date
      * @param context The application context to access SharedPreferences
      */
     public void updateUserStreak(Context context) {
-        SessionManager sessionManager = new SessionManager(this.context);
-        int userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
+        try {
+            SessionManager sessionManager = new SessionManager(context);
 
-        if (userId < 0) {
-            Log.e(TAG, "Cannot update streak: Invalid user ID");
-            return;
-        }
+            // Get user details in a safer way
+            HashMap<String, String> userDetails = sessionManager.getUserDetails();
+            String userIdStr = userDetails.get(SessionManager.KEY_USER_ID);
 
-        SQLiteDatabase db = this.getWritableDatabase();
-        Cursor cursor = getUserProgress(userId);
-
-        if (cursor != null && cursor.moveToFirst()) {
-            try {
-                // Get last study date and current streak
-                String lastStudyDateStr = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LAST_STUDY_DATE));
-                int currentStreak = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_STREAK));
-
-                // Get today's date
-                String todayStr = getCurrentDate();
-
-                // Convert last study date to Date object
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                Date lastStudyDate = null;
-                try {
-                    lastStudyDate = sdf.parse(lastStudyDateStr);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error data parsing in updateUserStreak");
-                    return;
-                }
-                Date today = sdf.parse(todayStr);
-
-                // Calculate difference in days
-                long diff = TimeUnit.DAYS.convert(today.getTime() - lastStudyDate.getTime(), TimeUnit.MILLISECONDS);
-
-                if (diff == 1) {
-                    // Studied yesterday → Increment streak
-                    currentStreak++;
-                } else if (diff > 1) {
-                    // Missed a day → Reset streak
-                    currentStreak = 1;
-                }
-
-                // Update the database
-                ContentValues values = new ContentValues();
-                values.put(COLUMN_STREAK, currentStreak);
-                values.put(COLUMN_LAST_STUDY_DATE, todayStr); // Update last study date to today
-
-                db.update(TABLE_USER_PROGRESS, values, COLUMN_USER_ID + " = ?", new String[]{String.valueOf(userId)});
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error updating streak: " + e.getMessage());
-                e.printStackTrace();
-            } finally {
-                cursor.close();
+            if (userIdStr == null || userIdStr.isEmpty()) {
+                Log.e(TAG, "Cannot update streak: User ID not found in session");
+                return;
             }
-        } else {
-            // No progress record exists yet, create one with streak of 1
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_USER_ID, userId);
-            values.put(COLUMN_STREAK, 1);
-            values.put(COLUMN_LAST_STUDY_DATE, getCurrentDate());
-            values.put(COLUMN_PROGRESS_ID, generateUniqueProgressId(db));
-            // Add other required fields with default values
-            values.put(COLUMN_DIFFICULTY_LEVEL, 1);
-            values.put(COLUMN_COMPLETION_TIME, getCurrentDate());
-            values.put(COLUMN_XP, 0);
-            values.put(COLUMN_LESSON_ID, 1); // Default lesson ID
 
-            db.insert(TABLE_USER_PROGRESS, null, values);
-            Log.d(TAG, "Created new streak record for user: " + userId);
+            int userId;
+            try {
+                userId = Integer.parseInt(userIdStr);
+            } catch (NumberFormatException e) {
+                Log.e(TAG, "Cannot update streak: Invalid user ID format: " + userIdStr, e);
+                return;
+            }
+
+            if (userId < 0) {
+                Log.e(TAG, "Cannot update streak: Invalid user ID value: " + userId);
+                return;
+            }
+
+            // Log the user ID for debugging
+            Log.d(TAG, "Updating streak for user ID: " + userId);
+
+            SQLiteDatabase db = this.getWritableDatabase();
+            Cursor cursor = getUserProgress(userId);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                try {
+                    // Get last study date and current streak
+                    int lastStudyDateIndex = cursor.getColumnIndex(COLUMN_LAST_STUDY_DATE);
+                    int streakIndex = cursor.getColumnIndex(COLUMN_STREAK);
+
+                    if (lastStudyDateIndex == -1 || streakIndex == -1) {
+                        Log.e(TAG, "Column not found in cursor. LAST_STUDY_DATE index: " +
+                                lastStudyDateIndex + ", STREAK index: " + streakIndex);
+                        cursor.close();
+                        return;
+                    }
+
+                    String lastStudyDateStr = cursor.getString(lastStudyDateIndex);
+                    int currentStreak = cursor.getInt(streakIndex);
+
+                    // Get today's date
+                    String todayStr = getCurrentDate();
+                    Log.d(TAG, "Last study date: " + lastStudyDateStr + ", Today: " + todayStr);
+
+                    // Convert last study date to Date object
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                    Date lastStudyDate;
+                    Date today;
+                    try {
+                        lastStudyDate = sdf.parse(lastStudyDateStr);
+                        today = sdf.parse(todayStr);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing date in updateUserStreak", e);
+                        cursor.close();
+                        return;
+                    }
+
+                    // Calculate difference in days
+                    long diff = TimeUnit.DAYS.convert(
+                            today.getTime() - lastStudyDate.getTime(), TimeUnit.MILLISECONDS);
+                    Log.d(TAG, "Days since last study: " + diff);
+
+                    if (diff == 0) {
+                        // Already updated today, no change needed
+                        Log.d(TAG, "Streak already updated today, no change");
+                        cursor.close();
+                        return;
+                    } else if (diff == 1) {
+                        // Studied yesterday → Increment streak
+                        currentStreak++;
+                        Log.d(TAG, "Incrementing streak to: " + currentStreak);
+                    } else if (diff > 1) {
+                        // Missed a day → Reset streak
+                        currentStreak = 1;
+                        Log.d(TAG, "Resetting streak to 1");
+                    }
+
+                    // Update the database
+                    ContentValues values = new ContentValues();
+                    values.put(COLUMN_STREAK, currentStreak);
+                    values.put(COLUMN_LAST_STUDY_DATE, todayStr); // Update last study date to today
+
+                    int rowsUpdated = db.update(TABLE_USER_PROGRESS, values,
+                            COLUMN_USER_ID + " = ?",
+                            new String[]{String.valueOf(userId)});
+                    Log.d(TAG, "Updated " + rowsUpdated + " rows in user progress table");
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Error updating streak: " + e.getMessage(), e);
+                } finally {
+                    cursor.close();
+                }
+            } else {
+                // No progress record exists yet, create one with streak of 1
+                try {
+                    Log.d(TAG, "No existing progress record, creating new one with streak of 1");
+                    ContentValues values = new ContentValues();
+                    values.put(COLUMN_USER_ID, userId);
+                    values.put(COLUMN_STREAK, 1);
+                    values.put(COLUMN_LAST_STUDY_DATE, getCurrentDate());
+
+                    // Generate a unique progress ID
+                    int progressId = generateUniqueProgressId(db);
+                    values.put(COLUMN_PROGRESS_ID, progressId);
+
+                    // Add other required fields with default values
+                    values.put(COLUMN_DIFFICULTY_LEVEL, 1);
+                    values.put(COLUMN_COMPLETION_TIME, getCurrentDate());
+                    values.put(COLUMN_XP, 0);
+                    values.put(COLUMN_LESSON_ID, 1); // Default lesson ID
+
+                    long newRowId = db.insert(TABLE_USER_PROGRESS, null, values);
+                    Log.d(TAG, "Created new streak record for user: " + userId +
+                            ", new row ID: " + newRowId);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error creating new progress record: " + e.getMessage(), e);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error in updateUserStreak: " + e.getMessage(), e);
         }
     }
+
 
     public int getUserXp(Context context) {
     SessionManager sessionManager = new SessionManager(context); // Use the passed context
@@ -1143,5 +1242,116 @@ public int getUserStreak(Context context) {
         }
     }
 
+    /**
+     * Get username by email
+     * @param email The user's email
+     * @return The username associated with this email
+     */
+    @SuppressLint("Range")
+    public String getUsernameByEmail(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String username = null;
+
+        String[] columns = {"username"};
+        String selection = "email = ?";
+        String[] selectionArgs = {email};
+
+        Cursor cursor = db.query("users", columns, selection, selectionArgs, null, null, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            username = cursor.getString(cursor.getColumnIndex("username"));
+            cursor.close();
+        }
+
+        db.close();
+        return username;
+    }
+
+    /**
+     * Check if a Gmail account exists in the database
+     * @param email The Gmail address to check
+     * @return True if the email exists in the database
+     */
+    public boolean doesUserGmailExist(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String selection = "Gmail = ?";
+        String[] selectionArgs = {email};
+
+        Cursor cursor = db.query("users", null, selection, selectionArgs, null, null, null);
+        boolean exists = cursor != null && cursor.getCount() > 0;
+
+        if (cursor != null) {
+            cursor.close();
+        }
+
+        db.close();
+        return exists;
+    }
+    public void addGoogleColumnIfNeeded(SQLiteDatabase db) {
+        try {
+            // Check if column exists first to avoid errors
+            Cursor cursor = db.rawQuery("PRAGMA table_info('" + TABLE_USERS + "')", null);
+            boolean columnExists = false;
+
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    @SuppressLint("Range") String columnName = cursor.getString(cursor.getColumnIndex("name"));
+                    if ("google".equals(columnName)) {
+                        columnExists = true;
+                        break;
+                    }
+                }
+                cursor.close();
+            }
+
+            if (!columnExists) {
+                db.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN google INTEGER DEFAULT 0");
+                Log.d(TAG, "Added 'google' column to Users table");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding google column: " + e.getMessage(), e);
+        }
+    }
+    /**
+     * Get user ID by email
+     * @param email The user's email
+     * @return The user ID, or -1 if not found
+     */
+    public int getUserIdByEmail(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        int userId = -1;
+        Cursor cursor = null;
+
+        try {
+            String[] columns = {"UserId"};
+            String selection = "Gmail = ?"; // Changed from "Gmail" to "Email" (common column name)
+            String[] selectionArgs = {email};
+
+            cursor = db.query(
+                    "Users",
+                    columns,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                int columnIndex = cursor.getColumnIndex("UserId");
+                if (columnIndex != -1) {
+                    userId = cursor.getInt(columnIndex);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("DB_ERROR", "Error getting user ID", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+        return userId;
+    }
 
 }

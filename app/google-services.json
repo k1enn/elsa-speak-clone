@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "812766092434",
+    "project_id": "elsa-speak-clone",
+    "storage_bucket": "elsa-speak-clone.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:812766092434:android:b903facad6b026c51e5a4b",
+        "android_client_info": {
+          "package_name": "com.example.elsa_speak_clone"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "812766092434-8o2jtcu3cjk5rdd33gsna1k0m2s6dnbf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.elsa_speak_clone",
+            "certificate_hash": "24f8284b8822195c93e281e6d5c1e23b74c510d0"
+          }
+        },
+        {
+          "client_id": "812766092434-kik9792f0bja1ujrbhijef9760jrssgg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.elsa_speak_clone",
+            "certificate_hash": "c7b3fd70874d5a5dbace36153d596016eeeea54e"
+          }
+        },
+        {
+          "client_id": "812766092434-841qsgtqt4bo6c8vp6noi3akeoe85u37.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB91fbHzZ9b4AW05O-HtVGraFth18VstH8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "812766092434-841qsgtqt4bo6c8vp6noi3akeoe85u37.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.GoogleSignInHelper;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.fragments.HomeFragment;
 import com.example.elsa_speak_clone.fragments.LearnFragment;
@@ -17,12 +18,17 @@ import com.example.elsa_speak_clone.fragments.ProfileFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseUser;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageButton;
+import android.widget.Toast;
+
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
     SharedPreferences prefs;
@@ -31,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private ActionBarDrawerToggle toggle;
     private NavigationView navigationView;
     private ImageButton dictionary;
+    GoogleSignInHelper googleSignInHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,13 +71,25 @@ public class MainActivity extends AppCompatActivity {
 
         // Check if user is already logged in
         SessionManager sessionManager = new SessionManager(this);
-        if (!sessionManager.isLoggedIn()) {
+        if (!sessionManager.isLoggedIn() || sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState() ) {
             // User is not logged in, go to login activity
             startActivity(new Intent(MainActivity.this, LoginActivity.class));
             finish();
         }
     }
     private void initializeVariable() {
+        googleSignInHelper = new GoogleSignInHelper(MainActivity.this, new GoogleSignInHelper.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser user) {
+
+            }
+
+
+            @Override
+            public void onError(String message) {
+
+            }
+        });
         dictionary = findViewById(R.id.btnDictionary);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(navListener);

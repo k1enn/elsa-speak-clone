@@ -20,6 +20,11 @@ import com.example.elsa_speak_clone.activities.LoginActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.database.LearningAppDatabase;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -121,13 +126,35 @@ public class ProfileFragment extends Fragment {
     private void setupLogoutButton() {
         btnLogout.setOnClickListener(v -> {
             try {
-                sessionManager.logout();
-                navigateToLogin();
+                // First, check if user is logged in with Google
+                FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+                if (currentUser != null) {
+                    // Sign out from Firebase Auth
+                    FirebaseAuth.getInstance().signOut();
+
+                    // Clear Google sign-in credentials
+                    GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestIdToken(getString(R.string.default_web_client_id))
+                            .requestEmail()
+                            .build();
+                    GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(requireContext(), gso);
+                    googleSignInClient.signOut().addOnCompleteListener(task -> {
+                        Log.d(TAG, "Google Sign-Out successful");
+                        // Clear local session data after Google sign-out
+                        sessionManager.clearSession();
+                        navigateToLogin();
+                    });
+                } else {
+                    // Just local authentication, use SessionManager logout
+                    sessionManager.logout();
+                    navigateToLogin();
+                }
             } catch (Exception e) {
-                Log.d(TAG, "Logout button error", e);
+                Log.e(TAG, "Logout button error", e);
             }
         });
     }
+
 
     private void navigateToLogin() {
         Activity main = null;
