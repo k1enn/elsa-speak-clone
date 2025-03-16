@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.ImageButton;
 
 public class MainActivity extends AppCompatActivity {
     SharedPreferences prefs;
@@ -29,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle toggle;
     private NavigationView navigationView;
+    private ImageButton dictionary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         setupNavigationMenu();
         initializeSharedPreferences();
         checkUserLogin();
-
+        setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
 
@@ -69,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     private void initializeVariable() {
+        dictionary = findViewById(R.id.btnDictionary);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(navListener);
         // Set up the toolbar
@@ -147,5 +150,15 @@ public class MainActivity extends AppCompatActivity {
     private void loadFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, fragment).commit();
+    }
+    private void navigateToDictionary() {
+        Intent intent = new Intent(MainActivity.this, DictionaryActivity.class);
+        startActivity(intent);
+    }
+
+    private void setupDictionaryButton() {
+        dictionary.setOnClickListener(v -> {
+            navigateToDictionary();
+        });
     }
 }
