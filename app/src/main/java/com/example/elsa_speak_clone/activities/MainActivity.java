@@ -1,7 +1,11 @@
 
 package com.example.elsa_speak_clone.activities;
 
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -12,15 +16,21 @@ import com.example.elsa_speak_clone.fragments.LearnFragment;
 import com.example.elsa_speak_clone.fragments.ProfileFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.navigation.NavigationView;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.ImageButton;
 
 public class MainActivity extends AppCompatActivity {
     SharedPreferences prefs;
     private BottomNavigationView bottomNavigationView;
+    private DrawerLayout drawerLayout;
+    private ActionBarDrawerToggle toggle;
+    private NavigationView navigationView;
+    private ImageButton dictionary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,9 +38,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         initializeVariable();
+        setupNavigationMenu();
         initializeSharedPreferences();
         checkUserLogin();
-
+        setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
 
@@ -60,9 +71,52 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     private void initializeVariable() {
+        dictionary = findViewById(R.id.btnDictionary);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(navListener);
+        // Set up the toolbar
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        // Initialize drawer layout and navigation view
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+
+        // Set up the ActionBarDrawerToggle
+        toggle = new ActionBarDrawerToggle(
+                this,
+                drawerLayout,
+                toolbar,
+                R.string.navigation_drawer_open,
+                R.string.navigation_drawer_close
+        );
+
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
     }
+    private void setupNavigationMenu() {
+        // Set up navigation item selection listener
+        navigationView.setNavigationItemSelectedListener(item -> {
+            // Handle navigation view item clicks here
+            int id = item.getItemId();
+
+            if (id == R.id.nav_home) {
+                // Handle home action
+            } else if (id == R.id.nav_learn) {
+                // Handle learn action
+            } else if (id == R.id.nav_discover) {
+                // Handle discover action
+            } else if (id == R.id.nav_leaderboard) {
+                // Handle leaderboard action
+            } else if (id == R.id.nav_account) {
+                // Handle profile action
+            }
+
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
+        });
+    }
+
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -96,5 +150,15 @@ public class MainActivity extends AppCompatActivity {
     private void loadFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, fragment).commit();
+    }
+    private void navigateToDictionary() {
+        Intent intent = new Intent(MainActivity.this, DictionaryActivity.class);
+        startActivity(intent);
+    }
+
+    private void setupDictionaryButton() {
+        dictionary.setOnClickListener(v -> {
+            navigateToDictionary();
+        });
     }
 }
