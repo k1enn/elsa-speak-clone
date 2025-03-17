@@ -3,6 +3,8 @@ package com.example.elsa_speak_clone.fragments;
 import android.content.Intent;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -96,6 +98,12 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    private Handler progressRefreshHandler;
+    private final int REFRESH_INTERVAL = 1000; // 10 seconds refresh interval
+    private int refreshCount = 0;
+    private final int MAX_REFRESHES = 2;
+    private Runnable progressChecker;
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -105,13 +113,71 @@ public class HomeFragment extends Fragment {
         initializeVariables();
 
         WelcomeUsername();
-        loadUserProgress();
+        loadUserProgress(); // Initial load
         setupSpeechToTextButton();
         setupGrammarButton();
         setupVocabularyButton();
 
+        // For update user progress frequently
+        progressRefreshHandler = new Handler(Looper.getMainLooper());
+        createProgressCheckerRunnable();
+
         return view;
     }
+
+    private void createProgressCheckerRunnable() {
+        progressChecker = new Runnable() {
+            @Override
+            public void run() {
+                // Check if reach max loop time
+                if (refreshCount < MAX_REFRESHES) {
+                    // Load the latest user progress
+                    loadUserProgress();
+                    refreshCount++;
+                    Log.d("HomeFragment", "Progress refresh #" + refreshCount + " completed");
+
+                    // Ready for next loop
+                    if (refreshCount < MAX_REFRESHES) {
+                        progressRefreshHandler.postDelayed(this, REFRESH_INTERVAL);
+                    } else {
+                        Log.d("HomeFragment", "Reached maximum number of refreshes");
+                    }
+                }
+            }
+        };
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (progressRefreshHandler != null && progressChecker != null) {
+            refreshCount = 0;
+            progressRefreshHandler.removeCallbacks(progressChecker);
+            progressRefreshHandler.postDelayed(progressChecker, REFRESH_INTERVAL);
+            Log.d("HomeFragment", "Refresh timer restarted in onResume");
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (progressRefreshHandler != null && progressChecker != null) {
+            progressRefreshHandler.removeCallbacks(progressChecker);
+            Log.d("HomeFragment", "Refresh timer paused in onPause");
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (progressRefreshHandler != null) {
+            progressRefreshHandler.removeCallbacksAndMessages(null);
+            progressRefreshHandler = null;
+            Log.d("HomeFragment", "Refresh timer cleaned up in onDestroy");
+        }
+    }
+
+
 
     private void initializeUI(View view) {
         try {

@@ -33,20 +33,20 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     private static final String emptyString = "";
 
     // Users Table
-    private static final String TABLE_USERS = "Users";
-    private static final String COLUMN_USER_ID = "UserId";
-    private static final String COLUMN_GMAIL = "Gmail";
-    private static final String COLUMN_NAME = "Name";
-    private static final String COLUMN_JOIN_DATE = "JoinDate";
-    private static final String COLUMN_IS_GOOGLE_USER = "google";
-    private static final String COLUMN_PASSWORD = "Password";
+    public static final String TABLE_USERS = "Users";
+    public static final String COLUMN_USER_ID = "UserId";
+    public static final String COLUMN_GMAIL = "Gmail";
+    public static final String COLUMN_NAME = "Name";
+    public static final String COLUMN_JOIN_DATE = "JoinDate";
+    public static final String COLUMN_IS_GOOGLE_USER = "google";
+    public static final String COLUMN_PASSWORD = "Password";
 
     // Lessons Table
     private static final String TABLE_LESSONS = "Lessons";
-    private static final String COLUMN_LESSON_ID = "LessonId";
+    public static final String COLUMN_LESSON_ID = "LessonId";
     private static final String COLUMN_LESSON_CONTENT = "LessonContent";
     private static final String COLUMN_TOPIC = "Topic";
-    private static final String COLUMN_DIFFICULTY_LEVEL = "DifficultyLevel";
+    public static final String COLUMN_DIFFICULTY_LEVEL = "DifficultyLevel";
 
     // Vocabulary Table
     private static final String TABLE_VOCABULARY = "Vocabulary";
@@ -55,12 +55,12 @@ public class LearningAppDatabase extends SQLiteOpenHelper {
     private static final String COLUMN_WORD_ID = "WordId";
 
     // UserProgress Table
-    private static final String TABLE_USER_PROGRESS = "UserProgress";
-    private static final String COLUMN_PROGRESS_ID = "ProgressId";
-    private static final String COLUMN_COMPLETION_TIME = "CompletionTime";
-    private static final String COLUMN_STREAK = "Streak";
-    private static final String COLUMN_XP = "Xp";
-    private static final String COLUMN_LAST_STUDY_DATE = "LastStudyDate";
+    public static final String TABLE_USER_PROGRESS = "UserProgress";
+    public static final String COLUMN_PROGRESS_ID = "ProgressId";
+    public static final String COLUMN_COMPLETION_TIME = "CompletionTime";
+    public static final String COLUMN_STREAK = "Streak";
+    public static final String COLUMN_XP = "Xp";
+    public static final String COLUMN_LAST_STUDY_DATE = "LastStudyDate";
 
     // Quizzes Table
     private static final String TABLE_QUIZZES = "Quizzes";
@@ -1411,5 +1411,62 @@ public int getUserStreak(Context context) {
         return userId;
     }
 
+    /**
+     * Add 5 XP points to the specified user across all their progress records
+     * @param userId The ID of the user to add XP to
+     * @return True if the operation was successful, false otherwise
+     */
+    public boolean addXpPoints(int userId, int lessonId, int points) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        boolean success = false;
+
+        try {
+            // Check if user has any progress records
+            Cursor cursor = db.query(
+                    TABLE_USER_PROGRESS,
+                    null,
+                    COLUMN_USER_ID + "=?",
+                    new String[]{String.valueOf(userId)},
+                    null, null, null
+            );
+
+            boolean hasProgress = cursor != null && cursor.getCount() > 0;
+            if (cursor != null) {
+                cursor.close();
+            }
+
+            if (hasProgress) {
+                // User has progress records - update them all by adding 5 XP
+                db.execSQL(
+                        "UPDATE " + TABLE_USER_PROGRESS +
+                                " SET " + COLUMN_XP + " = " + COLUMN_XP + " + 5" +
+                                " WHERE " + COLUMN_USER_ID + " = ?",
+                        new String[]{String.valueOf(userId)}
+                );
+                success = true;
+            } else {
+                // No progress records - create a new one with the default lesson
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_USER_ID, userId);
+                values.put(COLUMN_PROGRESS_ID, generateUniqueProgressId(db));
+                values.put(COLUMN_DIFFICULTY_LEVEL, 1);
+                values.put(COLUMN_COMPLETION_TIME, getCurrentDate());
+                values.put(COLUMN_STREAK, 1);
+                values.put(COLUMN_LAST_STUDY_DATE, getCurrentDate());
+                values.put(COLUMN_XP, points);
+                values.put(COLUMN_LESSON_ID, lessonId);
+
+                long result = db.insert(TABLE_USER_PROGRESS, null, values);
+                success = result != -1;
+            }
+
+            return success;
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding XP points to user " + userId, e);
+            return false;
+        } finally {
+            db.close();
+        }
+    }
 
 }

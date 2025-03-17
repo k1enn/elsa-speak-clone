@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.classes.Lesson;
 import com.example.elsa_speak_clone.classes.LessonAdapter;
 import com.example.elsa_speak_clone.R;
@@ -71,7 +72,7 @@ public class LearnFragment extends Fragment {
         LessonAdapter adapter = new LessonAdapter(vocabList, db, lesson -> {
             // Handle lesson click (navigate to detail fragment/activity)
             Toast.makeText(requireContext(), "Clicked " + lesson.getTopic(), Toast.LENGTH_SHORT).show();
-            Intent intent = new Intent(requireActivity(), SpeechToText.class);
+            Intent intent = new Intent(requireActivity(), QuizActivity.class);
             intent.putExtra("LESSON_ID", lesson.getLessonId());
             startActivity(intent);
 

@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.FirebaseSyncManager;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.fragments.HomeFragment;
@@ -28,6 +29,7 @@ import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import java.util.HashMap;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
@@ -38,7 +40,8 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private ImageButton dictionary;
     GoogleSignInHelper googleSignInHelper;
-
+    private FirebaseSyncManager syncManager;
+    private SessionManager sessionManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,10 +54,33 @@ public class MainActivity extends AppCompatActivity {
         setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
+        firebaseSync();
 
     }
 
+    private void firebaseSync() {
+        try {
+            sessionManager = new SessionManager(this);
+            syncManager = new FirebaseSyncManager(this);
 
+            // Setup offline capability
+            syncManager.setupOfflineCapability();
+
+            // Get current user ID
+            HashMap<String, String> userDetails = sessionManager.getUserDetails();
+            int userId = Integer.parseInt(userDetails.get(SessionManager.KEY_USER_ID));
+
+            // Sync local data to Firebase
+            syncManager.syncUserData(userId);
+            syncManager.syncUserProgress(userId);
+
+            // Listen for remote changes
+            syncManager.listenForRemoteChanges(userId);
+        } catch (Exception e) {
+            Log.d("MainActivity", "Can not sync with firebase");
+        }
+
+    }
     private void initializeSharedPreferences() {
         String username = getIntent().getStringExtra("username");
         int userId = getIntent().getIntExtra("userId", -1);

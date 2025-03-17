@@ -109,7 +109,7 @@ public class ProfileFragment extends Fragment {
         btnLogout = view.findViewById(R.id.btnLogout);
         btnShare = view.findViewById(R.id.btnShare);
         btnSettings = view.findViewById(R.id.btnSettings);
-    sessionManager = new SessionManager(requireContext());
+        sessionManager = new SessionManager(requireContext());
     }
     private void setupShareProfileButton() {
         btnShare.setOnClickListener(v -> {

@@ -15,7 +15,7 @@
         android:gravity="center"
         android:text="Congratulations!"
         android:textColor="#4CAF50"
-        android:textSize="48sp"
+        android:textSize="36sp"
         android:textStyle="bold" />
 
     <TextView
