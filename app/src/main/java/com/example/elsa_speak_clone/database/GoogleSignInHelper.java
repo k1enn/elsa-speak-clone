@@ -2,6 +2,7 @@ package com.example.elsa_speak_clone.database;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 
 
@@ -22,7 +23,7 @@ public class GoogleSignInHelper {
     private final GoogleSignInClient mGoogleSignInClient;
     private final Activity activity;
     private final AuthCallback authCallback;
-    private static final int RC_SIGN_IN = 9001;
+    public static final int RC_SIGN_IN = 9001;
 
     public interface AuthCallback {
         void onSuccess(FirebaseUser user);
@@ -46,30 +47,41 @@ public class GoogleSignInHelper {
 
         mGoogleSignInClient = GoogleSignIn.getClient(activity, gso);
     }
+
     // It will return true if have an account already signed in
     public boolean CheckGoogleLoginState() {
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this.activity);
-        if (account != null) {
-            return false;
-        }
-        return true;
+        return account != null; // Return true if account exists, false otherwise
     }
+    // Modify your GoogleSignInHelper class
     public void signIn() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        activity.startActivityForResult(signInIntent, RC_SIGN_IN);
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(activity.getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        GoogleSignInClient client = GoogleSignIn.getClient(activity, gso);
+        // Force account selection even if already signed in
+        client.signOut().addOnCompleteListener(task -> {
+            Intent signInIntent = client.getSignInIntent();
+            activity.startActivityForResult(signInIntent, RC_SIGN_IN);
+        });
     }
+
 
     public void handleActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == RC_SIGN_IN) {
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
+                Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 firebaseAuthWithGoogle(account.getIdToken());
             } catch (ApiException e) {
+                // Log the specific error code to diagnose the issue
+                Log.e("GoogleSignIn", "Sign-in failed with error code: " + e.getStatusCode());
                 authCallback.onError("Google sign in failed: " + e.getStatusCode());
             }
         }
     }
+
 
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);

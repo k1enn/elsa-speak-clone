@@ -99,30 +99,61 @@ public class LoginActivity extends AppCompatActivity {
         googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
-                String email = user.getEmail();
-                try {
-                if (!dbHelper.doesUserGmailExist(email)) {
-                    String name = user.getDisplayName() != null ? 
-                        user.getDisplayName() : Objects.requireNonNull(email).split("@")[0];
-                    // Use empty because Google doesn't need password
-                    dbHelper.registerUser(name, emptyString);
-                } else {
-                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
-                    navigateToMain();
-                    finish();
+                if (user == null || user.getEmail() == null) {
+                    Toast.makeText(LoginActivity.this, "Failed to get user data", Toast.LENGTH_SHORT).show();
+                    return;
                 }
-                } catch (Exception e) {
-                    Log.d("LoginActivity", "Can not initialize Google login", e);
 
+                String email = user.getEmail();
+                String displayName = user.getDisplayName() != null ?
+                        user.getDisplayName() : email.split("@")[0];
+
+                try {
+                    // Check if user already exists in our database
+                    int userId = dbHelper.getUserIdByEmail(email);
+
+                    if (userId != -1) {
+                        // User exists - authenticate as Google user
+                        Log.d("GoogleSignIn", "User exists with ID: " + userId);
+                        if (dbHelper.authenticateGoogleUser(email)) {
+                            Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                            navigateToMain();
+                        } else {
+                            // This could happen if the email exists but not as a Google user
+                            Toast.makeText(LoginActivity.this, "Authentication Failed", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        // New user - register
+                        Log.d("GoogleSignIn", "Registering new Google user: " + email);
+                        if (dbHelper.registerGoogleUser(email)) {
+                            // Get the newly created user ID and create session
+                            userId = dbHelper.getUserIdByEmail(email);
+                            if (userId != -1) {
+                                SessionManager sessionManager = new SessionManager(LoginActivity.this);
+                                sessionManager.createGoogleSession(displayName, userId);
+                                Toast.makeText(LoginActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                                navigateToMain();
+                            } else {
+                                Toast.makeText(LoginActivity.this, "Error getting user ID after registration", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(LoginActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("GoogleSignIn", "Error in Google sign-in process", e);
+                    Toast.makeText(LoginActivity.this, "Login Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onError(String message) {
                 Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
+                Log.e("GoogleSignIn", "Error: " + message);
             }
         });
     }
+
 
 
 
@@ -132,7 +163,7 @@ public class LoginActivity extends AppCompatActivity {
             String password = etPassword.getText().toString().trim();
 
             try {
-                if (dbHelper.authenticateUser(username, password)) {
+                if (dbHelper.authenticateLocalUser(username, password)) {
                     // Create session after successful login
                     SessionManager sessionManager = new SessionManager(LoginActivity.this);
                     int userId = dbHelper.getUserId(username);
@@ -152,8 +183,12 @@ public class LoginActivity extends AppCompatActivity {
 
     // Google Sign-In Setup
     private void setupGoogleLoginButton() {
-        googleLoginButton.setOnClickListener(v -> googleSignInHelper.signIn());
+        googleLoginButton.setOnClickListener(v -> {
+            googleSignInHelper.signOut();
+            googleSignInHelper.signIn();
+        });
     }
+
 
     private void setupRegisterButton() {
         btnRegister.setOnClickListener(v -> {

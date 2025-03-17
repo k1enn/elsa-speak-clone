@@ -1,9 +1,12 @@
 package com.example.elsa_speak_clone.activities;
 
+import android.animation.Animator;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -12,6 +15,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -20,6 +24,7 @@ import androidx.core.content.ContextCompat;
 
 import android.media.MediaPlayer;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.LearningAppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
@@ -34,6 +39,8 @@ public class QuizActivity extends AppCompatActivity {
     private EditText etAnswer;
     private Button btnCheckAnswer, btnNextQuestion;
     private String correctAnswer;
+
+    LottieAnimationView lottieConfetti;
     private int currentLessonId = 1; // Default to lesson 1
     private List<Integer> usedQuizIds = new ArrayList<>(); // Track used questions
     private MediaPlayer correctSoundPlayer; // For the "ting ting" sound
@@ -61,7 +68,8 @@ public class QuizActivity extends AppCompatActivity {
         btnCheckAnswer = findViewById(R.id.btnCheckAnswer);
         btnNextQuestion = findViewById(R.id.btnNextQuestion);
         tvResult = findViewById(R.id.tvResult);
-
+        // Initialize the confetti animation view
+        lottieConfetti = findViewById(R.id.lottieConfetti);
         // Initialize the sound player
         correctSoundPlayer = MediaPlayer.create(this, R.raw.correct_sound);
     }
@@ -141,37 +149,95 @@ public class QuizActivity extends AppCompatActivity {
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.popup_congratulations, null);
 
-        // Create the popup window
         int width = LinearLayout.LayoutParams.MATCH_PARENT;
         int height = LinearLayout.LayoutParams.MATCH_PARENT;
-        boolean focusable = false; // Not allows taps outside the popup to dismiss it
+        boolean focusable = false;
 
         final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
 
-        // Set a nice animation for the popup
         popupWindow.setAnimationStyle(android.R.style.Animation_Dialog);
 
-        // Show the popup centered in the screen
         popupWindow.showAtLocation(findViewById(android.R.id.content), Gravity.CENTER, 0, 0);
 
-        // Set up the close button
+        // Call the separate method to display the confetti popup ABOVE this one
+        showConfettiPopup();
+
         Button btnClose = popupView.findViewById(R.id.btnClose);
         btnClose.setOnClickListener(v -> {
             popupWindow.dismiss();
-            // finish();
+            navigatetoMain();
+
+            // Ensure we dismiss the confetti if it's still visible
+            if (confettiPopup != null && confettiPopup.isShowing()) {
+                confettiPopup.dismiss();
+            }
         });
 
-        // Add a dim background effect
         View rootView = getWindow().getDecorView().getRootView();
         WindowManager.LayoutParams params = (WindowManager.LayoutParams) rootView.getLayoutParams();
+
         params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         params.dimAmount = 0.5f;
+
         getWindow().setAttributes(params);
 
-        // Reset the dim effect when popup is dismissed
         popupWindow.setOnDismissListener(() -> {
             params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
             getWindow().setAttributes(params);
+
+            // Dismiss the confetti when popup is dismissed
+            if (confettiPopup != null && confettiPopup.isShowing()) {
+                confettiPopup.dismiss();
+            }
+        });
+    }
+
+
+    private PopupWindow confettiPopup;
+
+    private void showConfettiPopup() {
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        // Create a simple FrameLayout to hold the LottieAnimationView
+        FrameLayout confettiLayout = new FrameLayout(this);
+        confettiLayout.setLayoutParams(new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+
+        // Create and configure the LottieAnimationView
+        LottieAnimationView confettiView = new LottieAnimationView(this);
+        confettiView.setAnimation(R.raw.confetti);
+        confettiView.setScaleX(4.0f); // 400% bigger
+        confettiView.setScaleY(4.0f);
+        confettiView.setRepeatCount(0); // Play once
+        confettiView.playAnimation();
+
+        // Add the LottieAnimationView to the layout
+        confettiLayout.addView(confettiView);
+
+        // Create the PopupWindow with transparent background
+        confettiPopup = new PopupWindow(
+                confettiLayout,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                false);
+
+        // Transparent background for popup
+        confettiPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        // Show it on top of everything else
+        confettiPopup.showAtLocation(findViewById(android.R.id.content), Gravity.CENTER, 0, 0);
+
+        // Automatically dismiss after animation ends
+        confettiView.addAnimatorListener(new Animator.AnimatorListener() {
+            @Override public void onAnimationStart(Animator animator) { }
+            @Override public void onAnimationEnd(Animator animator) {
+                if (confettiPopup != null && confettiPopup.isShowing()) {
+                    confettiPopup.dismiss();
+                }
+            }
+            @Override public void onAnimationCancel(Animator animator) { }
+            @Override public void onAnimationRepeat(Animator animator) { }
         });
     }
 
@@ -190,12 +256,17 @@ public class QuizActivity extends AppCompatActivity {
             } catch (NullPointerException e) {
                 Log.d("QuizActivity", "Correct sound is NULL");
             }
-
-            // Optional: Update user score in database
             SessionManager sessionManager = new SessionManager(this);
             int userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
-            // Get the quiz ID (you would need to store this when loading the question)
-            // dbHelper.addQuizScore(userId, quizId, 1);
+
+            // Update user score in database by difficulty
+            if (currentLessonId > 5) {
+                dbHelper.addXpPoints(userId, currentLessonId, 10);
+            } else {
+                dbHelper.addXpPoints(userId, currentLessonId, 5);
+            }
+            dbHelper.updateUserStreak(this);
+
             changeCheckAnswerButton();
 
         } else {
@@ -213,7 +284,9 @@ public class QuizActivity extends AppCompatActivity {
     private void returnCheckAnswerButton() {
         btnCheckAnswer.setText("Kiểm tra");
         btnCheckAnswer.setBackground(ContextCompat.getDrawable(this, R.drawable.rounded_button));
-        btnCheckAnswer.setOnClickListener(v -> checkAnswer());
+        btnCheckAnswer.setOnClickListener(v ->{
+            checkAnswer();
+        });
     }
 
     @Override
@@ -225,4 +298,26 @@ public class QuizActivity extends AppCompatActivity {
             correctSoundPlayer = null;
         }
     }
+    @Override
+    public void onBackPressed() {
+
+        // Create intent to navigate to MainActivity
+        super.onBackPressed();
+
+        navigatetoMain();
+        // Update user streak when returning to MainActivity
+        dbHelper.updateUserStreak(this);
+    }
+
+    private void navigatetoMain() {
+        Intent intent = new Intent(this, MainActivity.class);
+
+        // Add flags to properly handle the back stack
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        // Start MainActivity
+        startActivity(intent);
+        finish();
+    }
+
 }
