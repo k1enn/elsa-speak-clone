@@ -58,7 +58,14 @@ dependencies {
     implementation libs.activity
     implementation libs.firebase.storage
     implementation libs.ui.android
+    // Firebase core
+    implementation 'com.google.firebase:firebase-core:21.1.1'
 
+    // Firebase Realtime Database
+    implementation 'com.google.firebase:firebase-database:20.2.2'
+
+    // Firebase Authentication (if you need user authentication)
+    implementation 'com.google.firebase:firebase-auth:22.1.2'
     // Unit Testing
     testImplementation "junit:junit:4.13.2"
     androidTestImplementation "androidx.test:runner:1.5.2"
