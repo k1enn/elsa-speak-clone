@@ -1,0 +1,8 @@
+Index: app/google-services.json
+===================================================================
+diff --git a/app/google-services.json b/app/google-services.json
+deleted file mode 100644
+--- a/app/google-services.json	(revision 826b61f91ee6f64e051af6212796301f9a422ddc)
++++ /dev/null	(revision 826b61f91ee6f64e051af6212796301f9a422ddc)
+@@ -1,1 +0,0 @@
+-
