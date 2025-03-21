@@ -14,19 +14,26 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 
 import com.example.elsa_speak_clone.activities.LoginActivity;
 import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 import com.example.elsa_speak_clone.activities.SpeechToText;
-import com.example.elsa_speak_clone.database.LearningAppDatabase;
+import com.example.elsa_speak_clone.services.NavigationService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.malinskiy.materialicons.IconDrawable;
 import com.malinskiy.materialicons.Iconify;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -60,12 +67,22 @@ public class HomeFragment extends Fragment {
     private TextView tvWelcome;
     private ImageView ivPronunciation;
     private ImageView profileImage;
-    private LearningAppDatabase db;
-    private int user_id;
     private IconDrawable iconPronunciation;
     private IconDrawable iconProfile;
-    private boolean loginCheck;
     private SessionManager sessionManager;
+    NavigationService navigationService;
+
+    // Room database components
+    private AppDatabase database;
+    private UserProgressRepository userProgressRepository;
+    private ExecutorService executor;
+    private Handler mainHandler;
+
+    private Handler progressRefreshHandler;
+    private final int REFRESH_INTERVAL = 1000; // 1 second refresh interval
+    private int refreshCount = 0;
+    private final int MAX_REFRESHES = 2;
+    private Runnable progressChecker;
 
     public HomeFragment() {
         // Required empty public constructor
@@ -98,31 +115,64 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private Handler progressRefreshHandler;
-    private final int REFRESH_INTERVAL = 1000; // 10 seconds refresh interval
-    private int refreshCount = 0;
-    private final int MAX_REFRESHES = 2;
-    private Runnable progressChecker;
-
+    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
-
+        
+        // Intialize navigation service
+        initializeNavigationService();
+        
+        // Initialize database components
+        initializeDatabase();
+        
+        // Initialize UI components
         initializeUI(view);
+        
+        // Initialize other components
         initializeVariables();
-
-        WelcomeUsername();
-        loadUserProgress(); // Initial load
+        
+        // Setup click listeners and UI updates
+        setupWelcomeMessage();
         setupSpeechToTextButton();
         setupGrammarButton();
         setupVocabularyButton();
-
-        // For update user progress frequently
-        progressRefreshHandler = new Handler(Looper.getMainLooper());
-        createProgressCheckerRunnable();
-
+        
+        // Only setup login button if it exists
+        if (btnLogin != null) {
+            setupLoginButton();
+        }
+        
+        // Load user progress
+        loadUserProgress();
+        observeUserProgress();
+        
         return view;
+    }
+
+    private void initializeNavigationService() {
+        navigationService = new NavigationService(requireContext());
+    }
+
+    // Initialize database and related components
+    private void initializeDatabase() {
+        try {
+            // Get database instance
+            database = AppDatabase.getInstance(requireContext());
+            
+            // Initialize repository for progress data
+            userProgressRepository = new UserProgressRepository(requireActivity().getApplication());
+            
+            // Set up threading components
+            executor = Executors.newSingleThreadExecutor();
+            mainHandler = new Handler(Looper.getMainLooper());
+            
+            // Initialize progress refresh handler
+            progressRefreshHandler = new Handler(Looper.getMainLooper());
+            createProgressCheckerRunnable();
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing database components", e);
+        }
     }
 
     private void createProgressCheckerRunnable() {
@@ -134,13 +184,13 @@ public class HomeFragment extends Fragment {
                     // Load the latest user progress
                     loadUserProgress();
                     refreshCount++;
-                    Log.d("HomeFragment", "Progress refresh #" + refreshCount + " completed");
+                    Log.d(TAG, "Progress refresh #" + refreshCount + " completed");
 
                     // Ready for next loop
                     if (refreshCount < MAX_REFRESHES) {
                         progressRefreshHandler.postDelayed(this, REFRESH_INTERVAL);
                     } else {
-                        Log.d("HomeFragment", "Reached maximum number of refreshes");
+                        Log.d(TAG, "Reached maximum number of refreshes");
                     }
                 }
             }
@@ -154,7 +204,7 @@ public class HomeFragment extends Fragment {
             refreshCount = 0;
             progressRefreshHandler.removeCallbacks(progressChecker);
             progressRefreshHandler.postDelayed(progressChecker, REFRESH_INTERVAL);
-            Log.d("HomeFragment", "Refresh timer restarted in onResume");
+            Log.d(TAG, "Refresh timer restarted in onResume");
         }
     }
 
@@ -163,7 +213,7 @@ public class HomeFragment extends Fragment {
         super.onPause();
         if (progressRefreshHandler != null && progressChecker != null) {
             progressRefreshHandler.removeCallbacks(progressChecker);
-            Log.d("HomeFragment", "Refresh timer paused in onPause");
+            Log.d(TAG, "Refresh timer paused in onPause");
         }
     }
 
@@ -173,14 +223,18 @@ public class HomeFragment extends Fragment {
         if (progressRefreshHandler != null) {
             progressRefreshHandler.removeCallbacksAndMessages(null);
             progressRefreshHandler = null;
-            Log.d("HomeFragment", "Refresh timer cleaned up in onDestroy");
+            Log.d(TAG, "Refresh timer cleaned up in onDestroy");
+        }
+
+        // Clean up executor
+        if (executor != null) {
+            executor.shutdown();
         }
     }
 
-
-
     private void initializeUI(View view) {
         try {
+            // Find all the views from the inflated layout
             btnLogin = view.findViewById(R.id.btnLogin);
             cvPronunciation = view.findViewById(R.id.cvPronunciation);
             cvGrammar = view.findViewById(R.id.cvGrammar);
@@ -188,81 +242,104 @@ public class HomeFragment extends Fragment {
             tvDayStreak = view.findViewById(R.id.tvDayStreak);
             tvXPPoint = view.findViewById(R.id.tvXPPoint);
             tvWelcome = view.findViewById(R.id.tvWelcome);
-            bottomNavigationView = view.findViewById(R.id.bottom_navigation);
-            bottomNavigationView.setOnItemSelectedListener(navListener);
-
-            // Set default selection
-            bottomNavigationView.setSelectedItemId(R.id.nav_home);
+ 
         } catch (Exception e) {
-            Log.d(TAG, "initializedUI components");
+            Log.e(TAG, "Error initializing UI components", e);
         }
 
         try {
             ivPronunciation = view.findViewById(R.id.ivPronunciation);
-            iconPronunciation = new IconDrawable(requireContext(), Iconify.IconValue.zmdi_volume_up)
-                    .colorRes(R.color.real_purple)  // Set color
-                    .sizeDp(48); // Set size
-            iconPronunciation.setStyle(Paint.Style.FILL);
-            ivPronunciation.setImageDrawable(iconPronunciation);
+            if (ivPronunciation != null) {
+                iconPronunciation = new IconDrawable(requireContext(), Iconify.IconValue.zmdi_volume_up)
+                        .colorRes(R.color.real_purple)  // Set color
+                        .sizeDp(48); // Set size
+                iconPronunciation.setStyle(Paint.Style.FILL);
+                ivPronunciation.setImageDrawable(iconPronunciation);
+            }
 
             profileImage = view.findViewById(R.id.profileImage);
-            iconProfile = new IconDrawable(requireContext(), Iconify.IconValue.zmdi_account_circle)
-                    .colorRes(R.color.gray)  // Set color
-                    .sizeDp(70); // Set size
-            iconProfile.setStyle(Paint.Style.FILL);
-            profileImage.setImageDrawable(iconProfile);
+            if (profileImage != null) {
+                iconProfile = new IconDrawable(requireContext(), Iconify.IconValue.zmdi_account_circle)
+                        .colorRes(R.color.gray)  // Set color
+                        .sizeDp(70); // Set size
+                iconProfile.setStyle(Paint.Style.FILL);
+                profileImage.setImageDrawable(iconProfile);
+            }
         } catch (NullPointerException npe) {
-            Log.d(TAG, "Can't find icons" + npe);
+            Log.d(TAG, "Can't find icons: " + npe);
         }
     }
 
     private void initializeVariables() {
         try {
-            db = new LearningAppDatabase(requireContext());
-            db.updateUserStreak(requireContext());
-            // Use SessionManager instead of direct SharedPreferences
+            // Use SessionManager for user information
             sessionManager = new SessionManager(requireContext());
+
+            // Update user streak using the Room database
+            executor.execute(() -> {
+                if (sessionManager.isLoggedIn()) {
+                    // Using UserProgressRepository to update streak
+                    userProgressRepository.updateDailyStreak(sessionManager.getUserId());
+                }
+            });
+
             if (sessionManager.isLoggedIn()) {
                 isLoggedIn = true;
                 username = sessionManager.getUserDetails().get("username");
-                userId = Integer.parseInt(sessionManager.getUserDetails().get("userId"));
+                userId = sessionManager.getUserId();
             } else {
                 isLoggedIn = false;
                 username = null;
                 userId = -1;
             }
-
         } catch (Exception e) {
             Log.e(TAG, "Error in initializeVariables: ", e);
         }
     }
 
-    private void WelcomeUsername() {
+    private void setupWelcomeMessage() {
         try {
-            if (userStreak <= 1) {
-                tvWelcome.setText("Welcome " + username + "!");
+            if (username != null) {
+                if (userStreak <= 1) {
+                    tvWelcome.setText("Welcome " + username + "!");
+                } else {
+                    tvWelcome.setText("Welcome back " + username + "!");
+                }
             } else {
-                tvWelcome.setText("Welcome back " + username + "!");
+                tvWelcome.setText("Welcome!");
             }
         } catch (Exception e) {
-            Log.d(TAG, "Error on WelcomeUsername" + e.getMessage());
+            Log.d(TAG, "Error on setupWelcomeMessage: " + e.getMessage());
         }
     }
 
+    private void observeUserProgress() {
+        if (isLoggedIn) {
+            // Observe streak changes
+            userProgressRepository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
+                userStreak = streak != null ? streak : 0;
+                tvDayStreak.setText(String.valueOf(userStreak));
+                setupWelcomeMessage(); // Update welcome message based on streak
+            });
+
+            // Observe XP changes
+            userProgressRepository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
+                int userXp = xp != null ? xp : 0;
+                tvXPPoint.setText(String.valueOf(userXp));
+            });
+        }
+    }
 
     private void loadUserProgress() {
         try {
-            if (tvDayStreak.getText() == "-1" || tvXPPoint.getText() == "-1") {
-                tvXPPoint.setText(String.valueOf(db.getUserXp(requireContext())));
-                tvDayStreak.setText(String.valueOf(db.getUserStreak(requireContext())));
-                Log.d(TAG, "Loaded new progress");
+            if (isLoggedIn) {
+                // Use the repository to load metrics
+                userProgressRepository.loadUserMetrics(userId);
             } else {
-                tvXPPoint.setText(String.valueOf(db.getUserXp(requireContext())));
-                tvDayStreak.setText(String.valueOf(db.getUserStreak(requireContext())));
-                Log.d(TAG, "Loaded progress");
+                // Set default values for not logged in users
+                tvXPPoint.setText("0");
+                tvDayStreak.setText("0");
             }
-
-
         } catch (Exception e) {
             Log.e(TAG, "Error in loadUserProgress: ", e);
             // Set default values in case of any error
@@ -272,114 +349,63 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupLoginButton() {
-        btnLogin.setOnClickListener(v -> {
-            try {
-                if (sessionManager.isLoggedIn()) {
-                    sessionManager.logout();
-                    navigateToLogin();
-                } else {
-                    navigateToLogin();
+        // Add null check before setting OnClickListener
+        if (btnLogin != null) {
+            btnLogin.setOnClickListener(v -> {
+                try {
+                    if (sessionManager.isLoggedIn()) {
+                        sessionManager.logout();
+                        navigateToLogin();
+                    } else {
+                        navigateToLogin();
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Error in setupLoginButton", e);
                 }
-            } catch (Exception e) {
-                Log.d(TAG, "Error in setupLoginButton", e);
-            }
-        });
+            });
+        } else {
+            Log.e(TAG, "Login button not found in layout");
+        }
+    }
+
+    private void navigateToLogin() {
+        try {
+            Intent intent = new Intent(requireActivity(), LoginActivity.class);
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "Error navigating to login: ", e);
+        }
     }
 
     private void setupSpeechToTextButton() {
         cvPronunciation.setOnClickListener(v -> {
-            checkLogin();
             try {
-                if (username != null) {
-                    try {
-                        navigateToSpeechToText();
-                    } catch (Exception e) {
-                        Log.d(TAG, "Can not found activity: " + e);
-                    }
-                } else {
-                    try {
-                        navigateToLogin();
-                    } catch (Exception e) {
-                        Log.d(TAG, "Can not found activity: " + e);
-                    }
-                }
+                navigationService.navigateToSpeechToText();
             } catch (Exception e) {
-                Log.d(TAG, "SpeechToText button error: " + e);
+                Log.e(TAG, "Error navigating to speech recognition: ", e);
             }
         });
     }
 
     private void setupGrammarButton() {
         cvGrammar.setOnClickListener(v -> {
-            Intent intent = new Intent(requireActivity(), QuizActivity.class);
-            startActivity(intent);
+            try {
+                // In progress
+                navigationService.navigateToQuiz(1);
+            } catch (Exception e) {
+                Log.e(TAG, "Error navigating to grammar: ", e);
+            }
         });
     }
 
     private void setupVocabularyButton() {
         cvVocabulary.setOnClickListener(v -> {
-            checkLogin();
+            // Launch vocabulary activity or fragment
             try {
-                if (username != null) {
-                    try {
-                        navigateToSpeechToText();
-                    } catch (Exception e) {
-                        Log.d(TAG, "Can not found activity: " + e);
-                    } finally {
-                        Log.d(TAG, "Clicked vocabulary button");
-                    }
-                } else {
-                    try {
-                        navigateToLogin();
-                    } catch (Exception e) {
-                        Log.d(TAG, "Can not found activity: " + e);
-                    }
-                }
+                navigationService.navigateToDictionary();
             } catch (Exception e) {
-                Log.d(TAG, "Vocabulary button error: " + e);
+                Log.e(TAG, "Error navigating to vocabulary: ", e);
             }
         });
     }
-
-    private void checkLogin() {
-        try {
-            if (!isLoggedIn) {
-                navigateToLogin();
-                Log.d(TAG, "Haven't logged in yet");
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Error in check login:", e);
-        }
-    }
-
-
-    private void navigateToSpeechToText() {
-        Intent intent = new Intent(requireActivity(), SpeechToText.class);
-        startActivity(intent);
-    }
-
-    private void navigateToLogin() {
-        Intent intent = new Intent(requireActivity(), LoginActivity.class);
-        startActivity(intent);
-        requireActivity().finish();
-    }
-
-    private final NavigationBarView.OnItemSelectedListener navListener = item -> {
-        Fragment selectedFragment = null;
-        int itemId = item.getItemId();
-
-        if (itemId == R.id.nav_home) {
-            selectedFragment = new HomeFragment();
-        } else if (itemId == R.id.nav_profile) {
-            selectedFragment = new ProfileFragment();
-        }
-
-        if (selectedFragment != null) {
-            requireActivity().getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, selectedFragment)
-                    .commit();
-        }
-
-        return true;
-    };
 }

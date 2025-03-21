@@ -1,4 +1,3 @@
-
 package com.example.elsa_speak_clone.activities;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -10,12 +9,13 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.elsa_speak_clone.R;
-import com.example.elsa_speak_clone.database.FirebaseSyncManager;
+import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.fragments.HomeFragment;
 import com.example.elsa_speak_clone.fragments.LearnFragment;
 import com.example.elsa_speak_clone.fragments.ProfileFragment;
+import com.example.elsa_speak_clone.services.NavigationService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.navigation.NavigationView;
@@ -27,98 +27,70 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageButton;
-import android.widget.Toast;
 
 import java.util.HashMap;
-import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
-    SharedPreferences prefs;
+    private static final String TAG = "MainActivity";
+    
+    // UI components
     private BottomNavigationView bottomNavigationView;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle toggle;
     private NavigationView navigationView;
     private ImageButton dictionary;
-    GoogleSignInHelper googleSignInHelper;
-    private FirebaseSyncManager syncManager;
+    
+    private NavigationService navigationService;
+    private GoogleSignInHelper googleSignInHelper;
     private SessionManager sessionManager;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initializeVariable();
+        initializeServices();
+        initializeUI();
         setupNavigationMenu();
         initializeSharedPreferences();
         checkUserLogin();
         setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
-        firebaseSync();
-
     }
 
-    private void firebaseSync() {
-        try {
-            sessionManager = new SessionManager(this);
-            syncManager = new FirebaseSyncManager(this);
-
-            // Setup offline capability
-            syncManager.setupOfflineCapability();
-
-            // Get current user ID
-            HashMap<String, String> userDetails = sessionManager.getUserDetails();
-            int userId = Integer.parseInt(userDetails.get(SessionManager.KEY_USER_ID));
-
-            // Sync local data to Firebase
-            syncManager.syncUserData(userId);
-            syncManager.syncUserProgress(userId);
-
-            // Listen for remote changes
-            syncManager.listenForRemoteChanges(userId);
-        } catch (Exception e) {
-            Log.d("MainActivity", "Can not sync with firebase");
-        }
-
-    }
-    private void initializeSharedPreferences() {
-        String username = getIntent().getStringExtra("username");
-        int userId = getIntent().getIntExtra("userId", -1);
-
-        if (username != null && userId != -1) {
-            // Save to SharedPreferences here
-            prefs = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-            prefs.edit().putString("username", username).putInt("userId", userId).apply();
-        }
-
-    }
-
-    private void checkUserLogin() {
-
-        // Check if user is already logged in
-        SessionManager sessionManager = new SessionManager(this);
-        if (!sessionManager.isLoggedIn() || sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState() ) {
-            // User is not logged in, go to login activity
-            startActivity(new Intent(MainActivity.this, LoginActivity.class));
-            finish();
-        }
-    }
-    private void initializeVariable() {
-        googleSignInHelper = new GoogleSignInHelper(MainActivity.this, new GoogleSignInHelper.AuthCallback() {
+    private void initializeServices() {
+        sessionManager = new SessionManager(this);
+        navigationService = new NavigationService(this);
+        googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
-
+                // Handle success
             }
-
 
             @Override
             public void onError(String message) {
-
+                // Handle error
             }
         });
+        
+        // Initialize database instance
+        AppDatabase database = AppDatabase.getInstance(this);
+        
+        // Optionally pre-load data on a background thread if needed
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            // Any database pre-loading operations
+        });
+    }
+
+    private void initializeUI() {
         dictionary = findViewById(R.id.btnDictionary);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(navListener);
+        
         // Set up the toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -139,16 +111,37 @@ public class MainActivity extends AppCompatActivity {
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
     }
+
+
+    private void initializeSharedPreferences() {
+        String username = getIntent().getStringExtra("username");
+        int userId = getIntent().getIntExtra("userId", -1);
+
+        if (username != null && userId != -1) {
+            SharedPreferences prefs = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putString("username", username).putInt("userId", userId).apply();
+        }
+    }
+
+    private void checkUserLogin() {
+        if (!sessionManager.isLoggedIn() || 
+            (sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState())) {
+            navigationService.navigateToLogin();
+            finish();
+        }
+    }
+
+    // Side navigation menu (in progress)
     private void setupNavigationMenu() {
-        // Set up navigation item selection listener
         navigationView.setNavigationItemSelectedListener(item -> {
-            // Handle navigation view item clicks here
             int id = item.getItemId();
 
             if (id == R.id.nav_home) {
                 // Handle home action
+                navigationService.navigateToHomeFragment(MainActivity.this);
             } else if (id == R.id.nav_learn) {
                 // Handle learn action
+               navigationService.navigateToLearnFragment(MainActivity.this);
             } else if (id == R.id.nav_discover) {
                 // Handle discover action
             } else if (id == R.id.nav_leaderboard) {
@@ -168,27 +161,28 @@ public class MainActivity extends AppCompatActivity {
         if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
             getSupportFragmentManager().popBackStack();
         } else {
-            // Show a confirmation dialog
-            finishAffinity(); // Close all activities
-            System.exit(0); // Exit the app
+            finishAffinity();
+            System.exit(0);
         }
     }
 
+    // Bottom navigation menu
     private final NavigationBarView.OnItemSelectedListener navListener = item -> {
-        Fragment selectedFragment;
+        //Fragment selectedFragment;
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_learn) {
-            selectedFragment = new LearnFragment();
+         //   selectedFragment = new LearnFragment();
+            navigationService.navigateToLearnFragment(MainActivity.this);
         } else if (itemId == R.id.nav_home) {
-            selectedFragment = new HomeFragment();
+            navigationService.navigateToHomeFragment(MainActivity.this);
         } else if (itemId == R.id.nav_profile) {
-            selectedFragment = new ProfileFragment();
+            navigationService.navigateToProfileFragment(MainActivity.this);
         } else {
             return false;
         }
 
-        loadFragment(selectedFragment);
+        //loadFragment(selectedFragment);
         return true;
     };
 
@@ -196,14 +190,8 @@ public class MainActivity extends AppCompatActivity {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, fragment).commit();
     }
-    private void navigateToDictionary() {
-        Intent intent = new Intent(MainActivity.this, DictionaryActivity.class);
-        startActivity(intent);
-    }
 
     private void setupDictionaryButton() {
-        dictionary.setOnClickListener(v -> {
-            navigateToDictionary();
-        });
+        dictionary.setOnClickListener(v -> navigationService.navigateToDictionary());
     }
 }
