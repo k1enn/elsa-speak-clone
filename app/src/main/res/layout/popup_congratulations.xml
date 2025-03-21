@@ -21,7 +21,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="You've completed all the quizzes for this lesson!"
+        android:text="You've completed all the exercises!"
         android:textSize="16sp"
         android:gravity="center"
         android:layout_marginBottom="20dp"/>

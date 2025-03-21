@@ -3,6 +3,8 @@ package com.example.elsa_speak_clone.fragments;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,13 +20,18 @@ import androidx.fragment.app.Fragment;
 
 import com.example.elsa_speak_clone.activities.LoginActivity;
 import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.database.AppDatabase;
+import com.example.elsa_speak_clone.database.entities.User;
 import com.example.elsa_speak_clone.database.SessionManager;
-import com.example.elsa_speak_clone.database.LearningAppDatabase;
+import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -44,12 +51,19 @@ public class ProfileFragment extends Fragment {
 
     private ImageView ivProfilePicture;
     private TextView tvUsername, tvEmail, tvUserStreak, tvUserXP;
-    private LearningAppDatabase db;
     private SessionManager sessionManager;
     private Button btnLogout;
     private Button btnShare;
     private Button btnSettings;
     private final String TAG = "ProfileFragment";
+    
+    // Room database components
+    private AppDatabase database;
+    private ExecutorService executor;
+    private Handler mainHandler;
+    
+    // User progress repository
+    private UserProgressRepository userProgressRepository;
 
     public ProfileFragment() {
         // Required empty public constructor
@@ -80,7 +94,6 @@ public class ProfileFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
     }
 
     @Nullable
@@ -88,9 +101,14 @@ public class ProfileFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
+        // Initialize Room database and threading components
+        database = AppDatabase.getInstance(requireContext());
+        executor = Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
+        
+        // Initialize user progress repository
+        userProgressRepository = new UserProgressRepository(requireActivity().getApplication());
 
-
-        db = new LearningAppDatabase(requireContext());
         initializeUI(view);
         loadUserProfile();
 
@@ -100,6 +118,7 @@ public class ProfileFragment extends Fragment {
 
         return view;
     }
+
     private void initializeUI(View view) {
         ivProfilePicture = view.findViewById(R.id.ivProfilePicture);
         tvUsername = view.findViewById(R.id.tvUsername);
@@ -111,6 +130,7 @@ public class ProfileFragment extends Fragment {
         btnSettings = view.findViewById(R.id.btnSettings);
         sessionManager = new SessionManager(requireContext());
     }
+
     private void setupShareProfileButton() {
         btnShare.setOnClickListener(v -> {
             Toast.makeText(requireContext(), "Share button clicked", Toast.LENGTH_SHORT).show();
@@ -155,7 +175,6 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-
     private void navigateToLogin() {
         Activity main = null;
         try {
@@ -164,35 +183,81 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
             requireActivity().finish(); // Optional: finish the activity to prevent returning to it
         } catch (NullPointerException e) {
-           Log.d(TAG, "Activity is NULL", e);
+            Log.d(TAG, "Activity is NULL", e);
         } finally {
             Log.d(TAG, "Successful navigate to Login");
         }
-
     }
+
     private void loadUserProfile() {
         String username = sessionManager.getUserDetails().get("username");
-        String streak = null;
-        String xp = null;
-
-        try {
-            streak = String.valueOf(db.getUserStreak(requireContext()));
-            xp = String.valueOf(db.getUserXp(requireContext()));
-        } catch (Exception e) {
-            Log.d(TAG, "Error in convert string at loadUserProfile()", e);
+        int userId = sessionManager.getUserId();
+        
+        // Set initial values
+        if (username != null) {
+            tvUsername.setText(username);
         }
-
-        try {
-            if (username != null) {
-                tvUsername.setText(username);
-                tvUserStreak.setText(streak);
-                tvUserXP.setText(xp);
-            } else {
-                Log.d(TAG, "Username is NULL");
+        
+        // Retrieve user data from Room database in background thread
+        executor.execute(() -> {
+            try {
+                // Get user data from Room database
+                User user = database.userDao().getUserById(userId);
+                final User finalUser = user;
+                
+                // Update UI on main thread with user info
+                mainHandler.post(() -> {
+                    if (isAdded()) { // Check if fragment is still attached
+                        if (finalUser != null) {
+                            tvUsername.setText(finalUser.getName());
+                            // If you have email field in your TextView
+                            if (tvEmail != null) {
+                                tvEmail.setText(finalUser.getGmail());
+                            }
+                        }
+                    }
+                });
+                
+                // Load user metrics through the repository
+                // This should be done on the main thread because we're setting up LiveData observers
+                mainHandler.post(() -> {
+                    if (isAdded()) {
+                        // Set up LiveData observers
+                        userProgressRepository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
+                            int userStreak = streak != null ? streak : 0;
+                            tvUserStreak.setText(String.valueOf(userStreak));
+                        });
+                        
+                        userProgressRepository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
+                            int userXp = xp != null ? xp : 0;
+                            tvUserXP.setText(String.valueOf(userXp));
+                        });
+                        
+                        // Trigger the loading of metrics
+                        userProgressRepository.loadUserMetrics(userId);
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading user profile", e);
+                
+                mainHandler.post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(),
+                                "Error loading profile: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
-        } catch (Exception e) {
-            Log.d(TAG, "Error when set text in loadUserProfile()");
+        });
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Clean up resources
+        if (executor != null) {
+            executor.shutdown();
         }
     }
-
 }

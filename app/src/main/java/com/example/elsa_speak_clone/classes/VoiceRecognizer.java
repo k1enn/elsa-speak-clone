@@ -3,28 +3,35 @@ package com.example.elsa_speak_clone.classes;
 import android.animation.Animator;
 import android.content.Context;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.speech.RecognitionListener;
-import android.os.Handler;
-import android.os.Looper;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.R;
-import com.example.elsa_speak_clone.database.LearningAppDatabase;
+import com.example.elsa_speak_clone.database.AppDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class VoiceRecognizer {
+    private static final String TAG = "VoiceRecognizer";
     private final TextView tvPrompt;
     private final TextView tvWord;
+    private final Context context;
+    private MediaPlayer correctSoundPlayer;
     private final Button btnSpeak, btnRandomWord;
     private final SpeechRecognizer speechRecognizer;
     private final LottieAnimationView lottieConfetti;
@@ -32,25 +39,101 @@ public class VoiceRecognizer {
     private final Handler errorHandler = new Handler(Looper.getMainLooper());
     private boolean isProcessingError = false; // Prevent multiple triggers
     // Add these new fields
-    private LearningAppDatabase db;
     private int currentLessonId = 1; // Default lesson ID
     private ArrayList<String> usedWords = new ArrayList<>();
     private ArrayList<String> availableWords = new ArrayList<>();
+    private final AppDatabase database;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private ExecutorService executor;
+    // Add flag to track if current word is pronounced correctly
+    private boolean currentWordPronounced = false;
 
-    // Update constructor to accept database
-    public VoiceRecognizer(TextView tvPrompt, TextView tvWord, Button btnSpeak,
+    // Add this interface at the top of the class
+    public interface ProgressUpdateListener {
+        void onProgressUpdated();
+    }
+    
+    private ProgressUpdateListener progressUpdateListener;
+    
+    // Set the listener to update progress
+    public void setProgressUpdateListener(ProgressUpdateListener listener) {
+        this.progressUpdateListener = listener;
+    }
+
+    // Update constructor to NOT load vocabulary immediately
+    public VoiceRecognizer(TextView tvPrompt, TextView tvWord, Context context, Button btnSpeak,
                            Button btnRandomWord, SpeechRecognizer speechRecognizer,
-                           LottieAnimationView lottieConfetti, LearningAppDatabase db) {
+                           LottieAnimationView lottieConfetti, AppDatabase database) {
         this.tvPrompt = tvPrompt;
         this.tvWord = tvWord;
+        this.context = context;
         this.btnSpeak = btnSpeak;
         this.btnRandomWord = btnRandomWord;
         this.speechRecognizer = speechRecognizer;
         this.lottieConfetti = lottieConfetti;
-        this.db = db;
+        this.database = database;
+        this.executor = Executors.newSingleThreadExecutor();
 
-        // Initialize available words for the default lesson
+        // Initialize sound player for correct answers
+        correctSoundPlayer = MediaPlayer.create(this.context, R.raw.correct_sound);
+        
+    }
+
+    // Make this method public and modify to use background thread
+    public void loadVocabularyForLesson() {
         loadVocabularyForLesson(currentLessonId);
+    }
+    
+    // Modified method to use background thread
+    public void loadVocabularyForLesson(int lessonId) {
+        // Update the current lesson ID
+        this.currentLessonId = lessonId;
+        
+        // Clear available words before loading new ones
+        availableWords.clear();
+        
+        try {
+            // Use the correct method that already returns List<String>
+            List<String> vocabularyList = database.vocabularyDao().getWordsByLessonId(lessonId);
+            
+            // Add all words to available words list
+            availableWords.addAll(vocabularyList);
+            
+            // Update UI on main thread
+            mainHandler.post(() -> {
+                // Optionally add UI feedback if no words available
+                if (availableWords.isEmpty()) {
+                    tvPrompt.setText("No vocabulary words available for this lesson");
+                    btnRandomWord.setEnabled(false);
+                } else {
+                    Log.d(TAG, "Loaded " + availableWords.size() + " words for lesson " + lessonId);
+                    // Generate first random word
+                    generateAndDisplayNewWord();
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading vocabulary: " + e.getMessage(), e);
+            mainHandler.post(() -> {
+                tvPrompt.setText("Error loading vocabulary. Please try again.");
+                btnRandomWord.setEnabled(false);
+            });
+        }
+    }
+
+    public void setCurrentLessonId(int lessonId) {
+        if (this.currentLessonId != lessonId) {
+            this.currentLessonId = lessonId;
+            // Reset used words when changing lessons
+            usedWords.clear();
+        }
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
     }
 
     public void startListening() {
@@ -93,7 +176,8 @@ public class VoiceRecognizer {
             public void onResults(Bundle results) {
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (matches != null && evaluateRecognition(matches.get(0))) {
-                    showConfetti();
+                    // Enable the random word button after correct pronunciation
+                    enableRandomWordButton();
                 }
             }
 
@@ -107,11 +191,31 @@ public class VoiceRecognizer {
         speechRecognizer.startListening(intent);
     }
 
+    private void playCorrectSound() {
+        try {
+            if (correctSoundPlayer != null) {
+                correctSoundPlayer.seekTo(0);
+                correctSoundPlayer.start();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing sound", e);
+        }
+    }
     private boolean evaluateRecognition(String recognizedText) {
         if (recognizedText != null) {
             recognizedText = recognizedText.toLowerCase(Locale.US);
-            if (recognizedText.equals(randomWord)) {
+            if (recognizedText.equals(randomWord.toLowerCase(Locale.US))) {
                 tvPrompt.setText("Correct! You said: " + recognizedText);
+                currentWordPronounced = true;
+                
+                // Play correct sound
+                playCorrectSound();
+                
+                // Notify listener that progress has updated
+                if (progressUpdateListener != null) {
+                    progressUpdateListener.onProgressUpdated();
+                }
+                
                 return true;
             } else {
                 tvPrompt.setText("Incorrect! You said: " + recognizedText);
@@ -122,29 +226,6 @@ public class VoiceRecognizer {
         return false;
     }
 
-    // Add a method to set the current lesson ID
-    public void setCurrentLessonId(int lessonId) {
-        if (this.currentLessonId != lessonId) {
-            this.currentLessonId = lessonId;
-            // Reset used words when changing lessons
-            usedWords.clear();
-            loadVocabularyForLesson(lessonId);
-        }
-    }
-
-    // Add a method to load vocabulary for a specific lesson
-    private void loadVocabularyForLesson(int lessonId) {
-        availableWords.clear();
-        List<String> vocabularyList = db.getVocabularyByLessonId(lessonId);
-
-        for (String vocab : vocabularyList) {
-            availableWords.add(vocab);
-        }
-    }
-
-    private boolean allWordsGenerated() {
-        return usedWords.size() >= availableWords.size();
-    }
 
     // Update the generateRandomWord method
     private String generateRandomWord() {
@@ -166,8 +247,36 @@ public class VoiceRecognizer {
 
         // Add the word to the used words list
         usedWords.add(randomWord);
-
+        
+        // Reset the pronunciation flag for the new word
+        currentWordPronounced = false;
+        
         return randomWord;
+    }
+    
+    // New method to generate and display a new word
+    private void generateAndDisplayNewWord() {
+        String word = generateRandomWord();
+        tvWord.setText("Say this word: " + word);
+        // Disable random word button until this word is pronounced correctly
+        disableRandomWordButton();
+        
+        // Notify listener that progress has updated
+        if (progressUpdateListener != null) {
+            progressUpdateListener.onProgressUpdated();
+        }
+    }
+    
+    // Method to disable the random word button
+    private void disableRandomWordButton() {
+        btnRandomWord.setEnabled(false);
+        btnRandomWord.setAlpha(0.5f); // Visual feedback that button is disabled
+    }
+    
+    // Method to enable the random word button
+    private void enableRandomWordButton() {
+        btnRandomWord.setEnabled(true);
+        btnRandomWord.setAlpha(1.0f); // Restore normal appearance
     }
 
     private void navigateToQuiz() {
@@ -178,33 +287,22 @@ public class VoiceRecognizer {
         context.startActivity(intent);
     }
 
-
     public void setupRandomWordButton() {
+        // Initially disable the button until first word is pronounced correctly
+        disableRandomWordButton();
+        
         btnRandomWord.setOnClickListener(v -> {
-            tvWord.setText("Say this word: " + generateRandomWord());
-        });
-    }
-
-    private void showConfetti() {
-        lottieConfetti.setAnimation(R.raw.confetti);
-        lottieConfetti.setVisibility(View.VISIBLE);
-        lottieConfetti.playAnimation();
-        lottieConfetti.addAnimatorListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animator) {}
-
-            @Override
-            public void onAnimationEnd(Animator animator) {
-                lottieConfetti.setVisibility(View.GONE);
+            // Only proceed if the current word has been pronounced correctly
+            if (currentWordPronounced) {
+                generateAndDisplayNewWord();
+            } else {
+                // Provide feedback that user needs to pronounce current word first
+                tvPrompt.setText("Please pronounce the current word correctly first");
             }
-
-            @Override
-            public void onAnimationCancel(Animator animator) {}
-
-            @Override
-            public void onAnimationRepeat(Animator animator) {}
         });
     }
+
+
 
     private String getErrorMessage(int error) {
         switch (error) {
@@ -223,5 +321,13 @@ public class VoiceRecognizer {
 
     public void release() {
         speechRecognizer.destroy();
+    }
+
+    public int getUsedWordsCount() {
+        return usedWords.size();
+    }
+
+    public int getTotalWordsCount() {
+        return availableWords.size();
     }
 }

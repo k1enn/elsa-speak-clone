@@ -22,35 +22,40 @@ import androidx.annotation.Nullable;
 
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
-import com.example.elsa_speak_clone.database.LearningAppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.services.AuthenticationService;
+import com.example.elsa_speak_clone.services.NavigationService;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.util.Objects;
-
 public class LoginActivity extends AppCompatActivity {
+    private static final String TAG = "LoginActivity";
     private EditText etUsername, etPassword;
     private Button btnLogin;
     private ImageButton btnToggleLoginPassword;
-    private TextView btnRegister ;
+    private TextView btnRegister;
     private LinearLayout googleLoginButton;
-    private LearningAppDatabase dbHelper;
+    private AuthenticationService authService;
     private GoogleSignInHelper googleSignInHelper;
-    private static final String emptyString = "";
+    private NavigationService navigationService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
+        
+        // Handle system insets
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        // Initialize services
+        authService = new AuthenticationService(this);
+        navigationService = new NavigationService(this);
+        
+        // Initialize UI and setup interactions
         initializeUI();
-        initializeDatabase();
         initializeGoogleLogin();
         setupLoginButton();
         setupRegisterButton();
@@ -65,7 +70,6 @@ public class LoginActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         googleLoginButton = findViewById(R.id.btnGoogleLogin);
         btnToggleLoginPassword = findViewById(R.id.btnToggleLoginPassword);
-
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -78,21 +82,18 @@ public class LoginActivity extends AppCompatActivity {
                 if (isPasswordVisible) {
                     // Hide Password
                     etPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_closed); // Change to closed eye icon
-                    etPassword.setTypeface(null, Typeface.NORMAL); // Set to default font
+                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_closed);
+                    etPassword.setTypeface(null, Typeface.NORMAL);
                 } else {
                     // Show Password
                     etPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_open); // Change to open eye icon
-                    etPassword.setTypeface(null, Typeface.NORMAL); // Set to default font
+                    btnToggleLoginPassword.setImageResource(R.drawable.ic_eye_open);
+                    etPassword.setTypeface(null, Typeface.NORMAL);
                 }
                 isPasswordVisible = !isPasswordVisible;
                 etPassword.setSelection(etPassword.getText().length()); // Move cursor to the end
             }
         });
-    }
-    private void initializeDatabase() {
-        dbHelper = new LearningAppDatabase(this);
     }
 
     private void initializeGoogleLogin() {
@@ -109,39 +110,22 @@ public class LoginActivity extends AppCompatActivity {
                         user.getDisplayName() : email.split("@")[0];
 
                 try {
-                    // Check if user already exists in our database
-                    int userId = dbHelper.getUserIdByEmail(email);
-
-                    if (userId != -1) {
-                        // User exists - authenticate as Google user
-                        Log.d("GoogleSignIn", "User exists with ID: " + userId);
-                        if (dbHelper.authenticateGoogleUser(email)) {
-                            Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
-                            navigateToMain();
-                        } else {
-                            // This could happen if the email exists but not as a Google user
-                            Toast.makeText(LoginActivity.this, "Authentication Failed", Toast.LENGTH_SHORT).show();
-                        }
+                    // First try to authenticate, and if that fails, register
+                    if (authService.authenticateGoogleUser(email)) {
+                        Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                        navigationService.navigateToMain();
                     } else {
-                        // New user - register
-                        Log.d("GoogleSignIn", "Registering new Google user: " + email);
-                        if (dbHelper.registerGoogleUser(email)) {
-                            // Get the newly created user ID and create session
-                            userId = dbHelper.getUserIdByEmail(email);
-                            if (userId != -1) {
-                                SessionManager sessionManager = new SessionManager(LoginActivity.this);
-                                sessionManager.createGoogleSession(displayName, userId);
-                                Toast.makeText(LoginActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
-                                navigateToMain();
-                            } else {
-                                Toast.makeText(LoginActivity.this, "Error getting user ID after registration", Toast.LENGTH_SHORT).show();
-                            }
+                        // User doesn't exist, register new Google user
+                        Log.d(TAG, "Registering new Google user: " + email);
+                        if (authService.registerGoogleUser(email)) {
+                            Toast.makeText(LoginActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                            navigationService.navigateToMain();
                         } else {
                             Toast.makeText(LoginActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
                         }
                     }
                 } catch (Exception e) {
-                    Log.e("GoogleSignIn", "Error in Google sign-in process", e);
+                    Log.e(TAG, "Error in Google sign-in process", e);
                     Toast.makeText(LoginActivity.this, "Login Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
@@ -149,39 +133,35 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
-                Log.e("GoogleSignIn", "Error: " + message);
+                Log.e(TAG, "Google Sign-In Error: " + message);
             }
         });
     }
-
-
-
 
     private void setupLoginButton() {
         btnLogin.setOnClickListener(v -> {
             String username = etUsername.getText().toString().trim();
             String password = etPassword.getText().toString().trim();
 
-            try {
-                if (dbHelper.authenticateLocalUser(username, password)) {
-                    // Create session after successful login
-                    SessionManager sessionManager = new SessionManager(LoginActivity.this);
-                    int userId = dbHelper.getUserId(username);
-                    sessionManager.createSession(username, userId);
+            if (username.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Please enter both username and password", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
+            try {
+                if (authService.authenticateLocalUser(username, password)) {
                     Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                    navigateToMain();
-                    finish();
+                    navigationService.navigateToMain();
                 } else {
                     Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
-                Log.d("LoginActivity", "Login failed: ", e);
+                Log.e(TAG, "Login failed: ", e);
+                Toast.makeText(this, "Login Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // Google Sign-In Setup
     private void setupGoogleLoginButton() {
         googleLoginButton.setOnClickListener(v -> {
             googleSignInHelper.signOut();
@@ -189,28 +169,11 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-
     private void setupRegisterButton() {
         btnRegister.setOnClickListener(v -> {
-            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
-            startActivity(intent);
-            finish();
+            navigationService.navigateToRegister();
         });
     }
-
-    private void navigateToSpeechToText() {
-        Intent intent = new Intent(LoginActivity.this, SpeechToText.class);
-        startActivity(intent);
-        finish();
-    }
-
-    private void navigateToMain() {
-        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
-
 
     // Handle Google Sign-In Result
     @Override
