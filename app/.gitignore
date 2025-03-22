@@ -1,0 +1,9 @@
+/build
+/documents
+/app/src/main/assets
+google-services.json
+.env
+config.json
+*.key
+*.pem
+

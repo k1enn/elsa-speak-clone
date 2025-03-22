@@ -1,0 +1,8 @@
+# File mẫu cấu hình API key
+# Hướng dẫn:
+# 1. Tạo bản sao với tên "config.properties" 
+# 2. Thay thế YOUR_API_KEY bằng API key của bạn
+# 3. File config.properties sẽ không được commit lên Git (đã cấu hình trong .gitignore)
+
+# OpenAI API key
+openai_api_key=YOUR_API_KEY 

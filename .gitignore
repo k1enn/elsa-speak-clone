@@ -1,0 +1,52 @@
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Android Studio and Gradle specific files
+.gradle/
+*.iml
+.idea/
+build/
+captures/
+.externalNativeBuild
+.cxx
+.navigation
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# Log Files
+*.log
+
+# File config chứa thông tin nhạy cảm
+app/src/main/assets/config.properties
+
+# Các file chứa API key hoặc thông tin nhạy cảm
+*.jks
+*.keystore
+google-services.json
+firebase-crashlytics.json
+*.p12
+*.pem
+apikey.properties
+secrets.xml
+secrets.properties
+app-key.json
+
+# Các thư mục cá nhân hoặc nên được loại trừ
+.venv/
+venv/
+env/
+.env
+.secret
