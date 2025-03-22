@@ -189,23 +189,5 @@ public class QuizRepository {
         }
     }
 
-    /**
-     * Check if all quizzes in a lesson have been attempted by a user
-     * This requires integration with UserScoreRepository but is useful for progress tracking
-     */
-    public boolean hasUserCompletedAllQuizzes(int userId, int lessonId, UserScoreRepository userScoreRepository) {
-        List<Quiz> quizzes = getQuizzesForLessonSync(lessonId);
-        if (quizzes == null || quizzes.isEmpty()) {
-            return false;
-        }
-        
-        for (Quiz quiz : quizzes) {
-            if (userScoreRepository.getUserHighestScoreForQuiz(userId, quiz.getQuizId()) == 0) {
-                // User hasn't attempted this quiz
-                return false;
-            }
-        }
-        
-        return true;
-    }
+
 } 

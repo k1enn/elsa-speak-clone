@@ -42,21 +42,35 @@ public class QuizService {
      */
     public void addXpPoints(int userId, int lessonId, int points) {
         try {
-            // Check if score entry exists
-            UserScore existingScore = database.userScoreDao().getUserScoreByLessonAndUser(userId, lessonId);
+            // Check if score entry exists for this specific user AND lesson combination
+            UserProgress existingProgress = database.userProgressDao().getUserLessonProgress(userId, lessonId);
             
-            if (existingScore != null) {
-                // Update existing score
-                existingScore.setScore(existingScore.getScore() + points);
-                database.userScoreDao().update(existingScore);
+            if (existingProgress != null) {
+                // Update existing progress for this lesson
+                existingProgress.setXp(existingProgress.getXp() + points);
+                existingProgress.setLastStudyDate(getCurrentDate());
+                database.userProgressDao().update(existingProgress);
+                Log.d(TAG, "Updated XP for existing progress: " + existingProgress.getProgressId());
             } else {
-                // Create new score entry
-                UserScore newScore = new UserScore();
-                newScore.setUserId(userId);
-                newScore.setLessonId(lessonId);
-                newScore.setScore(points);
-                newScore.setDateUpdated(getCurrentDate());
-                database.userScoreDao().insert(newScore);
+                // Create new progress entry
+                // First, determine the next available progress ID
+                int progressId = getNextProgressId(userId);
+                
+                // Create new progress with all required fields
+                UserProgress newProgress = new UserProgress(
+                    progressId,
+                    userId,
+                    lessonId,
+                    0, // Default difficulty level
+                    null, // No completion time yet
+                    1, // Start with streak of 1
+                    points, // Initial XP points
+                    getCurrentDate() // Current date
+                );
+                
+                // Insert the new progress
+                long insertedId = database.userProgressDao().insert(newProgress);
+                Log.d(TAG, "Created new progress with ID: " + insertedId);
             }
             
             Log.d(TAG, "Added " + points + " XP for user " + userId + " in lesson " + lessonId);
@@ -65,6 +79,23 @@ public class QuizService {
         }
     }
 
+    /**
+     * Get next available progress ID for a user
+     * 
+     * @param userId The user ID
+     * @return The next available progress ID
+     */
+    private int getNextProgressId(int userId) {
+        try {
+            // Count existing progress entries and add 1
+            int count = database.userProgressDao().countUserProgressEntries(userId);
+            return (userId * 1000) + count + 1; // This creates unique IDs like 1001, 1002, etc. for user 1
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting next progress ID", e);
+            // Fallback to a timestamp-based ID if query fails
+            return (userId * 1000) + (int)(System.currentTimeMillis() % 1000);
+        }
+    }
 
     /**
      * Get the current date as a string in yyyy-MM-dd format
