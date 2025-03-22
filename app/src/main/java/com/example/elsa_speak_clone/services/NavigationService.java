@@ -86,9 +86,10 @@ public class NavigationService {
     /**
      * Navigate to SpeechToText activity
      */
-    public void navigateToSpeechToText() {
+    public void navigateToSpeechToText(int lessonId) {
         try {
             Intent intent = new Intent(context, SpeechToText.class);
+            intent.putExtra("LESSON_ID", lessonId);
             context.startActivity(intent);
         } catch (Exception e) {
             Log.e(TAG, "Error navigating to SpeechToText", e);

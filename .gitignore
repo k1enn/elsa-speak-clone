@@ -21,3 +21,5 @@ google-services.json
 config.json
 *.key
 *.pem
+/.cursor
+/.vscode

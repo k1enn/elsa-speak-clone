@@ -63,6 +63,19 @@ public class UserProgress {
         this.lastStudyDate = lastStudyDate;
     }
 
+    // Default constructor required by Room
+    public UserProgress() {
+        // Default values
+        this.progressId = 0;
+        this.userId = 0;
+        this.lessonId = 0;
+        this.difficultyLevel = 0;
+        this.completionTime = null;
+        this.streak = 0;
+        this.xp = 0;
+        this.lastStudyDate = null;
+    }
+
     // Getters and setters
     public int getProgressId() {
         return progressId;
@@ -128,7 +141,7 @@ public class UserProgress {
         this.lastStudyDate = lastStudyDate;
     }
 
-    public void setCurrentStreak(int i) {
-
+    public void setCurrentStreak(int streak) {
+        this.streak = streak;
     }
 } 

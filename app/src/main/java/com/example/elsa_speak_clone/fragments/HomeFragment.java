@@ -380,7 +380,7 @@ public class HomeFragment extends Fragment {
     private void setupSpeechToTextButton() {
         cvPronunciation.setOnClickListener(v -> {
             try {
-                navigationService.navigateToSpeechToText();
+                navigationService.navigateToSpeechToText(1);
             } catch (Exception e) {
                 Log.e(TAG, "Error navigating to speech recognition: ", e);
             }

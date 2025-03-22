@@ -1,26 +1,15 @@
 package com.example.elsa_speak_clone.activities;
 
 import android.Manifest;
-import android.animation.Animator;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,7 +21,6 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.R;
-import com.example.elsa_speak_clone.classes.PopupHelper;
 import com.example.elsa_speak_clone.classes.VoiceRecognizer;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.dao.VocabularyDao;
@@ -63,7 +51,6 @@ public class SpeechToText extends AppCompatActivity {
     private Button btnSpeak;
     private Button btnRandomWord;
     private LottieAnimationView lottieConfetti;
-    private PopupHelper popupHelper;
 
     // Speech recognition components
     private SpeechRecognizer speechRecognizer;
