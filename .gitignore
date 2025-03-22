@@ -23,3 +23,5 @@ config.json
 *.pem
 /.cursor
 /.vscode
+/app/src/main/assets/config.properties
+
