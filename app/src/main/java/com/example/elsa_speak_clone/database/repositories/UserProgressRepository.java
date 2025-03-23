@@ -89,52 +89,7 @@ public class UserProgressRepository {
         });
     }
 
-    // Add new user progress
-    public long addUserProgress(int userId, int lessonId, int difficultyLevel) {
-        try {
-            UserProgress userProgress = new UserProgress(
-                    generateUniqueProgressId(),
-                    userId,
-                    lessonId,
-                    difficultyLevel,
-                    getCurrentDate(),
-                    1, // Initial streak
-                    0, // Initial XP
-                    getCurrentDate() // Last study date
-            );
 
-            Future<Long> future = AppDatabase.databaseWriteExecutor.submit(() ->
-                    userProgressDao.insert(userProgress));
-            return future.get();
-        } catch (ExecutionException | InterruptedException e) {
-            Log.e(TAG, "Error adding user progress", e);
-            return -1;
-        }
-    }
-
-    // Update user streak
-    public void updateUserStreak(int userId, int streak, String date) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            userProgressDao.updateUserStreak(userId, streak, date);
-            userStreak.postValue(streak); // Update the LiveData
-        });
-    }
-
-    // Add XP points to user
-    public void addXpPoints(int userId, int points) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            userProgressDao.addXpPoints(userId, points);
-            
-            // Update the LiveData with the new XP value
-            List<UserProgress> progressList = userProgressDao.getUserProgress(userId);
-            if (progressList != null && !progressList.isEmpty()) {
-                int totalXp = progressList.get(0).getXp();
-                userXp.postValue(totalXp);
-            }
-        });
-    }
-
-    // Calculate and update streak based on last study date
     public void updateDailyStreak(int userId) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             UserProgress userProgress = userProgressDao.getUserProgressById(userId);

@@ -269,9 +269,9 @@ public class QuizActivity extends AppCompatActivity {
                 try {
                     // Add XP based on lesson difficulty
                     int xpPoints = 5;
-//                    quizService.addXpPoints(userId, currentLessonId, xpPoints);
+                    quizService.addXpPoints(userId, currentLessonId, xpPoints);
                     AppDatabase.databaseWriteExecutor.execute(() -> {
-                        firebaseDataManager.syncUserProgressAfterQuiz(userId, currentLessonId);
+                        firebaseDataManager.syncUserProgress(userId, currentLessonId);
                     });
 //                    quizService.updateUserStreak(userId);
                 } catch (Exception e) {
@@ -317,14 +317,9 @@ public class QuizActivity extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
         
-        // Update user streak before returning to MainActivity
         int userId = sessionManager.getUserId();
         executor.execute(() -> {
-//            try {
-//                quizService.updateUserStreak(userId);
-//            } catch (Exception e) {
-//                Log.e(TAG, "Error updating streak: " + e.getMessage());
-//            }
+            firebaseDataManager.syncUserProgress(userId, 1);
         });
         
         navigationService.navigateToMain();

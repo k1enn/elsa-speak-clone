@@ -24,6 +24,7 @@ import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
 import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 import com.example.elsa_speak_clone.activities.SpeechToText;
 import com.example.elsa_speak_clone.services.NavigationService;
@@ -77,6 +78,7 @@ public class HomeFragment extends Fragment {
     private UserProgressRepository userProgressRepository;
     private ExecutorService executor;
     private Handler mainHandler;
+    private FirebaseDataManager firebaseDataManager;
 
     private Handler progressRefreshHandler;
     private final int REFRESH_INTERVAL = 1000; // 1 second refresh interval
@@ -166,7 +168,8 @@ public class HomeFragment extends Fragment {
             // Set up threading components
             executor = Executors.newSingleThreadExecutor();
             mainHandler = new Handler(Looper.getMainLooper());
-            
+
+            firebaseDataManager = FirebaseDataManager.getInstance(this.getContext());
             // Initialize progress refresh handler
             progressRefreshHandler = new Handler(Looper.getMainLooper());
             createProgressCheckerRunnable();

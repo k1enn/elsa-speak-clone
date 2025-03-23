@@ -17,6 +17,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.MutableData;
+import com.google.firebase.database.Transaction;
 
 import java.util.HashMap;
 import java.util.List;
@@ -100,26 +102,67 @@ public class FirebaseDataManager {
     }
     
     /**
-     * Add or update user in the leaderboard
+     * Update or create a user entry in the leaderboard
+     * 
+     * @param username The username to update
+     * @param userId The user ID
+     * @param streak The user's streak
+     * @param xp The user's XP
+     * @return CompletableFuture that completes with true if successful, false otherwise
      */
     public CompletableFuture<Boolean> updateLeaderboard(String username, int userId, int streak, int xp) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         
-        Map<String, Object> userUpdate = new HashMap<>();
-        userUpdate.put("userId", userId);
-        userUpdate.put("userStreak", streak);
-        userUpdate.put("userXp", xp);
+        if (username == null || username.isEmpty()) {
+            Log.e(TAG, "Cannot update leaderboard with empty username");
+            future.complete(false);
+            return future;
+        }
         
-        leaderboardRef.child(username)
-                .updateChildren(userUpdate)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Leaderboard updated successfully for " + username);
-                    future.complete(true);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error updating leaderboard: " + e.getMessage());
+        // Create data map with proper type conversion to avoid type issues
+        Map<String, Object> userUpdate = new HashMap<>();
+        userUpdate.put("userId", Integer.valueOf(userId));
+        userUpdate.put("userStreak", Integer.valueOf(streak));
+        userUpdate.put("userXp", Integer.valueOf(xp));
+        
+        // Use a transaction to ensure atomic updates
+        DatabaseReference userRef = leaderboardRef.child(username);
+        
+        userRef.runTransaction(new Transaction.Handler() {
+            @Override
+            public Transaction.Result doTransaction(MutableData mutableData) {
+                // If this is a new entry, setValue creates it entirely
+                if (mutableData.getValue() == null) {
+                    mutableData.setValue(userUpdate);
+                    return Transaction.success(mutableData);
+                }
+                
+                // For existing entries, update each field individually
+                mutableData.child("userId").setValue(userId);
+                mutableData.child("userStreak").setValue(streak);
+                mutableData.child("userXp").setValue(xp);
+                
+                return Transaction.success(mutableData);
+            }
+            
+            @Override
+            public void onComplete(DatabaseError databaseError, boolean committed, DataSnapshot dataSnapshot) {
+                if (databaseError != null) {
+                    Log.e(TAG, "Firebase transaction failed: " + databaseError.getMessage(), databaseError.toException());
                     future.complete(false);
-                });
+                    return;
+                }
+                
+                if (committed) {
+                    Log.d(TAG, "Leaderboard updated successfully for " + username);
+                    Log.d(TAG, "New values - Streak: " + streak + ", XP: " + xp);
+                    future.complete(true);
+                } else {
+                    Log.e(TAG, "Firebase transaction not committed for " + username);
+                    future.complete(false);
+                }
+            }
+        });
         
         return future;
     }
@@ -158,7 +201,7 @@ public class FirebaseDataManager {
     /**
      * Sync local user progress to Firebase after quiz completion
      */
-    public void syncUserProgressAfterQuiz(int userId, int lessonId) {
+    public void syncUserProgress(int userId, int lessonId) {
         try {
             // First update local progress
             UserProgress progress = progressRepository.getUserLessonProgress(userId, lessonId);
@@ -330,5 +373,39 @@ public class FirebaseDataManager {
     public int getUserLessonStreak(int userId, int lessonId) {
         UserProgress progress = progressRepository.getUserLessonProgress(userId, lessonId);
         return progress != null ? progress.getStreak() : 0;
+    }
+    
+    /**
+     * Check if a username exists in the Firebase leaderboard
+     * @param username The username to check
+     * @return CompletableFuture that completes with true if username exists in leaderboard, false otherwise
+     */
+    public CompletableFuture<Boolean> isUsernameExistsInLeaderboard(String username) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        
+        if (username == null || username.trim().isEmpty()) {
+            Log.e(TAG, "Cannot check empty username in leaderboard");
+            future.complete(false);
+            return future;
+        }
+        
+        leaderboardRef.child(username)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        boolean exists = snapshot.exists();
+                        Log.d(TAG, "Username '" + username + "' " + 
+                              (exists ? "exists" : "does not exist") + " in leaderboard");
+                        future.complete(exists);
+                    }
+                    
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Error checking username in leaderboard: " + error.getMessage());
+                        future.complete(false);
+                    }
+                });
+        
+        return future;
     }
 } 

@@ -61,8 +61,6 @@ public class MainActivity extends AppCompatActivity {
         setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
-        // ConfigManager is now initialized in SplashActivity
-        // No need to initialize it here again
     }
 
     private void initializeServices() {
