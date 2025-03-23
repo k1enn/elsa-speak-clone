@@ -17,6 +17,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.ArrayList;
 
 public class UserProgressRepository {
     private static final String TAG = "UserProgressRepository";
@@ -213,6 +214,48 @@ public class UserProgressRepository {
         } catch (ExecutionException | InterruptedException e) {
             Log.e(TAG, "Error checking user progress", e);
             return false;
+        }
+    }
+
+    /**
+     * Get all progress entries for a user as a list (not LiveData)
+     */
+    public List<UserProgress> getUserProgressList(int userId) {
+        try {
+            Future<List<UserProgress>> future = AppDatabase.databaseWriteExecutor.submit(() ->
+                    userProgressDao.getUserProgress(userId));
+            return future.get();
+        } catch (ExecutionException | InterruptedException e) {
+            Log.e(TAG, "Error getting user progress list", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Update a specific user progress entry (used for syncing)
+     */
+    public boolean updateUserProgress(UserProgress progress) {
+        try {
+            AppDatabase.databaseWriteExecutor.execute(() -> 
+                    userProgressDao.update(progress));
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating user progress", e);
+            return false;
+        }
+    }
+
+    /**
+     * Insert a user progress entry (used for syncing)
+     */
+    public long insertUserProgress(UserProgress progress) {
+        try {
+            Future<Long> future = AppDatabase.databaseWriteExecutor.submit(() ->
+                    userProgressDao.insert(progress));
+            return future.get();
+        } catch (ExecutionException | InterruptedException e) {
+            Log.e(TAG, "Error inserting user progress", e);
+            return -1;
         }
     }
 } 

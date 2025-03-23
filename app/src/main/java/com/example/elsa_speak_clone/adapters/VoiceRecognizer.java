@@ -1,6 +1,5 @@
-package com.example.elsa_speak_clone.classes;
+package com.example.elsa_speak_clone.adapters;
 
-import android.animation.Animator;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
@@ -10,7 +9,6 @@ import android.os.Looper;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.speech.RecognitionListener;

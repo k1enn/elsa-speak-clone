@@ -24,4 +24,4 @@ config.json
 /.cursor
 /.vscode
 /app/src/main/assets/config.properties
-
+/app/src/main/assets

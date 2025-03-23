@@ -26,8 +26,10 @@ import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.database.entities.Quiz;
+import com.example.elsa_speak_clone.database.entities.UserScore;
 import com.example.elsa_speak_clone.services.NavigationService;
 import com.example.elsa_speak_clone.services.QuizService;
+import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,7 @@ public class QuizActivity extends AppCompatActivity {
     private QuizService quizService;
     private SessionManager sessionManager;
     private AppDatabase database;
+    private FirebaseDataManager firebaseDataManager;
     
     // UI components
     private TextView tvQuestion, tvResult;
@@ -67,6 +70,7 @@ public class QuizActivity extends AppCompatActivity {
         initializeServices();
         initializeUI();
         loadNextQuestion();
+        firebaseDataManager = FirebaseDataManager.getInstance(this);
     }
     
     private void initializeServices() {
@@ -256,16 +260,20 @@ public class QuizActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Log.e(TAG, "Error playing sound", e);
             }
-            
+
+
             // Update user score in database
             int userId = sessionManager.getUserId();
             
             executor.execute(() -> {
                 try {
                     // Add XP based on lesson difficulty
-                    int xpPoints = (currentLessonId > 5) ? 10 : 5;
-                    quizService.addXpPoints(userId, currentLessonId, xpPoints);
-                   // quizService.updateUserStreak(userId);
+                    int xpPoints = 5;
+//                    quizService.addXpPoints(userId, currentLessonId, xpPoints);
+                    AppDatabase.databaseWriteExecutor.execute(() -> {
+                        firebaseDataManager.syncUserProgressAfterQuiz(userId, currentLessonId);
+                    });
+//                    quizService.updateUserStreak(userId);
                 } catch (Exception e) {
                     Log.e(TAG, "Error updating score: " + e.getMessage(), e);
                 }
@@ -321,4 +329,6 @@ public class QuizActivity extends AppCompatActivity {
         
         navigationService.navigateToMain();
     }
+
+
 }

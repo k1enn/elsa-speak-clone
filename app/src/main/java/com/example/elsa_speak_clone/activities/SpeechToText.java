@@ -21,7 +21,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.R;
-import com.example.elsa_speak_clone.classes.VoiceRecognizer;
+import com.example.elsa_speak_clone.adapters.VoiceRecognizer;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.dao.VocabularyDao;
 import com.example.elsa_speak_clone.services.NavigationService;

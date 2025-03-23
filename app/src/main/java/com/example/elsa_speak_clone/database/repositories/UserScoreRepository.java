@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.ArrayList;
 
 public class UserScoreRepository {
     private static final String TAG = "UserScoreRepository";
@@ -67,7 +68,7 @@ public class UserScoreRepository {
             return future.get();
         } catch (ExecutionException | InterruptedException e) {
             Log.e(TAG, "Error getting user scores", e);
-            return null;
+            return new ArrayList<>();
         }
     }
 
@@ -136,5 +137,45 @@ public class UserScoreRepository {
         }
     }
 
+    /**
+     * Get a specific user score by ID
+     */
+    public UserScore getUserScoreById(int scoreId) {
+        try {
+            Future<UserScore> future = AppDatabase.databaseWriteExecutor.submit(() ->
+                    userScoreDao.getUserScoreById(scoreId));
+            return future.get();
+        } catch (ExecutionException | InterruptedException e) {
+            Log.e(TAG, "Error getting user score by ID", e);
+            return null;
+        }
+    }
 
+    /**
+     * Insert a user score (used for syncing)
+     */
+    public long insertUserScore(UserScore score) {
+        try {
+            Future<Long> future = AppDatabase.databaseWriteExecutor.submit(() ->
+                    userScoreDao.insert(score));
+            return future.get();
+        } catch (ExecutionException | InterruptedException e) {
+            Log.e(TAG, "Error inserting user score", e);
+            return -1;
+        }
+    }
+
+    /**
+     * Update a user score (used for syncing)
+     */
+    public boolean updateUserScore(UserScore score) {
+        try {
+            AppDatabase.databaseWriteExecutor.execute(() ->
+                    userScoreDao.update(score));
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating user score", e);
+            return false;
+        }
+    }
 } 

@@ -1,4 +1,4 @@
-package com.example.elsa_speak_clone.classes;
+package com.example.elsa_speak_clone.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;

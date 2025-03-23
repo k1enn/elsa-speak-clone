@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF0000</color>
+    <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
     <color name="colorPrimary">#7b4bff</color>
     <color name="colorPrimaryDark">#6539ba</color>
@@ -11,7 +11,7 @@
     <color name="primaryColor">#6200EE</color>
     <color name="primaryLightColor">#BB86FC</color>
     <color name="primaryDarkColor">#3700B3</color>
-
+    <color name="golden">#DCB904</color>
     <color name="transparent">#1C00FF00</color>
     <color name="searchButtonColor">#7DA8EB</color>
 

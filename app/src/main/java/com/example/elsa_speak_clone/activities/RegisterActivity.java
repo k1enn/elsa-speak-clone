@@ -1,9 +1,6 @@
 package com.example.elsa_speak_clone.activities;
 
-import static com.example.elsa_speak_clone.database.GoogleSignInHelper.RC_SIGN_IN;
-
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -22,12 +19,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
 import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.entities.User;
 import com.example.elsa_speak_clone.database.repositories.UserRepository;
 import com.example.elsa_speak_clone.services.AuthenticationService;
 import com.example.elsa_speak_clone.services.NavigationService;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Objects;
+
+import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
 
 public class RegisterActivity extends AppCompatActivity {
     private static final String TAG = "RegisterActivity";
@@ -50,6 +50,7 @@ public class RegisterActivity extends AppCompatActivity {
     private AuthenticationService authService;
     private NavigationService navigationService;
     private GoogleSignInHelper googleSignInHelper;
+    private FirebaseDataManager firebaseDataManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +70,8 @@ public class RegisterActivity extends AppCompatActivity {
     private void initializeServices() {
         authService = new AuthenticationService(this);
         navigationService = new NavigationService(this);
-        userRepository = new UserRepository(this);
+        userRepository = new UserRepository(getApplication());
+        firebaseDataManager = FirebaseDataManager.getInstance(this);
     }
 
     private void initializeViews() {
@@ -153,6 +155,11 @@ public class RegisterActivity extends AppCompatActivity {
                         Log.d(TAG, "Registering new Google user: " + email);
                         if (authService.registerGoogleUser(email)) {
                             Toast.makeText(RegisterActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                            
+                            // Get the user ID from session
+                            SessionManager sessionManager = new SessionManager(RegisterActivity.this);
+                            int userId = sessionManager.getUserId();
+                            
                             navigationService.navigateToMain();
                         } else {
                             Toast.makeText(RegisterActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
@@ -181,8 +188,7 @@ public class RegisterActivity extends AppCompatActivity {
             if (validateInput(username, password, rewritePassword)) {
                 try {
                     if (authService.registerLocalUser(username, password)) {
-                        showToast("Registration Successful");
-                        navigationService.navigateToMain();
+                        handleRegistrationSuccess(authService.getLocalUser());
                     } else {
                         showToast("Registration Failed");
                     }
@@ -243,9 +249,16 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         try {
-            // Check if username already exists using Room and executor
+            // Check if username already exists locally
             if (userRepository.isUsernameExists(username)) {
-                setTvUsername("Username already exists.");
+                setTvUsername("Username already exists locally.");
+                return false;
+            }
+            
+            // Check if username exists in Firebase
+            boolean existsInFirebase = firebaseDataManager.isUsernameExists(username).get();
+            if (existsInFirebase) {
+                setTvUsername("Username already exists in cloud.");
                 return false;
             }
         } catch (Exception e) {
@@ -324,6 +337,22 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         return true;
+    }
+
+    private void handleRegistrationSuccess(User user) {
+        // Create initial Firebase leaderboard entry
+        firebaseDataManager.updateLeaderboard(user.getName(), user.getUserId(),0, 0)
+            .thenAccept(success -> {
+                if (success) {
+                    Log.d(TAG, "User added to leaderboard successfully");
+                } else {
+                    Log.e(TAG, "Failed to add user to leaderboard");
+                }
+            });
+        
+        // Continue with normal flow
+        Toast.makeText(this, "Registration Successful", Toast.LENGTH_SHORT).show();
+        navigationService.navigateToMain();
     }
 
     private void showToast(String message) {

@@ -31,4 +31,7 @@ public interface LessonDao {
 
     @Query("DELETE FROM Lessons")
     void deleteAll();
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertLesson(Lesson lesson);
 }

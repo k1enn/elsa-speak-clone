@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 public class AuthenticationService {
     private static final String TAG = "AuthenticationService";
@@ -69,7 +70,7 @@ public class AuthenticationService {
                 return false;
             }
 
-            // Check if username/email already exists
+            // Then check if username/email exists locally
             Future<Integer> future;
             if (isGoogleUser) {
                 future = AppDatabase.databaseWriteExecutor.submit(() ->
@@ -80,12 +81,13 @@ public class AuthenticationService {
             }
 
             if (future.get() > 0) {
-                Log.d(TAG, "Username/Email already exists: " + username);
+                Log.d(TAG, "Username/Email already exists locally: " + username);
                 return false;
             }
 
             // Create new user
             int userId = generateUniqueId();
+            
             User user;
 
             if (isGoogleUser) {
@@ -109,6 +111,7 @@ public class AuthenticationService {
                 } else {
                     sessionManager.createSession(username, userId);
                 }
+                
                 return true;
             } else {
                 Log.e(TAG, "Failed to insert user into database");
@@ -198,6 +201,24 @@ public class AuthenticationService {
         }
     }
 
+    /**
+     * Authenticate a user without blocking the main thread
+     */
+    public CompletableFuture<Boolean> authenticateUserAsync(String username, String password, boolean isGoogleAuth) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                boolean result = authenticateUser(username, password, isGoogleAuth);
+                future.complete(result);
+            } catch (Exception e) {
+                Log.e(TAG, "Error in async authentication: " + e.getMessage(), e);
+                future.completeExceptionally(e);
+            }
+        });
+        
+        return future;
+    }
 
     public int getCurrentUserId() {
         return sessionManager.getUserId();
@@ -257,5 +278,42 @@ public class AuthenticationService {
     private String getCurrentDate() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         return dateFormat.format(new Date());
+    }
+
+    /**
+     * Get user by username asynchronously
+     */
+    public CompletableFuture<User> getLocalUserAsync() {
+        CompletableFuture<User> future = new CompletableFuture<>();
+        
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                User user = userDao.getUserById(sessionManager.getUserId());
+                future.complete(user);
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting local user async: " + e.getMessage(), e);
+                future.completeExceptionally(e);
+            }
+        });
+        
+        return future;
+    }
+
+    public User getLocalUser() {
+        try {
+            int userId = sessionManager.getUserId();
+            if (userId <= 0) {
+                Log.e(TAG, "Invalid user ID: " + userId);
+                return null;
+            }
+            
+            Future<User> future = AppDatabase.databaseWriteExecutor.submit(() -> 
+                userDao.getUserById(userId));
+            
+            return future.get(); // Wait for result
+        } catch (InterruptedException | ExecutionException e) {
+            Log.e(TAG, "Error getting local user: " + e.getMessage(), e);
+            return null;
+        }
     }
 }

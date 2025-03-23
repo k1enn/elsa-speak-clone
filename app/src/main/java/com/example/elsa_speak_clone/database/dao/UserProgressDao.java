@@ -2,6 +2,7 @@ package com.example.elsa_speak_clone.database.dao;
 
 import androidx.room.Dao;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
@@ -34,4 +35,26 @@ public interface UserProgressDao {
 
     @Query("SELECT * FROM UserProgress WHERE UserId = :userId LIMIT 1")
     UserProgress getUserProgressById(int userId);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertUserProgress(UserProgress progress);
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    void updateUserProgress(UserProgress existingProgress);
+    
+    @Query("SELECT * FROM UserProgress")
+    List<UserProgress> getAllUserProgress();
+    
+    @Query("SELECT SUM(Xp) FROM UserProgress WHERE UserId = :userId")
+    int getTotalXpForUser(int userId);
+    
+    @Query("SELECT MAX(Streak) FROM UserProgress WHERE UserId = :userId")
+    int getMaxStreakForUser(int userId);
+    
+    @Query("DELETE FROM UserProgress WHERE UserId = :userId")
+    void deleteUserProgress(int userId);
+    
+    @Query("SELECT MAX(ProgressId) FROM UserProgress")
+    Integer getMaxProgressId();
+
 } 

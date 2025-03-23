@@ -4,11 +4,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -18,7 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.elsa_speak_clone.R;
-import com.example.elsa_speak_clone.classes.ChatAdapter;
+import com.example.elsa_speak_clone.adapters.ChatAdapter;
 import com.example.elsa_speak_clone.models.Message;
 import com.example.elsa_speak_clone.services.ChatGptService;
 import com.example.elsa_speak_clone.utilities.ConfigManager;
@@ -40,15 +37,10 @@ public class ChatbotActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chatbot);
         
-        // Khởi tạo ConfigManager để đọc cấu hình
-        ConfigManager.initialize(this);
-        
         mainHandler = new Handler(Looper.getMainLooper());
         initializeUI();
         setupToolbar();
         setupChatService();
-        
-        // Gửi tin nhắn chào mừng
         showWelcomeMessage();
     }
     
@@ -57,12 +49,10 @@ public class ChatbotActivity extends AppCompatActivity {
         editTextMessage = findViewById(R.id.editTextMessage);
         buttonSend = findViewById(R.id.buttonSend);
         
-        // Thiết lập RecyclerView
         recyclerMessages.setLayoutManager(new LinearLayoutManager(this));
         chatAdapter = new ChatAdapter();
         recyclerMessages.setAdapter(chatAdapter);
-        
-        // Thiết lập nút gửi
+
         buttonSend.setOnClickListener(v -> sendMessage());
     }
     
@@ -76,7 +66,6 @@ public class ChatbotActivity extends AppCompatActivity {
     }
     
     private void setupChatService() {
-        // Lấy API key từ ConfigManager
         String apiKey = ConfigManager.getOpenAiApiKey();
         if (apiKey.isEmpty()) {
             Toast.makeText(this, "API key chưa được cấu hình", Toast.LENGTH_LONG).show();
@@ -101,17 +90,14 @@ public class ChatbotActivity extends AppCompatActivity {
             return;
         }
         
-        // Hiển thị tin nhắn người dùng
         chatAdapter.addMessage(new Message(messageText, Message.TYPE_USER));
         scrollToBottom();
         
         // Xóa input
         editTextMessage.setText("");
         
-        // Thông báo đang xử lý
         isProcessing = true;
-        
-        // Gửi tin nhắn đến ChatGPT API
+
         chatGptService.sendMessage(messageText, new ChatGptService.ChatGptCallback() {
             @Override
             public void onResponse(String response) {

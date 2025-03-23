@@ -1,16 +1,15 @@
 package com.example.elsa_speak_clone.services;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
 import android.util.Log;
 
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.entities.Quiz;
 import com.example.elsa_speak_clone.database.entities.UserProgress;
-import com.example.elsa_speak_clone.database.entities.UserScore;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 public class QuizService {
@@ -34,11 +33,7 @@ public class QuizService {
     }
 
     /**
-     * Add XP points to user score for a specific lesson
-     * 
-     * @param userId The user ID
-     * @param lessonId The lesson ID
-     * @param points The number of points to add
+     * Add XP points and sync to Firebase
      */
     public void addXpPoints(int userId, int lessonId, int points) {
         try {
@@ -51,6 +46,7 @@ public class QuizService {
                 existingProgress.setLastStudyDate(getCurrentDate());
                 database.userProgressDao().update(existingProgress);
                 Log.d(TAG, "Updated XP for existing progress: " + existingProgress.getProgressId());
+                
             } else {
                 // Create new progress entry
                 // First, determine the next available progress ID
@@ -71,6 +67,7 @@ public class QuizService {
                 // Insert the new progress
                 long insertedId = database.userProgressDao().insert(newProgress);
                 Log.d(TAG, "Created new progress with ID: " + insertedId);
+                
             }
             
             Log.d(TAG, "Added " + points + " XP for user " + userId + " in lesson " + lessonId);
@@ -78,6 +75,7 @@ public class QuizService {
             Log.e(TAG, "Error adding XP points: " + e.getMessage(), e);
         }
     }
+
 
     /**
      * Get next available progress ID for a user
@@ -106,6 +104,4 @@ public class QuizService {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         return dateFormat.format(new Date());
     }
-
-
 } 

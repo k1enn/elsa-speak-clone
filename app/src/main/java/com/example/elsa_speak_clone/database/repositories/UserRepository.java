@@ -1,13 +1,18 @@
 package com.example.elsa_speak_clone.database.repositories;
 
-import android.content.Context;
+import android.app.Application;
 import android.util.Log;
+
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.dao.UserDao;
 import com.example.elsa_speak_clone.database.entities.User;
 
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -18,10 +23,15 @@ public class UserRepository {
     private static final String TAG = "UserRepository";
     private final UserDao userDao;
     private final AppDatabase database;
+    private final MutableLiveData<User> currentUser = new MutableLiveData<>();
 
-    public UserRepository(Context context) {
-        this.database = AppDatabase.getInstance(context);
+    public UserRepository(Application application) {
+        this.database = AppDatabase.getInstance(application);
         this.userDao = database.userDao();
+    }
+
+    public LiveData<User> getCurrentUser() {
+        return currentUser;
     }
 
     /**
@@ -31,30 +41,27 @@ public class UserRepository {
      */
     public long insertUser(User user) {
         try {
-            Future<Long> future = AppDatabase.databaseWriteExecutor.submit(() -> 
-                userDao.insert(user));
-            return future.get();
+            // Set current date for new user
+            String currentDate = getCurrentDate();
+
+            // Insert into local database
+            Future<Long> future = AppDatabase.databaseWriteExecutor.submit(() ->
+                    userDao.insert(user));
+            long userId = future.get();
+
+            // Set the user ID and sync to Firebase
+            if (userId > 0) {
+                user.setUserId((int) userId);
+                currentUser.postValue(user);
+            }
+
+            return userId;
         } catch (ExecutionException | InterruptedException e) {
             Log.e(TAG, "Error inserting user", e);
             return -1;
         }
     }
 
-    /**
-     * Update an existing user
-     * @param user The user to update
-     * @return true if update was successful
-     */
-    public boolean updateUser(User user) {
-        try {
-            AppDatabase.databaseWriteExecutor.execute(() -> 
-                userDao.update(user));
-            return true;
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating user", e);
-            return false;
-        }
-    }
 
     /**
      * Delete a user
@@ -65,6 +72,7 @@ public class UserRepository {
         try {
             AppDatabase.databaseWriteExecutor.execute(() -> 
                 userDao.delete(user));
+            currentUser.postValue(null);
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error deleting user", e);
@@ -81,7 +89,9 @@ public class UserRepository {
         try {
             Future<User> future = AppDatabase.databaseWriteExecutor.submit(() -> 
                 userDao.getUserById(userId));
-            return future.get();
+            User user = future.get();
+            currentUser.postValue(user);
+            return user;
         } catch (ExecutionException | InterruptedException e) {
             Log.e(TAG, "Error getting user by ID", e);
             return null;
@@ -97,7 +107,9 @@ public class UserRepository {
         try {
             Future<User> future = AppDatabase.databaseWriteExecutor.submit(() -> 
                 userDao.getUserByEmail(email));
-            return future.get();
+            User user = future.get();
+            currentUser.postValue(user);
+            return user;
         } catch (ExecutionException | InterruptedException e) {
             Log.e(TAG, "Error getting user by email", e);
             return null;
@@ -199,4 +211,45 @@ public class UserRepository {
             return false;
         }
     }
-} 
+
+
+    /**
+     * Check if username exists in local database
+     */
+    public boolean isUsernameRegistered(String username) {
+        try {
+            Future<Integer> future = AppDatabase.databaseWriteExecutor.submit(() ->
+                    userDao.checkUsernameExists(username));
+            return future.get() > 0;
+        } catch (ExecutionException | InterruptedException e) {
+            Log.e(TAG, "Error checking if username exists", e);
+            return false;
+        }
+    }
+
+    /**
+     * Find user by username in local database
+     */
+    public User findUserByUsername(String username) {
+        try {
+            Future<User> future = AppDatabase.databaseWriteExecutor.submit(() ->
+                    userDao.getUserByUsername(username));
+            User user = future.get();
+            if (user != null) {
+                currentUser.postValue(user);
+            }
+            return user;
+        } catch (ExecutionException | InterruptedException e) {
+            Log.e(TAG, "Error finding user by username", e);
+            return null;
+        }
+    }
+
+    /**
+     * Get current date as formatted string
+     */
+    private String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return dateFormat.format(new Date());
+    }
+}

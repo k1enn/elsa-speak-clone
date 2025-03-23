@@ -126,7 +126,16 @@ public abstract class AppDatabase extends RoomDatabase {
                                 .fallbackToDestructiveMigration()
                                 .build();
                         
-                        Log.d(TAG, "Database instance created successfully");
+                        // Try a simple query to ensure database is ready
+                        databaseWriteExecutor.execute(() -> {
+                            try {
+                                // Just ensure we can access the database
+                                INSTANCE.userDao().getAllUsers();
+                                Log.d(TAG, "Database initialized successfully");
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error initializing database", e);
+                            }
+                        });
                     } catch (Exception e) {
                         Log.e(TAG, "Error creating database instance", e);
                         return null;
@@ -143,30 +152,6 @@ public abstract class AppDatabase extends RoomDatabase {
         return INSTANCE;
     }
     
-
-    // Verify database is initialized
-    public static boolean isDatabaseInitialized() {
-        if (INSTANCE == null) {
-            Log.e(TAG, "Database is not initialized");
-            return false;
-        }
-        
-        try {
-            databaseWriteExecutor.execute(() -> {
-                try {
-                    // Can be extended for actual validation
-                    INSTANCE.isOpen();
-                } catch (Exception e) {
-                    Log.e(TAG, "Database is not accessible", e);
-                }
-            });
-            return true;
-        } catch (Exception e) {
-            Log.e(TAG, "Error checking database state", e);
-            return false;
-        }
-    }
-
     private static final RoomDatabase.Callback sRoomDatabaseCallback = new RoomDatabase.Callback() {
         @Override
         public void onCreate(@NonNull SupportSQLiteDatabase db) {

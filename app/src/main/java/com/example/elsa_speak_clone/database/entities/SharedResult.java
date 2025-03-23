@@ -38,6 +38,7 @@ public class SharedResult {
         this.shareDate = shareDate;
     }
 
+    public SharedResult() {}
     // Getters and setters
     public int getShareId() {
         return shareId;

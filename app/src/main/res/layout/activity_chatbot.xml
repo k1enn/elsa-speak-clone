@@ -58,7 +58,6 @@
             android:layout_marginStart="8dp"
             android:src="@drawable/ic_send_24dp"
             app:fabSize="mini"
-            app:tint="@color/white"
             android:contentDescription="Gửi tin nhắn"/>
 
     </LinearLayout>

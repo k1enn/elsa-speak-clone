@@ -1,6 +1,5 @@
 package com.example.elsa_speak_clone.fragments;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -8,7 +7,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -18,18 +16,15 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.entities.Lesson;
 import com.example.elsa_speak_clone.database.entities.Quiz;
-import com.example.elsa_speak_clone.classes.LessonAdapter;
+import com.example.elsa_speak_clone.adapters.LessonAdapter;
 import com.example.elsa_speak_clone.R;
-import com.example.elsa_speak_clone.activities.SpeechToText;
 import com.example.elsa_speak_clone.database.DataInitializer;
 import com.example.elsa_speak_clone.database.repositories.QuizRepository;
 import com.example.elsa_speak_clone.services.NavigationService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

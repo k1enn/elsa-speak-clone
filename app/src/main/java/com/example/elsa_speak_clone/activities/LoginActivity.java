@@ -1,6 +1,8 @@
 package com.example.elsa_speak_clone.activities;
 
+
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
 
@@ -22,10 +24,18 @@ import androidx.annotation.Nullable;
 
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
-import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.services.AuthenticationService;
 import com.example.elsa_speak_clone.services.NavigationService;
 import com.google.firebase.auth.FirebaseUser;
+import com.example.elsa_speak_clone.database.entities.User;
+import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.AppDatabase;
+import com.example.elsa_speak_clone.database.entities.UserProgress;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
+import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
@@ -37,6 +47,9 @@ public class LoginActivity extends AppCompatActivity {
     private AuthenticationService authService;
     private GoogleSignInHelper googleSignInHelper;
     private NavigationService navigationService;
+    private SessionManager sessionManager;
+    private View loading;
+    private FirebaseDataManager firebaseDataManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +66,8 @@ public class LoginActivity extends AppCompatActivity {
         // Initialize services
         authService = new AuthenticationService(this);
         navigationService = new NavigationService(this);
+        sessionManager = new SessionManager(this);
+        firebaseDataManager = FirebaseDataManager.getInstance(this);
         
         // Initialize UI and setup interactions
         initializeUI();
@@ -98,6 +113,8 @@ public class LoginActivity extends AppCompatActivity {
 
     private void initializeGoogleLogin() {
         googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
+            private Context context;
+
             @Override
             public void onSuccess(FirebaseUser user) {
                 if (user == null || user.getEmail() == null) {
@@ -113,13 +130,13 @@ public class LoginActivity extends AppCompatActivity {
                     // First try to authenticate, and if that fails, register
                     if (authService.authenticateGoogleUser(email)) {
                         Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
-                        navigationService.navigateToMain();
+                        handleLoginSuccess(authService.getLocalUser());
                     } else {
                         // User doesn't exist, register new Google user
                         Log.d(TAG, "Registering new Google user: " + email);
                         if (authService.registerGoogleUser(email)) {
                             Toast.makeText(LoginActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
-                            navigationService.navigateToMain();
+                            handleLoginSuccess(authService.getLocalUser());
                         } else {
                             Toast.makeText(LoginActivity.this, "Registration Failed", Toast.LENGTH_SHORT).show();
                         }
@@ -148,17 +165,52 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            loginUser(username, password);
+        });
+    }
+
+    private void loginUser(String username, String password) {
+        loading.setVisibility(View.VISIBLE);
+        btnLogin.setEnabled(false);
+        
+        // Move authentication to background thread
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            boolean success = false;
+            User user = null;
+            
             try {
-                if (authService.authenticateLocalUser(username, password)) {
-                    Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                    navigationService.navigateToMain();
-                } else {
-                    Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
+                success = authService.authenticateLocalUser(username, password);
+                if (success) {
+                    user = authService.getLocalUser();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Login failed: ", e);
-                Toast.makeText(this, "Login Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Authentication error: " + e.getMessage(), e);
             }
+            
+            final boolean loginSuccess = success;
+            final User finalUser = user;
+            
+            // Update UI on main thread
+            runOnUiThread(() -> {
+                if (loginSuccess && finalUser != null) {
+                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                    
+                    // Create session
+                    sessionManager.createSession(finalUser.getName(), finalUser.getUserId());
+                    
+                    // Check if we need to pull data from Firebase
+                    checkAndPullUserProgress(finalUser);
+                    
+                    // Navigate to main activity
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    loading.setVisibility(View.GONE);
+                    btnLogin.setEnabled(true);
+                    Toast.makeText(LoginActivity.this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
 
@@ -180,5 +232,42 @@ public class LoginActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         googleSignInHelper.handleActivityResult(requestCode, resultCode, data);
+    }
+
+    private void handleLoginSuccess(User user) {
+        // Create session
+        sessionManager.createSession(user.getName(), user.getUserId());
+        
+        // Continue with login navigation
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
+    private void checkAndPullUserProgress(User user) {
+        // Check if user has any local progress
+        UserProgressRepository progressRepo = new UserProgressRepository(getApplication());
+        List<UserProgress> localProgress = progressRepo.getUserProgressList(user.getUserId());
+        
+        // If no local progress or minimal progress, try to pull from Firebase
+        if (localProgress == null || localProgress.isEmpty() || shouldPullProgress(localProgress)) {
+            firebaseDataManager.pullUserProgressToLocal(user.getName(), user.getUserId())
+                    .thenAccept(success -> {
+                        if (success) {
+                            Log.d(TAG, "Successfully pulled user progress from Firebase");
+                        } else {
+                            Log.d(TAG, "No progress found in Firebase or pull failed");
+                        }
+                    });
+        }
+    }
+
+    private boolean shouldPullProgress(List<UserProgress> progressList) {
+        // Pull if total XP is very low (suggesting new installation)
+        int totalXp = 0;
+        for (UserProgress progress : progressList) {
+            totalXp += progress.getXp();
+        }
+        return totalXp < 10; // Arbitrary threshold
     }
 }

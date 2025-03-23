@@ -12,7 +12,9 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.elsa_speak_clone.R;
+import com.example.elsa_speak_clone.activities.ChatbotActivity;
 import com.example.elsa_speak_clone.activities.DictionaryActivity;
+import com.example.elsa_speak_clone.activities.LeaderboardActivity;
 import com.example.elsa_speak_clone.activities.LoginActivity;
 import com.example.elsa_speak_clone.activities.MainActivity;
 import com.example.elsa_speak_clone.activities.QuizActivity;
@@ -190,5 +192,15 @@ public class NavigationService {
         } catch (Exception e) {
             Log.e(TAG, "Error navigating to " + activityClass.getSimpleName(), e);
         }
+    }
+
+    public void navigateToChatbot(Context context) {
+        Intent intent = new Intent (context, ChatbotActivity.class);
+        context.startActivity(intent);
+    }
+
+    public void navigateToLeaderboard(Context context) {
+        Intent intent = new Intent (context, LeaderboardActivity.class);
+        context.startActivity(intent);
     }
 }

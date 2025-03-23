@@ -27,7 +27,7 @@ public class User {
     @ColumnInfo(name = "JoinDate", typeAffinity = ColumnInfo.TEXT)
     @NonNull
     private String joinDate;
-
+    
     // Constructor
     public User(int userId, String gmail, String name, String password, boolean google, String joinDate) {
         this.userId = userId;
@@ -36,8 +36,12 @@ public class User {
         this.password = password;
         this.google = google;
         this.joinDate = joinDate;
+
     }
 
+    public User() {
+
+    }
     // Getters and setters
     public int getUserId() {
         return userId;
@@ -71,6 +75,7 @@ public class User {
         this.password = password;
     }
 
+
     public boolean getGoogle() {
         return google;
     }
@@ -86,5 +91,6 @@ public class User {
     public void setJoinDate(String joinDate) {
         this.joinDate = joinDate;
     }
+    
 
 }

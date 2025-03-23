@@ -1,4 +1,4 @@
-package com.example.elsa_speak_clone.classes;
+package com.example.elsa_speak_clone.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,7 +12,6 @@ import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.dao.VocabularyDao;
 import com.example.elsa_speak_clone.database.entities.Lesson;
-import com.example.elsa_speak_clone.database.entities.Vocabulary;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;

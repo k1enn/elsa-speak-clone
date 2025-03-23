@@ -16,6 +16,7 @@ import com.example.elsa_speak_clone.fragments.HomeFragment;
 import com.example.elsa_speak_clone.fragments.LearnFragment;
 import com.example.elsa_speak_clone.fragments.ProfileFragment;
 import com.example.elsa_speak_clone.services.NavigationService;
+import com.example.elsa_speak_clone.utilities.ConfigManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.navigation.NavigationView;
@@ -26,6 +27,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.ImageButton;
 
 import java.util.HashMap;
@@ -40,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle toggle;
     private NavigationView navigationView;
-    private ImageButton dictionary;
-    
+    private ImageButton chatbot;
+
     private NavigationService navigationService;
     private GoogleSignInHelper googleSignInHelper;
     private SessionManager sessionManager;
@@ -59,11 +61,15 @@ public class MainActivity extends AppCompatActivity {
         setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
+        // ConfigManager is now initialized in SplashActivity
+        // No need to initialize it here again
     }
 
     private void initializeServices() {
         sessionManager = new SessionManager(this);
         navigationService = new NavigationService(this);
+
+        // Adding this so it doesn't crash
         googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
@@ -75,22 +81,14 @@ public class MainActivity extends AppCompatActivity {
                 // Handle error
             }
         });
-        
-        // Initialize database instance
-        AppDatabase database = AppDatabase.getInstance(this);
-        
-        // Optionally pre-load data on a background thread if needed
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            // Any database pre-loading operations
-        });
+
     }
 
     private void initializeUI() {
-        dictionary = findViewById(R.id.btnDictionary);
+        chatbot = findViewById(R.id.btnChatbot);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(navListener);
-        
+
         // Set up the toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -145,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_discover) {
                 // Handle discover action
             } else if (id == R.id.nav_leaderboard) {
-                // Handle leaderboard action
+                navigationService.navigateToLeaderboard(MainActivity.this);
             } else if (id == R.id.nav_account) {
                 // Handle profile action
             }
@@ -192,6 +190,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupDictionaryButton() {
-        dictionary.setOnClickListener(v -> navigationService.navigateToDictionary());
+        chatbot.setOnClickListener(v -> navigationService.navigateToChatbot(this));
     }
 }

@@ -3,16 +3,22 @@ package com.example.elsa_speak_clone.database.dao;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
 import com.example.elsa_speak_clone.database.entities.User;
 import com.example.elsa_speak_clone.database.entities.UserScore;
 
+import java.util.List;
+
 @Dao
 public interface UserDao {
     @Insert
     long insert(User user);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    long insertUser(User user);
 
     @Update
     void update(User user);
@@ -46,6 +52,9 @@ public interface UserDao {
     
     @Query("DELETE FROM Users WHERE UserId = :userId")
     int deleteUserById(int userId);
+
+    @Query("SELECT * FROM Users")
+    List<User> getAllUsers();
 
     @Query("SELECT * FROM UserScores us JOIN Quizzes q ON us.QuizId = q.QuizId " +
            "WHERE us.UserId = :userId AND q.LessonId = :lessonId LIMIT 1")

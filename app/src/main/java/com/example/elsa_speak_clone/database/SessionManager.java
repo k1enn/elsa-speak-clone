@@ -70,9 +70,10 @@ public class SessionManager {
         return user;
     }
 
+
     // Just for debugging - get the raw user ID
     public int getUserId() {
-        return sharedPreferences.getInt(KEY_USER_ID, -1);
+        return sharedPreferences.getInt(SessionManager.KEY_USER_ID, -1);
     }
 
     // Check if user is logged in via Google
@@ -102,5 +103,8 @@ public class SessionManager {
     // Get auth type
     public String getAuthType() {
         return sharedPreferences.getString(KEY_AUTH_TYPE, AUTH_TYPE_LOCAL);
+    }
+
+    public Context getContext() { return context;
     }
 }
