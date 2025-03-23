@@ -16,7 +16,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
-
+import android.widget.ProgressBar;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import android.widget.ProgressBar;
+import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
+import java.util.Objects;
+import java.util.List;
+import java.util.ArrayList;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.adapters.ValidationErrorAdapter;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
@@ -50,6 +57,7 @@ public class RegisterActivity extends AppCompatActivity {
     private TextView tvPassword;
     private TextView tvRewritePassword;
     private TextView tvUsername;
+    private ProgressBar progressBar;
     
     // Services
     private UserRepository userRepository;
@@ -57,6 +65,7 @@ public class RegisterActivity extends AppCompatActivity {
     private NavigationService navigationService;
     private GoogleSignInHelper googleSignInHelper;
     private FirebaseDataManager firebaseDataManager;
+    private SessionManager sessionManager;
 
     // Add this as a class field
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -81,6 +90,7 @@ public class RegisterActivity extends AppCompatActivity {
         navigationService = new NavigationService(this);
         userRepository = new UserRepository(getApplication());
         firebaseDataManager = FirebaseDataManager.getInstance(this);
+        sessionManager = new SessionManager(this);
     }
 
     private void initializeViews() {
@@ -95,6 +105,7 @@ public class RegisterActivity extends AppCompatActivity {
         btnTogglePassword = findViewById(R.id.btnTogglePassword);
         btnToggleRewritePassword = findViewById(R.id.btnToggleLoginPassword);
         btnGoogleRegister = findViewById(R.id.btnGoogleRegister);
+        progressBar = findViewById(R.id.progressBar);
     }
 
     private void setupLoginButton() {
@@ -195,7 +206,9 @@ public class RegisterActivity extends AppCompatActivity {
             String password = etNewPassword.getText().toString().trim();
             String rewritePassword = etRewritePassword.getText().toString().trim();
             
-
+            // Show loading indicator immediately
+            progressBar.setVisibility(View.VISIBLE);
+            
             // Move validation to background thread
             executorService.execute(() -> {
                 // Validate input in background thread
@@ -204,51 +217,14 @@ public class RegisterActivity extends AppCompatActivity {
                 // Return to UI thread with result
                 runOnUiThread(() -> {
                     if (!inputValid) {
-                        // Show appropriate error messages on UI thread
-                        if (validateUsernameLogic(username) != null) {
-                            setTvUsername(validateUsernameLogic(username));
-                        } else {
-                            hideTvUsername();
-                        }
-                        
-                        if (validatePasswordLogic(password) != null) {
-                            setTvPassword(validatePasswordLogic(password));
-                        } else {
-                            hideTvPassword();
-                        }
-                        
-                        if (!Objects.equals(password, rewritePassword)) {
-                            setTvRewritePassword();
-                        } else {
-                            hideTvRewritePassword();
-                        }
-                        
+                        // Show appropriate error messages
+                        progressBar.setVisibility(View.GONE);
+                        displayValidationErrors(username, password, rewritePassword);
                         return;
                     }
                     
-                    // Continue with registration in background
-                    executorService.execute(() -> {
-                        try {
-                            final boolean registrationSuccess = authService.registerLocalUser(username, password);
-                            final User user = registrationSuccess ? authService.getLocalUser() : null;
-                            
-                            // Update UI with result
-                            runOnUiThread(() -> {
-                                if (registrationSuccess && user != null) {
-                                    // Firebase sync happens in firebaseSync method
-                                    // which handles its own loading indicators
-                                    firebaseSync(user);
-                                } else {
-                                    showToast("Registration Failed");
-                                }
-                            });
-                        } catch (Exception e) {
-                            Log.e(TAG, "Registration error: " + e.getMessage(), e);
-                            runOnUiThread(() -> {
-                                showToast("Registration Error: " + e.getMessage());
-                            });
-                        }
-                    });
+                    // Continue with improved registration process
+                    registerUser(username, password);
                 });
             });
         });
@@ -467,6 +443,89 @@ public class RegisterActivity extends AppCompatActivity {
         // Clean up executor service
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
+        }
+    }
+
+    private void registerUser(String username, String password) {
+        // Already on UI thread, move to background for database operations
+        executorService.execute(() -> {
+            try {
+                // First register locally
+                final boolean localSuccess = authService.registerLocalUser(username, password);
+                final User user = localSuccess ? authService.getLocalUser() : null;
+                
+                if (localSuccess && user != null) {
+                    // Now register in Firebase
+                    firebaseDataManager.registerUserInFirebase(username, password, user.getUserId())
+                        .thenAcceptAsync(success -> {
+                            // Return to UI thread to show results
+                            runOnUiThread(() -> {
+                                progressBar.setVisibility(View.GONE);
+                                
+                                if (success) {
+                                    // Complete success - local and Firebase
+                                    Log.d(TAG, "Registration fully successful for " + username);
+                                    Toast.makeText(this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                                    
+                                    // Create session
+                                    sessionManager.createSession(user.getName(), user.getUserId());
+                                    navigationService.navigateToMain();
+                                } else {
+                                    // Only local success, Firebase failed
+                                    Log.w(TAG, "Local registration successful but Firebase failed for " + username);
+                                    Toast.makeText(this, "Registration partially successful. Cloud sync failed.", 
+                                            Toast.LENGTH_SHORT).show();
+                                   sessionManager.createSession(user.getName(), user.getUserId());
+                                    navigationService.navigateToMain();
+                                }
+                            });
+                        })
+                        .exceptionally(e -> {
+                            Log.e(TAG, "Error during Firebase registration: " + e.getMessage(), e);
+                            runOnUiThread(() -> {
+                                progressBar.setVisibility(View.GONE);
+                                Toast.makeText(this, "Registration successful, but cloud sync failed", 
+                                        Toast.LENGTH_SHORT).show();
+
+                                sessionManager.createSession(user.getName(), user.getUserId());
+                                navigationService.navigateToMain();
+                            });
+                            return null;
+                        });
+                } else {
+                    // Local registration failed
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(this, "Registration Failed", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Registration error: " + e.getMessage(), e);
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(this, "Registration Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void displayValidationErrors(String username, String password, String rewritePassword) {
+        if (validateUsernameLogic(username) != null) {
+            setTvUsername(validateUsernameLogic(username));
+        } else {
+            hideTvUsername();
+        }
+        
+        if (validatePasswordLogic(password) != null) {
+            setTvPassword(validatePasswordLogic(password));
+        } else {
+            hideTvPassword();
+        }
+        
+        if (!Objects.equals(password, rewritePassword)) {
+            setTvRewritePassword();
+        } else {
+            hideTvRewritePassword();
         }
     }
 }

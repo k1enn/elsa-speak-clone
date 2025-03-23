@@ -30,6 +30,11 @@ public interface UserProgressDao {
     @Query("UPDATE UserProgress SET Xp = Xp + :points WHERE UserId = :userId")
     void addXpPoints(int userId, int points);
 
+    @Query("UPDATE UserProgress SET Xp = :points WHERE UserId = :userId")
+    void updateXpPoints(int userId, int points);
+
+    @Query("UPDATE UserProgress SET Streak = :streak WHERE UserId = :userId")
+    void updateStreak(int userId, int streak);
     @Query("SELECT COUNT(*) FROM UserProgress WHERE UserId = :userId")
     int countUserProgressEntries(int userId);
 

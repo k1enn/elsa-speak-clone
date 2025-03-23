@@ -230,7 +230,7 @@ public class UserRepository {
     /**
      * Find user by username in local database
      */
-    public User findUserByUsername(String username) {
+    public User getUserByName(String username) {
         try {
             Future<User> future = AppDatabase.databaseWriteExecutor.submit(() ->
                     userDao.getUserByUsername(username));
