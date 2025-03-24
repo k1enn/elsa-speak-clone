@@ -33,32 +33,20 @@ public class QuizRepository {
         quizDao = database.quizDao();
     }
 
-    /**
-     * Get LiveData for observing all quizzes
-     */
     public LiveData<List<Quiz>> getAllQuizzes() {
         refreshAllQuizzes();
         return allQuizzes;
     }
 
-    /**
-     * Get LiveData for observing quizzes for a specific lesson
-     */
     public LiveData<List<Quiz>> getQuizzesForLesson(int lessonId) {
         refreshLessonQuizzes(lessonId);
         return lessonQuizzes;
     }
 
-    /**
-     * Get LiveData for observing the current quiz
-     */
     public LiveData<Quiz> getCurrentQuiz() {
         return currentQuiz;
     }
 
-    /**
-     * Refresh the LiveData with all quizzes
-     */
     private void refreshAllQuizzes() {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             List<Quiz> quizzes = quizDao.getAllQuizzes();
@@ -66,9 +54,6 @@ public class QuizRepository {
         });
     }
 
-    /**
-     * Refresh the LiveData with quizzes for a specific lesson
-     */
     private void refreshLessonQuizzes(int lessonId) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             List<Quiz> quizzes = quizDao.getQuizzesForLesson(lessonId);
@@ -76,9 +61,6 @@ public class QuizRepository {
         });
     }
 
-    /**
-     * Get a list of all quizzes (non-LiveData)
-     */
     public List<Quiz> getAllQuizzesSync() {
         try {
             Future<List<Quiz>> future = AppDatabase.databaseWriteExecutor.submit(quizDao::getAllQuizzes);
@@ -89,9 +71,6 @@ public class QuizRepository {
         }
     }
 
-    /**
-     * Get a list of quizzes for a specific lesson (non-LiveData)
-     */
     public List<Quiz> getQuizzesForLessonSync(int lessonId) {
         try {
             Future<List<Quiz>> future = AppDatabase.databaseWriteExecutor.submit(() -> 
@@ -103,9 +82,6 @@ public class QuizRepository {
         }
     }
 
-    /**
-     * Get a specific quiz by ID
-     */
     public Quiz getQuizById(int quizId) {
         try {
             Future<Quiz> future = AppDatabase.databaseWriteExecutor.submit(() -> 
@@ -117,10 +93,6 @@ public class QuizRepository {
         }
     }
 
-    /**
-     * Get a random quiz for a specific lesson
-     * This is the method used by UserScoreRepository
-     */
     public Quiz getRandomQuizForLesson(int lessonId) {
         try {
             Future<Quiz> future = AppDatabase.databaseWriteExecutor.submit(() -> 
@@ -132,51 +104,6 @@ public class QuizRepository {
         }
     }
 
-    /**
-     * Get a random quiz for a specific lesson excluding specified quiz IDs
-     */
-    public Quiz getRandomQuizForLessonExcluding(int lessonId, List<Integer> excludedIds) {
-        try {
-            Future<Quiz> future = AppDatabase.databaseWriteExecutor.submit(() -> 
-                quizDao.getRandomQuizForLessonExcluding(lessonId, excludedIds));
-            return future.get();
-        } catch (ExecutionException | InterruptedException e) {
-            Log.e(TAG, "Error getting random quiz for lesson " + lessonId + " excluding IDs", e);
-            return null;
-        }
-    }
-
-    /**
-     * Insert a new quiz
-     */
-    public long insertQuiz(Quiz quiz) {
-        try {
-            Future<Long> future = AppDatabase.databaseWriteExecutor.submit(() -> 
-                quizDao.insert(quiz));
-            return future.get();
-        } catch (ExecutionException | InterruptedException e) {
-            Log.e(TAG, "Error inserting quiz", e);
-            return -1;
-        }
-    }
-
-    /**
-     * Update an existing quiz
-     */
-    public void updateQuiz(Quiz quiz) {
-        AppDatabase.databaseWriteExecutor.execute(() -> quizDao.update(quiz));
-    }
-
-    /**
-     * Delete a quiz
-     */
-    public void deleteQuiz(Quiz quiz) {
-        AppDatabase.databaseWriteExecutor.execute(() -> quizDao.delete(quiz));
-    }
-    
-    /**
-     * Count quizzes for a lesson
-     */
     public int countQuizzesForLesson(int lessonId) {
         try {
             Future<List<Quiz>> future = AppDatabase.databaseWriteExecutor.submit(() -> 

@@ -27,8 +27,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
@@ -61,6 +65,21 @@ public class MainActivity extends AppCompatActivity {
         setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
+
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_home) {
+                loadFragment(new HomeFragment());
+                return true;
+            } else if (itemId == R.id.nav_discover) {
+                startActivity(new Intent(MainActivity.this, NewsActivity.class));
+                return true;
+            } else if (itemId == R.id.nav_profile) {
+                loadFragment(new ProfileFragment());
+                return true;
+            }
+            return false;
+        });
     }
 
     private void initializeServices() {
@@ -139,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
                 // Handle learn action
                navigationService.navigateToLearnFragment(MainActivity.this);
             } else if (id == R.id.nav_discover) {
-                // Handle discover action
+                navigationService.navigateToNews(MainActivity.this);
             } else if (id == R.id.nav_leaderboard) {
                 navigationService.navigateToLeaderboard(MainActivity.this);
             } else if (id == R.id.nav_account) {
@@ -177,8 +196,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             return false;
         }
-
-        //loadFragment(selectedFragment);
         return true;
     };
 
@@ -188,6 +205,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupDictionaryButton() {
-        chatbot.setOnClickListener(v -> navigationService.navigateToChatbot(this));
+        chatbot.setOnClickListener(v -> {
+        navigationService.navigateToChatbot(MainActivity.this);
+        });
     }
+
+
 }

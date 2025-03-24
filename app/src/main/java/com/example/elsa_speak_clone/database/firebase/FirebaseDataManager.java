@@ -5,7 +5,6 @@ import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.lifecycle.LiveData;
 
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
@@ -14,7 +13,6 @@ import com.example.elsa_speak_clone.database.entities.User;
 import com.example.elsa_speak_clone.database.entities.UserProgress;
 import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 import com.example.elsa_speak_clone.database.repositories.UserRepository;
-import com.example.elsa_speak_clone.services.AuthenticationService;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -86,39 +84,8 @@ public class FirebaseDataManager {
         }
         return instance;
     }
-    
-    /**
-     * Check if a username exists in Firebase
-     */
-    public CompletableFuture<Boolean> isUsernameExists(String username) {
-        CompletableFuture<Boolean> future = new CompletableFuture<>();
-        
-        leaderboardRef.orderByKey().equalTo(username)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        future.complete(snapshot.exists());
-                    }
-                    
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "Error checking username: " + error.getMessage());
-                        future.complete(false);
-                    }
-                });
-        
-        return future;
-    }
-    
-    /**
-     * Update or create a user entry in the leaderboard
-     * 
-     * @param username The username to update
-     * @param userId The user ID
-     * @param streak The user's streak
-     * @param xp The user's XP
-     * @return CompletableFuture that completes with true if successful, false otherwise
-     */
+
+    // Update leaderboard when an event happened
     public CompletableFuture<Boolean> updateLeaderboard(String username, int userId, int streak, int xp) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         
@@ -128,13 +95,12 @@ public class FirebaseDataManager {
             return future;
         }
         
-        // Create data map with proper type conversion to avoid type issues
+        //  
         Map<String, Object> userUpdate = new HashMap<>();
         userUpdate.put("userId", Integer.valueOf(userId));
         userUpdate.put("userStreak", Integer.valueOf(streak));
         userUpdate.put("userXp", Integer.valueOf(xp));
         
-        // Use a transaction to ensure atomic updates
         DatabaseReference userRef = leaderboardRef.child(username);
         
         userRef.runTransaction(new Transaction.Handler() {
@@ -414,28 +380,7 @@ public class FirebaseDataManager {
         return future;
     }
     
-    /**
-     * Get user streak for a specific user
-     */
-    public int getUserStreak(int userId) {
-        try {
-            List<UserProgress> progressList = progressRepository.getUserProgressList(userId);
-            if (progressList != null && !progressList.isEmpty()) {
-                // Find the maximum streak among all progress entries
-                int maxStreak = 0;
-                for (UserProgress progress : progressList) {
-                    if (progress.getStreak() > maxStreak) {
-                        maxStreak = progress.getStreak();
-                    }
-                }
-                return maxStreak;
-            }
-            return 0;
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting user streak: " + e.getMessage(), e);
-            return 0;
-        }
-    }
+
     
     /**
      * Get user streak for a specific lesson

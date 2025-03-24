@@ -60,6 +60,7 @@ dependencies {
     // Firebase core
     implementation 'com.google.firebase:firebase-core:21.1.1'
     implementation libs.firebase.database
+    implementation libs.swiperefreshlayout
 
     // Unit Testing
     testImplementation "junit:junit:4.13.2"

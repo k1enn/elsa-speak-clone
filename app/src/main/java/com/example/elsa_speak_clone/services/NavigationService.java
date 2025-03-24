@@ -17,6 +17,7 @@ import com.example.elsa_speak_clone.activities.DictionaryActivity;
 import com.example.elsa_speak_clone.activities.LeaderboardActivity;
 import com.example.elsa_speak_clone.activities.LoginActivity;
 import com.example.elsa_speak_clone.activities.MainActivity;
+import com.example.elsa_speak_clone.activities.NewsActivity;
 import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.activities.RegisterActivity;
 import com.example.elsa_speak_clone.activities.SpeechToText;
@@ -201,6 +202,11 @@ public class NavigationService {
 
     public void navigateToLeaderboard(Context context) {
         Intent intent = new Intent (context, LeaderboardActivity.class);
+        context.startActivity(intent);
+    }
+
+    public void navigateToNews(Context context) {
+        Intent intent = new Intent(context, NewsActivity.class);
         context.startActivity(intent);
     }
 }
