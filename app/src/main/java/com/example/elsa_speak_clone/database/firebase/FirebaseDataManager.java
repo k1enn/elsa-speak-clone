@@ -964,4 +964,104 @@ public class FirebaseDataManager {
         
         return future;
     }
+
+    /**
+     * Sync all progress data from Firebase to local database for a specific user
+     * @param userId The user ID to sync progress for
+     */
+    public void syncAllUserProgressFromFirebase(int userId) {
+        try {
+            // Get user data first to verify user exists
+            User user = userRepository.getUserById(userId);
+            
+            if (user == null) {
+                Log.e(TAG, "Cannot sync progress - user " + userId + " not found in local database");
+                return;
+            }
+            
+            // Get Firebase reference for this user's progress
+            DatabaseReference userProgressRef = 
+                database.getReference("user_progress").child(String.valueOf(userId));
+            
+            // Listen for value once (not continuous)
+            userProgressRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.exists()) {
+                        try {
+                            // Count records processed for logging
+                            final int[] count = {0};
+                            
+                            // Process each progress record
+                            for (DataSnapshot progressSnapshot : dataSnapshot.getChildren()) {
+                                try {
+                                    // Get progress ID
+                                    Integer progressId = progressSnapshot.child("progressId").getValue(Integer.class);
+                                    Integer lessonId = progressSnapshot.child("lessonId").getValue(Integer.class);
+                                    Integer xp = progressSnapshot.child("xp").getValue(Integer.class);
+                                    Integer streak = progressSnapshot.child("streak").getValue(Integer.class);
+                                    String completionTime = progressSnapshot.child("completionTime").getValue(String.class);
+                                    String lastStudyDate = progressSnapshot.child("lastStudyDate").getValue(String.class);
+                                    
+                                    if (progressId != null && lessonId != null) {
+                                        // Check if progress exists locally
+                                        UserProgress existingProgress = 
+                                            progressRepository.getUserLessonProgress(userId, lessonId);
+                                        
+                                        if (existingProgress != null) {
+                                            // Update existing progress
+                                            if (xp != null) existingProgress.setXp(xp);
+                                            if (streak != null) existingProgress.setStreak(streak);
+                                            if (completionTime != null) existingProgress.setCompletionTime(completionTime);
+                                            if (lastStudyDate != null) existingProgress.setLastStudyDate(lastStudyDate);
+                                            
+                                            // Save updates
+                                            progressRepository.updateProgress(existingProgress);
+                                        } else {
+                                            // Create new progress record
+                                            UserProgress newProgress = new UserProgress(
+                                                progressId,
+                                                userId,
+                                                lessonId,
+                                                0, // Default difficulty
+                                                completionTime,
+                                                streak != null ? streak : 1,
+                                                xp != null ? xp : 0,
+                                                lastStudyDate != null ? lastStudyDate : getCurrentDate()
+                                            );
+                                            
+                                            // Save new record
+                                            progressRepository.insertProgress(newProgress);
+                                        }
+                                        
+                                        count[0]++;
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error processing progress record: " + e.getMessage(), e);
+                                }
+                            }
+                            
+                            Log.d(TAG, "Firebase sync completed: " + count[0] + " progress records updated for user " + userId);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error processing Firebase progress data: " + e.getMessage(), e);
+                        }
+                    } else {
+                        Log.d(TAG, "No progress data found in Firebase for user " + userId);
+                    }
+                }
+                
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "Firebase progress sync cancelled: " + databaseError.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error syncing progress from Firebase: " + e.getMessage(), e);
+        }
+    }
+
+    private String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return dateFormat.format(new Date());
+    }
 } 

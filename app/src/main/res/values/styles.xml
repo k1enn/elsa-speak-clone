@@ -1,13 +1,4 @@
 <resources>
-    <!-- Base application theme -->
-    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your theme here -->
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style>
     <style name="CircularImageView">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
@@ -16,6 +7,7 @@
         <item name="android:background">@android:color/transparent</item>
         <item name="android:textColor">#FFFFFF</item>
     </style>
+<!-- Circle Image View Style -->
 
     <style name="TransparentToolbar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
         <item name="android:windowActionBarOverlay">true</item>
@@ -34,5 +26,16 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
+    </style>
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Customize your theme here -->
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 </resources>

@@ -42,4 +42,16 @@ public interface QuizDao {
 
     @Query("DELETE FROM Quizzes")
     void deleteAll();
+
+    /**
+     * Get random quiz for a lesson excluding already used IDs
+     */
+    @Query("SELECT * FROM quizzes WHERE lessonId = :lessonId AND quizId NOT IN (:excludedIds) ORDER BY RANDOM() LIMIT 1")
+    Quiz getRandomQuizForLessonExcludingIds(int lessonId, Integer[] excludedIds);
+
+    /**
+     * Count all quizzes for a specific lesson
+     */
+    @Query("SELECT COUNT(*) FROM quizzes WHERE lessonId = :lessonId")
+    int countQuizzesForLesson(int lessonId);
 } 

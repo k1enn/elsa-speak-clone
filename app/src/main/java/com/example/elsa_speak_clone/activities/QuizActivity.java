@@ -3,9 +3,12 @@ package com.example.elsa_speak_clone.activities;
 import android.animation.Animator;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -14,7 +17,11 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
 import android.media.MediaPlayer;
@@ -50,6 +57,7 @@ public class QuizActivity extends AppCompatActivity {
     private TextView tvQuestion, tvResult;
     private EditText etAnswer;
     private Button btnCheckAnswer, btnNextQuestion;
+    private Toolbar toolbar;
     private LottieAnimationView lottieConfetti;
 
     // Quiz data
@@ -62,6 +70,10 @@ public class QuizActivity extends AppCompatActivity {
     // Thread management
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    private int correctAnswersCount = 0;
+    private int totalQuestionsAttempted = 0;
+    private static final int QUESTIONS_PER_SESSION = 5; // Set how many questions per session
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +81,7 @@ public class QuizActivity extends AppCompatActivity {
 
         initializeServices();
         initializeUI();
+        setupToolbar ();
         loadNextQuestion();
         firebaseDataManager = FirebaseDataManager.getInstance(this);
     }
@@ -85,7 +98,7 @@ public class QuizActivity extends AppCompatActivity {
         if (getIntent().hasExtra("LESSON_ID")) {
             currentLessonId = getIntent().getIntExtra("LESSON_ID", 1);
         }
-        
+        toolbar = findViewById (R.id.toolbar) ;
         tvQuestion = findViewById(R.id.tvQuestion);
         etAnswer = findViewById(R.id.etAnswer);
         btnCheckAnswer = findViewById(R.id.btnCheckAnswer);
@@ -101,53 +114,73 @@ public class QuizActivity extends AppCompatActivity {
         // Setup check answer button initial state
         returnCheckAnswerButton();
     }
-    
+    private void setupToolbar() {
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+    }
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        Log.d("PronunciationActivity", "onOptionsItemSelected: " + item.getItemId());
+
+        // Handle the back button (up button in action bar)
+        if (item.getItemId() == android.R.id.home) {
+            Log.d("PronunciationActivity", "Back button pressed");
+            onBackPressed();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+    @Override
+    public void onBackPressed() {
+        Log.d("Quiz", "onBackPressed called");
+        Log.d("Quiz", "isTaskRoot: " + isTaskRoot());
+        super.onBackPressed();
+    }
     private void loadNextQuestion() {
+        // Reset UI for new question
+        etAnswer.setText("");
+        tvResult.setText("");
         returnCheckAnswerButton();
-        
+
         executor.execute(() -> {
             try {
-                // Get random quiz for current lesson that hasn't been used yet
-                Quiz quiz = null;
-                
-                if (usedQuizIds.isEmpty()) {
-                    // First question, no used IDs yet
-                    quiz = database.quizDao().getRandomQuizForLesson(currentLessonId);
-                } else {
-                    // Get a quiz not in used list
-                    quiz = database.quizDao().getRandomQuizForLessonExcluding(currentLessonId, usedQuizIds);
+                // Count total questions if not already done
+                if (totalAvailableQuestions == 0) {
+                    totalAvailableQuestions = database.quizDao().countQuizzesForLesson(currentLessonId);
                 }
                 
-                final Quiz finalQuiz = quiz;
-                
-                runOnUiThread(() -> {
-                    if (finalQuiz != null) {
-                        // Add this question to used questions
-                        usedQuizIds.add(finalQuiz.getQuizId());
-                        
-                        tvQuestion.setText(finalQuiz.getQuestion());
-                        correctAnswer = finalQuiz.getAnswer().trim();
-                        etAnswer.setText(""); // Clear previous input
-                        tvResult.setText(""); // Clear previous result
-                        btnNextQuestion.setVisibility(Button.GONE);
-                    } else {
-                        // No more unused questions for this lesson
-                        if (!usedQuizIds.isEmpty()) {
-                            // All questions have been used, show congratulations popup
-                            showCongratulationsPopup();
-                            // Reset the list to start over if they want to try again
-                            usedQuizIds.clear();
-                        } else {
-                            // No questions at all for this lesson
-                            tvQuestion.setText("No questions available for this lesson!");
-                            correctAnswer = "";
-                        }
-                    }
-                });
+                // Get a random quiz that hasn't been used yet in this session
+                Quiz quiz = database.quizDao().getRandomQuizForLessonExcludingIds(
+                        currentLessonId, usedQuizIds.toArray(new Integer[0]));
+
+                if (quiz != null) {
+                    // Add this quiz ID to our used list
+                    usedQuizIds.add(quiz.getQuizId());
+                    
+                    // Update UI on main thread
+                    final String question = quiz.getQuestion();
+                    final String answer = quiz.getAnswer();
+                    
+                    runOnUiThread(() -> {
+                        tvQuestion.setText(question);
+                        correctAnswer = answer;
+                    });
+                } else {
+                    // No more questions, congratulate user
+                    showCongratulationsPopup ();
+                    runOnUiThread(this::finishQuizSession);
+                }
             } catch (Exception e) {
-                Log.e(TAG, "Error loading quiz: " + e.getMessage(), e);
+                Log.e(TAG, "Error loading next question: " + e.getMessage(), e);
                 runOnUiThread(() -> {
-                    tvQuestion.setText("Error loading quiz. Please try again.");
+                    Toast.makeText(QuizActivity.this, 
+                            "Error loading question: " + e.getMessage(), 
+                            Toast.LENGTH_LONG).show();
                 });
             }
         });
@@ -248,11 +281,13 @@ public class QuizActivity extends AppCompatActivity {
 
     private void checkAnswer() {
         String userAnswer = etAnswer.getText().toString().trim().replaceAll("\\s+", " ");
+        totalQuestionsAttempted++;
 
         // If user correct
         if (userAnswer.equalsIgnoreCase(correctAnswer.replaceAll("\\s+", " "))) {
             tvResult.setText("✅ Correct!");
             tvResult.setTextColor(Color.GREEN);
+            correctAnswersCount++; // Track correct answers
 
             // Play the "ting ting" sound
             try {
@@ -260,7 +295,6 @@ public class QuizActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Log.e(TAG, "Error playing sound", e);
             }
-
 
             // Update user score in database
             int userId = sessionManager.getUserId();
@@ -273,7 +307,6 @@ public class QuizActivity extends AppCompatActivity {
                     AppDatabase.databaseWriteExecutor.execute(() -> {
                         firebaseDataManager.syncUserProgress(userId, currentLessonId);
                     });
-//                    quizService.updateUserStreak(userId);
                 } catch (Exception e) {
                     Log.e(TAG, "Error updating score: " + e.getMessage(), e);
                 }
@@ -283,6 +316,11 @@ public class QuizActivity extends AppCompatActivity {
         } else {
             tvResult.setText("❌ Incorrect! The correct answer is: " + correctAnswer);
             tvResult.setTextColor(Color.RED);
+        }
+        
+        // Check if we've reached the session limit or run out of questions
+        if (totalQuestionsAttempted >= QUESTIONS_PER_SESSION || usedQuizIds.size() >= totalAvailableQuestions) {
+            finishQuizSession();
         }
     }
     
@@ -313,17 +351,43 @@ public class QuizActivity extends AppCompatActivity {
         }
     }
     
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        
+    private void finishQuizSession() {
+        // Update progress with session results
         int userId = sessionManager.getUserId();
-        executor.execute(() -> {
-            firebaseDataManager.syncUserProgress(userId, 1);
-        });
+        quizService.updateQuizProgress(userId, currentLessonId, correctAnswersCount, totalQuestionsAttempted);
         
-        navigationService.navigateToMain();
+        // Show completion dialog
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            showCompletionDialog();
+        }, 1000); // Small delay to let the user see the last answer result
     }
 
+    private void showCompletionDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = 
+                new androidx.appcompat.app.AlertDialog.Builder(this);
+        
+        int percentCorrect = (correctAnswersCount * 100) / totalQuestionsAttempted;
+        
+        builder.setTitle("Quiz Completed!")
+               .setMessage("You got " + correctAnswersCount + " out of " + 
+                        totalQuestionsAttempted + " correct (" + percentCorrect + "%).")
+               .setPositiveButton("Continue Learning", (dialog, which) -> {
+                    dialog.dismiss();
+                    // Navigate back to learn fragment
+                    navigationService.navigateToMain();
+               });
+        
+        // Show confetti for good performance
+        if (percentCorrect >= 70) {
+            showConfettiAnimation();
+        }
+        
+        builder.create().show();
+    }
 
+    private void showConfettiAnimation() {
+        // Implementation of showing confetti animation
+    }
+
+    private int totalAvailableQuestions = 0;
 }

@@ -250,6 +250,24 @@ public class UserProgressRepository {
         }
     }
 
+    /**
+     * Insert a new progress record
+     */
+    public void insertProgress(UserProgress progress) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            userProgressDao.insert(progress);
+        });
+    }
+
+    /**
+     * Update an existing progress record
+     */
+    public void updateProgress(UserProgress progress) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            userProgressDao.update(progress);
+        });
+    }
+
     public UserProgressDao getUserProgressDao() {
         return userProgressDao;
     }

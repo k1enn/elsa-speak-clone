@@ -80,6 +80,15 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+
+        // Check if we should navigate to a specific tab
+        if (getIntent().hasExtra("NAVIGATE_TO_TAB")) {
+            String tabToOpen = getIntent().getStringExtra("NAVIGATE_TO_TAB");
+            if ("learn".equals(tabToOpen)) {
+                // Navigate to Learn tab
+                bottomNavigationView.setSelectedItemId(R.id.nav_learn);
+            }
+        }
     }
 
     private void initializeServices() {

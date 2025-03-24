@@ -3,6 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/white"
+        app:title="Grammar Quiz"
+        android:translationZ="1dp"
+        android:outlineProvider="none"
+        android:clickable="true"
+        android:focusable="true"
+        app:titleTextColor="@color/black"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 <ScrollView
     android:layout_width="match_parent"
     android:layout_height="match_parent"

@@ -1,6 +1,8 @@
 package com.example.elsa_speak_clone.fragments;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,6 +15,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,6 +26,7 @@ import com.example.elsa_speak_clone.activities.LoginActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.entities.UserProgress;
 import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
 import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 import com.example.elsa_speak_clone.services.NavigationService;
@@ -30,9 +34,17 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.malinskiy.materialicons.IconDrawable;
 import com.malinskiy.materialicons.Iconify;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.example.elsa_speak_clone.activities.DictionaryActivity;
+import com.example.elsa_speak_clone.activities.NewsActivity;
+import com.example.elsa_speak_clone.activities.LeaderboardActivity;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -85,8 +97,9 @@ public class HomeFragment extends Fragment {
     private final int MAX_REFRESHES = 2;
     private Runnable progressChecker;
 
+    private CardView cvDictionary, cvNews, cvLeaderboard;
+
     public HomeFragment() {
-        // Required empty public constructor
     }
 
     /**
@@ -125,7 +138,8 @@ public class HomeFragment extends Fragment {
         setupOther();
         // Load user progress
         loadUserProgress();
-        observeUserProgress();
+   observeUserProgress();
+        refreshUserProgress ();
         
         return view;
     }
@@ -135,7 +149,9 @@ public class HomeFragment extends Fragment {
         setupWelcomeMessage();
         setupSpeechToTextButton();
         setupGrammarButton();
-        setupVocabularyButton();
+        setupDictionaryButton();
+        setupNewsButton();
+        setupLeaderboardButton();
     }
 
     private void initialize(View view) {
@@ -145,7 +161,7 @@ public class HomeFragment extends Fragment {
         initializeVariables();
     }
     private void setupLeaderboardButton() {
-        btnLeaderboard.setOnClickListener (v -> {
+        cvLeaderboard.setOnClickListener (v -> {
             navigationService.navigateToLeaderboard (this.requireContext ());
         });
     }
@@ -198,12 +214,81 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        
+        // Always refresh progress when returning to this fragment
+        startProgressRefresh();
+        refreshUserProgress();
+        
+        // Pull latest data from Firebase
+        syncFirebaseProgress();
+    }
+
+    private void syncFirebaseProgress() {
+        // Get current user ID
+        SharedPreferences prefs = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        int userId = prefs.getInt("USER_ID", 1);
+        
+        executor.execute(() -> {
+            try {
+                // Force sync all user progress from Firebase to local database
+                firebaseDataManager.syncAllUserProgressFromFirebase(userId);
+                
+                // Then refresh UI on main thread after sync completes
+                mainHandler.post(this::refreshUserProgress);
+                
+                Log.d(TAG, "Firebase progress sync completed for user " + userId);
+            } catch (Exception e) {
+                Log.e(TAG, "Error syncing Firebase progress: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    private void startProgressRefresh() {
+        // Reset counter
+        refreshCount = 0;
+        
+        // Start the refresh cycle
         if (progressRefreshHandler != null && progressChecker != null) {
-            refreshCount = 0;
-            progressRefreshHandler.removeCallbacks(progressChecker);
-            progressRefreshHandler.postDelayed(progressChecker, REFRESH_INTERVAL);
-            Log.d(TAG, "Refresh timer restarted in onResume");
+            progressRefreshHandler.post(progressChecker);
+            Log.d(TAG, "Started progress refresh cycle");
         }
+    }
+
+    private void refreshUserProgress() {
+        // Get current user ID
+        SharedPreferences prefs = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        int userId = prefs.getInt("USER_ID", 1);
+        
+        // Create a repository instance
+        UserProgressRepository repository = new UserProgressRepository(requireContext());
+        
+        // Load updated metrics
+        repository.loadUserMetrics(userId);
+        
+        // Observe the LiveData
+        repository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
+            TextView tvDayStreak = requireView().findViewById(R.id.tvDayStreak);
+            if (tvDayStreak != null) {
+                tvDayStreak.setText(String.valueOf(streak));
+            }
+        });
+        
+        repository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
+            TextView tvXPPoint = requireView().findViewById(R.id.tvXPPoint);
+            if (tvXPPoint != null) {
+                tvXPPoint.setText(String.valueOf(xp));
+            }
+            
+            // Update XP progress bar (if applicable)
+            com.google.android.material.progressindicator.LinearProgressIndicator xpProgress = 
+                requireView().findViewById(R.id.tvXPPoint);
+            if (xpProgress != null) {
+                // Calculate percentage of progress to next level
+                // For example: levels increase every 100 XP
+                int levelProgress = xp % 100;
+                xpProgress.setProgress(levelProgress);
+            }
+        });
     }
 
     @Override
@@ -235,40 +320,17 @@ public class HomeFragment extends Fragment {
     }
     private void initializeUI(View view) {
         try {
-            btnLeaderboard = view.findViewById(R.id.btnLeaderboard);
             btnLogin = view.findViewById(R.id.btnLogin);
             cvPronunciation = view.findViewById(R.id.cvPronunciation);
             cvGrammar = view.findViewById(R.id.cvGrammar);
-            cvVocabulary = view.findViewById(R.id.cvVocabulary);
             tvDayStreak = view.findViewById(R.id.tvDayStreak);
-            tvXPPoint = view.findViewById(R.id.tvXPPoint);
+            tvXPPoint = view.findViewById(R.id.tvXpPoint);
             tvWelcome = view.findViewById(R.id.tvWelcome);
- 
+            cvDictionary = view.findViewById(R.id.cvDictionary);
+            cvNews = view.findViewById(R.id.cvNews);
+            cvLeaderboard = view.findViewById(R.id.cvLeaderboard);
         } catch (Exception e) {
             Log.e(TAG, "Error initializing UI components", e);
-        }
-
-        try {
-            // Random icon lib
-            ivPronunciation = view.findViewById(R.id.ivPronunciation);
-            if (ivPronunciation != null) {
-                iconPronunciation = new IconDrawable(requireContext(), Iconify.IconValue.zmdi_volume_up)
-                        .colorRes(R.color.real_purple)  // Set color
-                        .sizeDp(48); // Set size
-                iconPronunciation.setStyle(Paint.Style.FILL);
-                ivPronunciation.setImageDrawable(iconPronunciation);
-            }
-
-            profileImage = view.findViewById(R.id.profileImage);
-            if (profileImage != null) {
-                iconProfile = new IconDrawable(requireContext(), Iconify.IconValue.zmdi_account_circle)
-                        .colorRes(R.color.gray)  // Set color
-                        .sizeDp(70); // Set size
-                iconProfile.setStyle(Paint.Style.FILL);
-                profileImage.setImageDrawable(iconProfile);
-            }
-        } catch (NullPointerException npe) {
-            Log.d(TAG, "Can't find icons: " + npe);
         }
     }
 
@@ -319,14 +381,14 @@ public class HomeFragment extends Fragment {
             // Observe streak changes
             userProgressRepository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
                 userStreak = streak != null ? streak : 0;
-                tvDayStreak.setText(String.valueOf(userStreak));
+                tvDayStreak.setText(userStreak + " Streak");
                 setupWelcomeMessage(); // Update welcome message based on streak
             });
 
             // Observe XP changes
             userProgressRepository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
                 int userXp = xp != null ? xp : 0;
-                tvXPPoint.setText(String.valueOf(userXp));
+                tvXPPoint.setText(userXp + " XP");
             });
         }
     }
@@ -335,6 +397,7 @@ public class HomeFragment extends Fragment {
         try {
             if (isLoggedIn) {
                 // Use the repository to load metrics
+                firebaseDataManager.pullUserProgressToLocal (username, userId);
                 userProgressRepository.loadUserMetrics(userId);
             } else {
                 // Set default values for not logged in users
@@ -346,35 +409,6 @@ public class HomeFragment extends Fragment {
             // Set default values in case of any error
             tvXPPoint.setText("0");
             tvDayStreak.setText("0");
-        }
-    }
-
-    private void setupLoginButton() {
-        // Add null check before setting OnClickListener
-        if (btnLogin != null) {
-            btnLogin.setOnClickListener(v -> {
-                try {
-                    if (sessionManager.isLoggedIn()) {
-                        sessionManager.logout();
-                        navigateToLogin();
-                    } else {
-                        navigateToLogin();
-                    }
-                } catch (Exception e) {
-                    Log.d(TAG, "Error in setupLoginButton", e);
-                }
-            });
-        } else {
-            Log.e(TAG, "Login button not found in layout");
-        }
-    }
-
-    private void navigateToLogin() {
-        try {
-            Intent intent = new Intent(requireActivity(), LoginActivity.class);
-            startActivity(intent);
-        } catch (Exception e) {
-            Log.e(TAG, "Error navigating to login: ", e);
         }
     }
 
@@ -399,13 +433,25 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void setupVocabularyButton() {
-        cvVocabulary.setOnClickListener(v -> {
-            // Launch vocabulary activity or fragment
+
+    private void setupDictionaryButton() {
+        cvDictionary.setOnClickListener(v -> {
             try {
                 navigationService.navigateToDictionary();
             } catch (Exception e) {
-                Log.e(TAG, "Error navigating to vocabulary: ", e);
+                Log.e(TAG, "Error navigating to dictionary: ", e);
+                Toast.makeText(requireContext(), "Could not open dictionary", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void setupNewsButton() {
+        cvNews.setOnClickListener(v -> {
+            try {
+               navigationService.navigateToNews (this.requireContext ());
+            } catch (Exception e) {
+                Log.e(TAG, "Error navigating to news: ", e);
+                Toast.makeText(requireContext(), "Could not open news", Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -2,6 +2,7 @@ package com.example.elsa_speak_clone.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,6 +10,7 @@ import android.os.Looper;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.speech.RecognitionListener;
@@ -18,12 +20,15 @@ import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.dao.VocabularyDao;
+import com.example.elsa_speak_clone.database.entities.UserProgress;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.text.SimpleDateFormat;
 
 public class VoiceRecognizer {
     private static final String TAG = "VoiceRecognizer";
@@ -340,5 +345,136 @@ public class VoiceRecognizer {
 
     public int getTotalWordsCount() {
         return availableWords.size();
+    }
+
+    /**
+     * Updates progress when a word is pronounced correctly
+     * @param userId The user ID
+     */
+    private void updatePronunciationProgress(int userId) {
+        executor.execute(() -> {
+            try {
+                // Award XP points for each correctly pronounced word
+                // You could adjust the points based on difficulty
+                int pointsPerWord = 10;
+                
+                // Add XP to the user's progress
+                UserProgress progress = database.userProgressDao().getUserLessonProgress(userId, currentLessonId);
+                
+                if (progress != null) {
+                    // Update existing progress
+                    progress.setXp(progress.getXp() + pointsPerWord);
+                    progress.setLastStudyDate(getCurrentDate());
+                    database.userProgressDao().update(progress);
+                } else {
+                    // Create new progress entry if none exists
+                    int progressId = getNextProgressId(database, userId);
+                    UserProgress newProgress = new UserProgress(
+                        progressId,
+                        userId,
+                        currentLessonId,
+                        0, // Default difficulty level
+                        null, // No completion time yet
+                        1, // Start with streak of 1
+                        pointsPerWord, // Initial XP points
+                        getCurrentDate() // Current date
+                    );
+                    database.userProgressDao().insert(newProgress);
+                }
+                
+                Log.d(TAG, "Updated pronunciation progress for user " + userId + 
+                       " in lesson " + currentLessonId);
+                   
+                // Check if all words have been pronounced correctly
+                if (usedWords.size() >= availableWords.size()) {
+                    // Mark the pronunciation exercise as completed if all words done
+                    markPronunciationCompleted(userId);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating pronunciation progress: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Marks the pronunciation exercise as completed
+     */
+    private void markPronunciationCompleted(int userId) {
+        executor.execute(() -> {
+            try {
+                UserProgress progress = database.userProgressDao().getUserLessonProgress(userId, currentLessonId);
+                
+                if (progress != null && progress.getCompletionTime() == null) {
+                    // Set completion time
+                    progress.setCompletionTime(getCurrentDate() + " " + getCurrentTime());
+                    
+                    // Add completion bonus
+                    progress.setXp(progress.getXp() + 50); // Bonus for completing all words
+                    
+                    // Update the progress
+                    database.userProgressDao().update(progress);
+                    Log.d(TAG, "Marked pronunciation exercise as completed for lesson " + currentLessonId);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error marking pronunciation as completed: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    // Helper method to get the current date
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return sdf.format(new Date());
+    }
+
+    // Helper method to get the current time
+    private String getCurrentTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        return sdf.format(new Date());
+    }
+
+    // Helper method to get the next available progress ID
+    private int getNextProgressId(AppDatabase database, int userId) {
+        List<UserProgress> existingProgress = database.userProgressDao().getUserProgress(userId);
+        int maxId = 0;
+        for (UserProgress progress : existingProgress) {
+            if (progress.getProgressId() > maxId) {
+                maxId = progress.getProgressId();
+            }
+        }
+        return maxId + 1;
+    }
+
+    private void onRecognizeSuccess() {
+        if (!currentWordPronounced) {
+            currentWordPronounced = true;
+            
+            // Play success sound
+            playCorrectSound();
+            
+            // Show success animation
+            lottieConfetti.setVisibility(View.VISIBLE);
+            lottieConfetti.playAnimation();
+            
+            // Update the prompt
+            tvPrompt.setText("Correct! Great pronunciation.");
+            
+            // Enable random word button for next word
+            enableRandomWordButton();
+            
+            // Update progress in the database
+            updatePronunciationProgress(getCurrentUserId());
+            
+            // Notify listener that progress has updated
+            if (progressUpdateListener != null) {
+                progressUpdateListener.onProgressUpdated();
+            }
+        }
+    }
+
+    private int getCurrentUserId() {
+        SharedPreferences sharedPreferences = 
+            context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        return sharedPreferences.getInt("USER_ID", 1); // Default to 1 if not found
     }
 }

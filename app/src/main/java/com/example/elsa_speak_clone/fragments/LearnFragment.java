@@ -131,7 +131,8 @@ public class LearnFragment extends Fragment {
                     
                     mainHandler.post(() -> {
                         showLoading(false);
-                        navigationService.navigateToSpeechToText(lesson.getLessonId());
+//                        navigationService.navigateToSpeechToText(lesson.getLessonId());
+                        navigationService.navigateToQuiz (lesson.getLessonId ());
                     });
                 } catch (Exception e) {
                     Log.e(TAG, "Error preloading quizzes for lesson " + lesson.getLessonId(), e);
@@ -183,5 +184,22 @@ public class LearnFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        
+        // Refresh lessons when returning to learn fragment to show updated progress
+        refreshLessons();
+    }
 
+    // Add new method to refresh without full reload
+    private void refreshLessons() {
+        if (recyclerLessons != null && recyclerLessons.getAdapter() != null) {
+            // Trigger adapter refresh
+            recyclerLessons.getAdapter().notifyDataSetChanged();
+            
+            // Log the refresh
+            Log.d(TAG, "Refreshed lesson display to show progress updates");
+        }
+    }
 }

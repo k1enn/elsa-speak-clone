@@ -17,13 +17,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
 import android.widget.ProgressBar;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import android.widget.ProgressBar;
-import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
-import java.util.Objects;
-import java.util.List;
-import java.util.ArrayList;
+
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.adapters.ValidationErrorAdapter;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
@@ -468,14 +462,14 @@ public class RegisterActivity extends AppCompatActivity {
                                     Toast.makeText(this, "Registration Successful", Toast.LENGTH_SHORT).show();
                                     
                                     // Create session
-                                    sessionManager.createSession(user.getName(), user.getUserId());
+                                    sessionManager.createSession (user.getName (), user.getUserId ());
                                     navigationService.navigateToMain();
                                 } else {
                                     // Only local success, Firebase failed
                                     Log.w(TAG, "Local registration successful but Firebase failed for " + username);
                                     Toast.makeText(this, "Registration partially successful. Cloud sync failed.", 
                                             Toast.LENGTH_SHORT).show();
-                                   sessionManager.createSession(user.getName(), user.getUserId());
+                                    sessionManager.createSession (user.getName (), user.getUserId ());
                                     navigationService.navigateToMain();
                                 }
                             });
@@ -486,8 +480,7 @@ public class RegisterActivity extends AppCompatActivity {
                                 progressBar.setVisibility(View.GONE);
                                 Toast.makeText(this, "Registration successful, but cloud sync failed", 
                                         Toast.LENGTH_SHORT).show();
-
-                                sessionManager.createSession(user.getName(), user.getUserId());
+                                sessionManager.createSession (user.getName (), user.getUserId ());
                                 navigationService.navigateToMain();
                             });
                             return null;
@@ -529,3 +522,4 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 }
+

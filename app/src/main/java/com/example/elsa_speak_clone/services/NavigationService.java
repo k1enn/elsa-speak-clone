@@ -40,17 +40,10 @@ public class NavigationService {
      * Navigate to MainActivity
      */
     public void navigateToMain() {
-        try {
-            Intent intent = new Intent(context, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
-            
-            if (context instanceof Activity) {
-                ((Activity) context).finish();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error navigating to MainActivity", e);
-        }
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // Clear top activities
+        intent.putExtra("NAVIGATE_TO_TAB", "learn"); // Tell MainActivity to navigate to learn tab
+        context.startActivity(intent);
     }
 
     /**
