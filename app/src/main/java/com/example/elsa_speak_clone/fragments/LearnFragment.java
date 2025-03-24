@@ -28,6 +28,7 @@ import com.example.elsa_speak_clone.services.NavigationService;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Random;
 
 public class LearnFragment extends Fragment {
 
@@ -50,51 +51,52 @@ public class LearnFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_learn, container, false);
 
         recyclerLessons = view.findViewById(R.id.recyclerLessons);
+        progressBar = view.findViewById(R.id.progressBar);
 
-
-        
-        initialize();
+        initialize(view);
         loadLessons();
         
         return view;
     }
 
-    private void initialize() {
+    private void initialize(View view) {
         navigationService = new NavigationService(requireContext());
 
+        recyclerLessons = view.findViewById(R.id.recyclerLessons);
+        recyclerLessons.setLayoutManager(new LinearLayoutManager(getContext()));
+        // Database things
         database = AppDatabase.getInstance(requireContext());
         quizRepository = new QuizRepository(requireContext());
+
+        // Background run
         executor = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
     }
     
     private void loadLessons() {
-        if (progressBar != null) {
-            progressBar.setVisibility(View.VISIBLE);
-        }
+        showLoading(true);
         
         executor.execute(() -> {
             try {
                 List<Lesson> lessonList = database.lessonDao().getAllLessons();
                 Log.d(TAG, "Loaded " + lessonList.size() + " lessons from database");
-                
+
                 for (Lesson lesson : lessonList) {
                     Log.d(TAG, "Lesson: " + lesson.getLessonId() + " - " + lesson.getTopic());
-                    
+
                     int quizCount = quizRepository.countQuizzesForLesson(lesson.getLessonId());
                     Log.d(TAG, "Lesson " + lesson.getLessonId() + " has " + quizCount + " quizzes");
                 }
 
-                if (lessonList.size() < 3) {
+                // If some load thing went wrong, load again for sure
+                if (lessonList.size() < 2) {
                     forceDataUpdate();
                 }
 
                 mainHandler.post(() -> {
                     if (isAdded()) {
                         setupRecyclerView(lessonList);
-                        if (progressBar != null) {
-                            progressBar.setVisibility(View.GONE);
-                        }
+                       showLoading(false);
                     }
                 });
             } catch (Exception e) {
@@ -121,19 +123,20 @@ public class LearnFragment extends Fragment {
         }
         
         LessonAdapter adapter = new LessonAdapter(lessonList, database, lesson -> {
-            Toast.makeText(requireContext(), "Selected: " + lesson.getTopic(), Toast.LENGTH_SHORT).show();
-
+            showLoading(true);
             executor.execute(() -> {
                 try {
                     List<Quiz> quizzes = quizRepository.getQuizzesForLessonSync(lesson.getLessonId());
                     Log.d(TAG, "Preloaded " + quizzes.size() + " quizzes for lesson " + lesson.getLessonId());
                     
                     mainHandler.post(() -> {
+                        showLoading(false);
                         navigationService.navigateToSpeechToText(lesson.getLessonId());
                     });
                 } catch (Exception e) {
                     Log.e(TAG, "Error preloading quizzes for lesson " + lesson.getLessonId(), e);
                     mainHandler.post(() -> {
+                        showLoading(false);
                         navigationService.navigateToQuiz(lesson.getLessonId());
                     });
                 }
@@ -142,6 +145,12 @@ public class LearnFragment extends Fragment {
 
         recyclerLessons.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerLessons.setAdapter(adapter);
+    }
+
+    private void showLoading(boolean isLoading) {
+        if (progressBar != null) {
+            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void forceDataUpdate() {
@@ -173,4 +182,6 @@ public class LearnFragment extends Fragment {
             executor.shutdown();
         }
     }
+
+
 }

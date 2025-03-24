@@ -1,7 +1,5 @@
 package com.example.elsa_speak_clone.activities;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -20,7 +18,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.adapters.NewsAdapter;
-import com.example.elsa_speak_clone.api.NewsApiClient;
+import com.example.elsa_speak_clone.services.NewsApiService;
 import com.example.elsa_speak_clone.models.Article;
 import com.example.elsa_speak_clone.models.NewsResponse;
 
@@ -87,10 +85,10 @@ public class NewsActivity extends AppCompatActivity {
         Call<NewsResponse> call;
         if (currentSource != null) {
             // Load news by source
-            call = NewsApiClient.getInstance().getTopHeadlinesBySource(currentSource);
+            call = NewsApiService.getInstance().getTopHeadlinesBySource(currentSource);
         } else {
             // Load news by country
-            call = NewsApiClient.getInstance().getTopHeadlines(DEFAULT_COUNTRY);
+            call = NewsApiService.getInstance().getTopHeadlines(DEFAULT_COUNTRY);
         }
         
         call.enqueue(new Callback<NewsResponse>() {

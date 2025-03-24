@@ -58,6 +58,9 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
+                    android:focusable="true"
+                    android:clickable="true"
+                    android:id="@+id/btnLeaderboard"
                     android:orientation="vertical">
 
                     <TextView

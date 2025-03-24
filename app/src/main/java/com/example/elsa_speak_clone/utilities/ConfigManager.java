@@ -14,7 +14,7 @@ import java.util.Properties;
 public class ConfigManager {
     private static final String TAG = "ConfigManager";
     private static final String CONFIG_FILE = "config.properties";
-    private static final String DEFAULT_API_KEY = ""; // Key mặc định (rỗng)
+    private static final String DEFAULT_API_KEY = ""; // Key mặc định
     
     private static Properties properties;
     
@@ -25,21 +25,21 @@ public class ConfigManager {
             InputStream inputStream = context.getAssets().open(CONFIG_FILE);
             properties.load(inputStream);
             inputStream.close();
-            Log.d(TAG, "Đã đọc file cấu hình thành công");
+            Log.d(TAG, "Successfully read property");
         } catch (IOException e) {
-            Log.e(TAG, "Không thể đọc file cấu hình: " + e.getMessage());
+            Log.e(TAG, "Unable to read property: " + e.getMessage());
         }
     }
 
     public static String getOpenAiApiKey() {
         if (properties == null) {
-            Log.e(TAG, "ConfigManager chưa được khởi tạo");
+            Log.e(TAG, "ConfigManager haven't initialized");
             return DEFAULT_API_KEY;
         }
         
         String apiKey = properties.getProperty("openai_api_key", DEFAULT_API_KEY);
         if (apiKey.isEmpty()) {
-            Log.w(TAG, "API key không được cấu hình trong file");
+            Log.w(TAG, "Wrong key");
         }
         
         return apiKey;

@@ -14,6 +14,7 @@ public class ElsaSpeakApplication extends Application {
         super.onCreate();
         
         // Initialize Firebase
+        // I don't know why but have to do this anyway
         try {
             FirebaseApp.initializeApp(this);
             FirebaseDatabase.getInstance().setPersistenceEnabled(true);

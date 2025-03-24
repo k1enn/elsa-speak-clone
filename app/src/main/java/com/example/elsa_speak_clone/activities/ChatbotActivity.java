@@ -68,7 +68,7 @@ public class ChatbotActivity extends AppCompatActivity {
     private void setupChatService() {
         String apiKey = ConfigManager.getOpenAiApiKey();
         if (apiKey.isEmpty()) {
-            Toast.makeText(this, "API key chưa được cấu hình", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Wrong API key", Toast.LENGTH_LONG).show();
         }
         chatGptService = new ChatGptService(apiKey);
     }

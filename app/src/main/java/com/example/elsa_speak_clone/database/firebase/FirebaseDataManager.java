@@ -28,6 +28,10 @@ import java.util.concurrent.CompletableFuture;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.ArrayList;
 
 public class FirebaseDataManager {
     private static final String TAG = "FirebaseDataManager";
@@ -822,5 +826,142 @@ public class FirebaseDataManager {
                 Log.e(TAG, "Error updating user progress: " + e.getMessage(), e);
             }
         });
+    }
+
+    /**
+     * Adds default users to the Firebase database
+     * @return CompletableFuture that completes when all users are added
+     */
+    public CompletableFuture<Boolean> addDefaultUsers() {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        
+        // Create a thread pool to handle parallel user creation
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+        List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+        
+        // Create 9 default users
+        for (int i = 1; i <= 9; i++) {
+            String username = "kiendeptrai" + i;
+            String password = "Dinhtrungkien05@";
+            
+            // Generate random values
+            Random random = new Random();
+            int userId = random.nextInt(99999) + 1;
+            int userStreak = random.nextInt(100) + 1;
+            
+            // Generate random XP that is divisible by 5
+            int userXp = (random.nextInt(120) + 1) * 5;
+            
+            // Create user data for Firebase
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("userId", userId);
+            userData.put("userName", username);
+            userData.put("password", password);
+            userData.put("userXp", userXp);
+            userData.put("userStreak", userStreak);
+            userData.put("isGoogleUser", false);
+            
+            // Check if user already exists
+            final int index = i;
+            CompletableFuture<Boolean> userFuture = new CompletableFuture<>();
+            futures.add(userFuture);
+            
+            executor.execute(() -> {
+                isUsernameExistsInUserTable(username)
+                    .thenAccept(exists -> {
+                        if (!exists) {
+                            // User doesn't exist, create it
+                            usersTableRef.child(username)
+                                .setValue(userData)
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d(TAG, "Default user created: " + username);
+                                    
+                                    // Also update the leaderboard
+                                    updateLeaderboard(username, userId, userStreak, userXp)
+                                        .thenAccept(success -> {
+                                            userFuture.complete(true);
+                                        });
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Error creating default user: " + e.getMessage());
+                                    userFuture.complete(false);
+                                });
+                        } else {
+                            Log.d(TAG, "Default user already exists: " + username);
+                            userFuture.complete(true);
+                        }
+                    });
+            });
+        }
+        
+        // Wait for all users to be created
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+            .thenRun(() -> {
+                executor.shutdown();
+                Log.d(TAG, "All default users created successfully");
+                future.complete(true);
+            })
+            .exceptionally(e -> {
+                executor.shutdown();
+                Log.e(TAG, "Error creating default users: " + e.getMessage());
+                future.complete(false);
+                return null;
+            });
+        
+        return future;
+    }
+
+    /**
+     * Pulls default users from Firebase to local database
+     * @return CompletableFuture that completes when all users are pulled
+     */
+    public CompletableFuture<Boolean> pullDefaultUsersToLocal() {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        
+        // First make sure default users exist in Firebase
+        addDefaultUsers()
+            .thenAccept(success -> {
+                if (!success) {
+                    Log.e(TAG, "Failed to create default users in Firebase");
+                    future.complete(false);
+                    return;
+                }
+                
+                // Pull all default users to local database
+                List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+                
+                for (int i = 1; i <= 9; i++) {
+                    String username = "kiendeptrai" + i;
+                    CompletableFuture<Boolean> userFuture = new CompletableFuture<>();
+                    futures.add(userFuture);
+                    
+                    // Get user data from Firebase
+                    getUserFromFirebase(username)
+                        .thenAccept(user -> {
+                            if (user != null) {
+                                // Save user to local database
+                                userRepository.insertUser(user);
+                                userFuture.complete(true);
+                            } else {
+                                Log.e(TAG, "Failed to pull user from Firebase: " + username);
+                                userFuture.complete(false);
+                            }
+                        });
+                }
+                
+                // Wait for all users to be pulled
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .thenRun(() -> {
+                        Log.d(TAG, "All default users pulled to local database");
+                        future.complete(true);
+                    })
+                    .exceptionally(e -> {
+                        Log.e(TAG, "Error pulling default users: " + e.getMessage());
+                        future.complete(false);
+                        return null;
+                    });
+            });
+        
+        return future;
     }
 } 

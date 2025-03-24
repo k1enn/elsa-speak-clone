@@ -71,8 +71,8 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.nav_home) {
                 loadFragment(new HomeFragment());
                 return true;
-            } else if (itemId == R.id.nav_discover) {
-                startActivity(new Intent(MainActivity.this, NewsActivity.class));
+            } else if (itemId == R.id.nav_learn) {
+               loadFragment (new LearnFragment());
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 loadFragment(new ProfileFragment());

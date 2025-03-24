@@ -2,12 +2,16 @@ package com.example.elsa_speak_clone.activities;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
+import android.view.Menu;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 
 public class LeaderboardActivity extends AppCompatActivity {
     private static final String TAG = "LeaderboardActivity";
@@ -41,29 +46,36 @@ public class LeaderboardActivity extends AppCompatActivity {
     private DatabaseReference leaderboardRef;
     private ValueEventListener leaderboardListener;
     
+    private String currentSortMethod = "xp"; // Default sort by XP
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_leaderboard);
-        
+
+        initialize();
+
+        // Setup real-time data listener
+        setupLeaderboardListener();
+    }
+
+    private void initialize() {
         // Initialize views
+        setupToolbar ();
         recyclerView = findViewById(R.id.recyclerLeaderboard);
         progressBar = findViewById(R.id.progressBar);
         tvEmpty = findViewById(R.id.tvEmpty);
-        
+
         // Initialize Firebase manager and reference
         firebaseDataManager = FirebaseDataManager.getInstance(this);
         leaderboardRef = FirebaseDatabase.getInstance().getReference(LEADERBOARD_PATH);
-        
+
         // Setup RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new LeaderboardAdapter(new ArrayList<>());
         recyclerView.setAdapter(adapter);
-        
-        // Setup real-time data listener
-        setupLeaderboardListener();
     }
-    
+
     private void setupLeaderboardListener() {
         progressBar.setVisibility(View.VISIBLE);
         
@@ -151,10 +163,84 @@ public class LeaderboardActivity extends AppCompatActivity {
         // Sort by XP (highest first)
         Collections.sort(entries, (e1, e2) -> Integer.compare(e2.getXp(), e1.getXp()));
         
+        // Apply current sort method after processing data
+        if (currentSortMethod.equals("xp")) {
+            sortLeaderboardByXp();
+        } else {
+            sortLeaderboardByStreak();
+        }
+        
         // Update adapter
         adapter.updateData(entries);
     }
-    
+
+    private void setupToolbar() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
+        } else if (item.getItemId() == R.id.action_sort) {
+            showSortMenu(item.getActionView() != null ? item.getActionView() : findViewById(R.id.action_sort));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_leaderboard, menu);
+        return true;
+    }
+
+    private void showSortMenu(View view) {
+        PopupMenu popup = new PopupMenu(this, view);
+        popup.getMenuInflater().inflate(R.menu.menu_leaderboard_sort, popup.getMenu());
+        
+        // Set checkmark on current sort method
+        if (currentSortMethod.equals("xp")) {
+            popup.getMenu().findItem(R.id.sort_by_xp).setChecked(true);
+        } else {
+            popup.getMenu().findItem(R.id.sort_by_streak).setChecked(true);
+        }
+        
+        popup.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.sort_by_xp) {
+                currentSortMethod = "xp";
+                sortLeaderboardByXp();
+                return true;
+            } else if (id == R.id.sort_by_streak) {
+                currentSortMethod = "streak";
+                sortLeaderboardByStreak();
+                return true;
+            }
+            return false;
+        });
+        
+        popup.show();
+    }
+
+    private void sortLeaderboardByXp() {
+        List<LeaderboardEntry> entries = adapter.getEntries();
+        Collections.sort(entries, (e1, e2) -> Integer.compare(e2.getXp(), e1.getXp()));
+        adapter.updateData(entries);
+    }
+
+    private void sortLeaderboardByStreak() {
+        List<LeaderboardEntry> entries = adapter.getEntries();
+        Collections.sort(entries, (e1, e2) -> Integer.compare(e2.getStreak(), e1.getStreak()));
+        adapter.updateData(entries);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();

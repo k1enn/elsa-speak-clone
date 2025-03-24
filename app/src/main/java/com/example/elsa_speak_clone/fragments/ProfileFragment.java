@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,6 +25,7 @@ import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.entities.User;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
+import com.example.elsa_speak_clone.services.NavigationService;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -50,8 +52,10 @@ public class ProfileFragment extends Fragment {
     private String mParam2;
 
     private ImageView ivProfilePicture;
+    private NavigationService navigationService;
     private TextView tvUsername, tvEmail, tvUserStreak, tvUserXP;
     private SessionManager sessionManager;
+    private LinearLayout btnLeaderboard;
     private Button btnLogout;
     private Button btnShare;
     private Button btnSettings;
@@ -101,13 +105,7 @@ public class ProfileFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        // Initialize Room database and threading components
-        database = AppDatabase.getInstance(requireContext());
-        executor = Executors.newSingleThreadExecutor();
-        mainHandler = new Handler(Looper.getMainLooper());
-        
-        // Initialize user progress repository
-        userProgressRepository = new UserProgressRepository(requireActivity().getApplication());
+        initializeVariable ();
 
         initializeUI(view);
         loadUserProfile();
@@ -116,14 +114,28 @@ public class ProfileFragment extends Fragment {
         setupSettingsButton();
         setupShareProfileButton();
 
+        setupLeaderboardButton ();
         return view;
     }
 
+    private void initializeVariable() {
+        // Initialize Room database and threading components
+        database = AppDatabase.getInstance(requireContext());
+        executor = Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
+
+        navigationService = new NavigationService (this.requireContext ());
+        // Initialize user progress repository
+        userProgressRepository = new UserProgressRepository(requireActivity().getApplication());
+    }
+
     private void initializeUI(View view) {
+        btnLeaderboard = view.findViewById (R.id.btnLeaderboard);
         ivProfilePicture = view.findViewById(R.id.ivProfilePicture);
         tvUsername = view.findViewById(R.id.tvUsername);
         tvUserStreak = view.findViewById(R.id.tvDayStreak);
         tvUserXP = view.findViewById(R.id.tvXPPoint);
+
         // Initialize the button variables
         btnLogout = view.findViewById(R.id.btnLogout);
         btnShare = view.findViewById(R.id.btnShare);
@@ -136,7 +148,11 @@ public class ProfileFragment extends Fragment {
             Toast.makeText(requireContext(), "Share button clicked", Toast.LENGTH_SHORT).show();
         });
     }
-
+    private void setupLeaderboardButton() {
+        btnLeaderboard.setOnClickListener (v -> {
+            navigationService.navigateToLeaderboard (this.requireContext ());
+        });
+    }
     private void setupSettingsButton() {
         btnSettings.setOnClickListener(v -> {
             Toast.makeText(requireContext(), "Settings button clicked", Toast.LENGTH_SHORT).show();
@@ -159,13 +175,12 @@ public class ProfileFragment extends Fragment {
                             .build();
                     GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(requireContext(), gso);
                     googleSignInClient.signOut().addOnCompleteListener(task -> {
-                        Log.d(TAG, "Google Sign-Out successful");
-                        // Clear local session data after Google sign-out
+                        // Clear local session data
                         sessionManager.clearSession();
                         navigateToLogin();
                     });
                 } else {
-                    // Just local authentication, use SessionManager logout
+                    // For local
                     sessionManager.logout();
                     navigateToLogin();
                 }
@@ -176,12 +191,10 @@ public class ProfileFragment extends Fragment {
     }
 
     private void navigateToLogin() {
-        Activity main = null;
-        try {
-            main = requireActivity();
-            Intent intent = new Intent(main, LoginActivity.class);
-            startActivity(intent);
-            requireActivity().finish(); // Optional: finish the activity to prevent returning to it
+       try {
+           navigationService.navigateToLogin ();
+           sessionManager.logout ();
+           sessionManager.clearSession ();
         } catch (NullPointerException e) {
             Log.d(TAG, "Activity is NULL", e);
         } finally {

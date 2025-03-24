@@ -1,17 +1,14 @@
 package com.example.elsa_speak_clone.activities;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.elsa_speak_clone.R;
@@ -25,41 +22,45 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 
 public class DictionaryActivity extends AppCompatActivity {
-    private static final String TAG = "DictionaryActivity";
     private static final String API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/";
-
+    private final String TAG = "DictionaryActivity";
     private TextView resultTextView;
     private EditText wordEditText;
+    ImageView searchButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dictionary);
 
+        initialize ();
+        setupSearchButton();
+    }
+
+    private void initialize() {
         resultTextView = findViewById(R.id.resultTextView);
         wordEditText = findViewById(R.id.wordEditText);
-        ImageView searchButton = (ImageView)findViewById(R.id.searchButton);
+        searchButton = findViewById(R.id.searchButton);
+    }
 
+    private void setupSearchButton() {
         // Set click listener for search button
-        searchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String word = wordEditText.getText().toString().trim();
-                if (!word.isEmpty()) {
-                    new FetchDefinitionTask().execute(word);
-                } else {
-                    Toast.makeText(DictionaryActivity.this, "Please enter a word", Toast.LENGTH_SHORT).show();
-                }
+        searchButton.setOnClickListener(v -> {
+            String word = wordEditText.getText().toString().trim();
+            if (!word.isEmpty()) {
+                new FetchDefinitionTask().execute(word);
+            } else {
+                Toast.makeText(DictionaryActivity.this, "Please enter a word", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class FetchDefinitionTask extends AsyncTask<String, Void, String> {
+        @SuppressLint("SetTextI18n")
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -95,7 +96,7 @@ public class DictionaryActivity extends AppCompatActivity {
 
                 return result.toString();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.d(TAG, "Can not connect to Dictionary ", e);
                 return "Network error: " + e.getMessage();
             } finally {
                 if (connection != null) {
@@ -105,7 +106,7 @@ public class DictionaryActivity extends AppCompatActivity {
                     try {
                         reader.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                             Log.d(TAG, "Error at FetchDefinitionTask: ", e);
                     }
                 }
             }

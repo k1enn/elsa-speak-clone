@@ -59,6 +59,9 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:id="@+id/btnLeaderboard"
                >
 
                 <LinearLayout

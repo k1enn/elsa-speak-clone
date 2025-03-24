@@ -33,7 +33,7 @@
             android:name=".activities.RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".activities.SpeechToText"
+            android:name=".activities.PronuncationActivity"
             android:exported="false" />
         <activity
             android:name=".activities.QuizActivity"

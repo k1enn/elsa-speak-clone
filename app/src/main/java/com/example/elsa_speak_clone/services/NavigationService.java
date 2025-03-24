@@ -20,7 +20,7 @@ import com.example.elsa_speak_clone.activities.MainActivity;
 import com.example.elsa_speak_clone.activities.NewsActivity;
 import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.activities.RegisterActivity;
-import com.example.elsa_speak_clone.activities.SpeechToText;
+import com.example.elsa_speak_clone.activities.PronuncationActivity;
 import com.example.elsa_speak_clone.fragments.HomeFragment;
 import com.example.elsa_speak_clone.fragments.LearnFragment;
 import com.example.elsa_speak_clone.fragments.ProfileFragment;
@@ -87,15 +87,15 @@ public class NavigationService {
     }
 
     /**
-     * Navigate to SpeechToText activity
+     * Navigate to PronuncationActivity activity
      */
     public void navigateToSpeechToText(int lessonId) {
         try {
-            Intent intent = new Intent(context, SpeechToText.class);
+            Intent intent = new Intent(context, PronuncationActivity.class);
             intent.putExtra("LESSON_ID", lessonId);
             context.startActivity(intent);
         } catch (Exception e) {
-            Log.e(TAG, "Error navigating to SpeechToText", e);
+            Log.e(TAG, "Error navigating to PronuncationActivity", e);
         }
     }
 

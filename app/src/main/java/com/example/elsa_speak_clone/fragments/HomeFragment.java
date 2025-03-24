@@ -11,28 +11,26 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 
 import com.example.elsa_speak_clone.activities.LoginActivity;
-import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
 import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
-import com.example.elsa_speak_clone.activities.SpeechToText;
 import com.example.elsa_speak_clone.services.NavigationService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.navigation.NavigationBarView;
 import com.malinskiy.materialicons.IconDrawable;
 import com.malinskiy.materialicons.Iconify;
 
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -79,6 +77,7 @@ public class HomeFragment extends Fragment {
     private ExecutorService executor;
     private Handler mainHandler;
     private FirebaseDataManager firebaseDataManager;
+    private LinearLayout btnLeaderboard;
 
     private Handler progressRefreshHandler;
     private final int REFRESH_INTERVAL = 1000; // 1 second refresh interval
@@ -121,30 +120,9 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
-        
-        // Intialize navigation service
-        initializeNavigationService();
-        
-        // Initialize database components
-        initializeDatabase();
-        
-        // Initialize UI components
-        initializeUI(view);
-        
-        // Initialize other components
-        initializeVariables();
-        
-        // Setup click listeners and UI updates
-        setupWelcomeMessage();
-        setupSpeechToTextButton();
-        setupGrammarButton();
-        setupVocabularyButton();
-        
-        // Only setup login button if it exists
-        if (btnLogin != null) {
-            setupLoginButton();
-        }
-        
+
+        initialize (view);
+        setupOther();
         // Load user progress
         loadUserProgress();
         observeUserProgress();
@@ -152,6 +130,25 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
+    private void setupOther() {
+        setupLeaderboardButton ();
+        setupWelcomeMessage();
+        setupSpeechToTextButton();
+        setupGrammarButton();
+        setupVocabularyButton();
+    }
+
+    private void initialize(View view) {
+        initializeNavigationService();
+        initializeDatabase();
+        initializeUI(view);
+        initializeVariables();
+    }
+    private void setupLeaderboardButton() {
+        btnLeaderboard.setOnClickListener (v -> {
+            navigationService.navigateToLeaderboard (this.requireContext ());
+        });
+    }
     private void initializeNavigationService() {
         navigationService = new NavigationService(requireContext());
     }
@@ -159,18 +156,16 @@ public class HomeFragment extends Fragment {
     // Initialize database and related components
     private void initializeDatabase() {
         try {
-            // Get database instance
             database = AppDatabase.getInstance(requireContext());
-            
-            // Initialize repository for progress data
             userProgressRepository = new UserProgressRepository(requireActivity().getApplication());
-            
-            // Set up threading components
+
+            // To run things in background
             executor = Executors.newSingleThreadExecutor();
             mainHandler = new Handler(Looper.getMainLooper());
 
             firebaseDataManager = FirebaseDataManager.getInstance(this.getContext());
-            // Initialize progress refresh handler
+
+            // For reload progress
             progressRefreshHandler = new Handler(Looper.getMainLooper());
             createProgressCheckerRunnable();
         } catch (Exception e) {
@@ -189,7 +184,7 @@ public class HomeFragment extends Fragment {
                     refreshCount++;
                     Log.d(TAG, "Progress refresh #" + refreshCount + " completed");
 
-                    // Ready for next loop
+                    // Reload twice for sure
                     if (refreshCount < MAX_REFRESHES) {
                         progressRefreshHandler.postDelayed(this, REFRESH_INTERVAL);
                     } else {
@@ -234,10 +229,13 @@ public class HomeFragment extends Fragment {
             executor.shutdown();
         }
     }
-
+    public int getRandomNumber() {
+        Random random = new Random();
+        return random.nextInt(9) + 1;
+    }
     private void initializeUI(View view) {
         try {
-            // Find all the views from the inflated layout
+            btnLeaderboard = view.findViewById(R.id.btnLeaderboard);
             btnLogin = view.findViewById(R.id.btnLogin);
             cvPronunciation = view.findViewById(R.id.cvPronunciation);
             cvGrammar = view.findViewById(R.id.cvGrammar);
@@ -251,6 +249,7 @@ public class HomeFragment extends Fragment {
         }
 
         try {
+            // Random icon lib
             ivPronunciation = view.findViewById(R.id.ivPronunciation);
             if (ivPronunciation != null) {
                 iconPronunciation = new IconDrawable(requireContext(), Iconify.IconValue.zmdi_volume_up)
@@ -275,13 +274,12 @@ public class HomeFragment extends Fragment {
 
     private void initializeVariables() {
         try {
-            // Use SessionManager for user information
             sessionManager = new SessionManager(requireContext());
 
             // Update user streak using the Room database
             executor.execute(() -> {
                 if (sessionManager.isLoggedIn()) {
-                    // Using UserProgressRepository to update streak
+                   // Update user streak everytime open app
                     userProgressRepository.updateDailyStreak(sessionManager.getUserId());
                 }
             });
@@ -383,7 +381,7 @@ public class HomeFragment extends Fragment {
     private void setupSpeechToTextButton() {
         cvPronunciation.setOnClickListener(v -> {
             try {
-                navigationService.navigateToSpeechToText(1);
+                navigationService.navigateToSpeechToText(getRandomNumber());
             } catch (Exception e) {
                 Log.e(TAG, "Error navigating to speech recognition: ", e);
             }
@@ -394,7 +392,7 @@ public class HomeFragment extends Fragment {
         cvGrammar.setOnClickListener(v -> {
             try {
                 // In progress
-                navigationService.navigateToQuiz(1);
+                navigationService.navigateToQuiz(getRandomNumber());
             } catch (Exception e) {
                 Log.e(TAG, "Error navigating to grammar: ", e);
             }

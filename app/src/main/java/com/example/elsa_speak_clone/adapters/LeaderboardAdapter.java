@@ -67,6 +67,10 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
         notifyDataSetChanged();
     }
     
+    public List<LeaderboardEntry> getEntries() {
+        return entries;
+    }
+    
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvRank;
         TextView tvUsername;

@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:ignore="ExtraText">
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/white"
+        app:title="Pronunciation Practice"
+        android:translationZ="1dp"
+    android:outlineProvider="none"
+    android:clickable="true"
+    android:focusable="true"
+        app:titleTextColor="@color/black"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -17,28 +33,17 @@
 
             <!-- Title -->
             <TextView
-                android:id="@+id/tvTitle"
+                android:id="@+id/tvLessonTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="80dp"
                 android:gravity="center"
                 android:paddingBottom="16dp"
-                android:text="Pronunciation Practice"
+                android:text="Basic Greetings"
                 android:textColor="@color/primaryTextColor"
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <!-- Lesson Title -->
-            <TextView
-                android:id="@+id/tvLessonTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:paddingBottom="8dp"
-                android:text="Lesson: Basic Greetings"
-                android:textColor="@color/primaryTextColor"
-                android:textSize="18sp"
-                android:textStyle="italic" />
 
             <!-- CardView containing the word to pronounce -->
             <androidx.cardview.widget.CardView

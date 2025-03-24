@@ -18,6 +18,7 @@ import com.example.elsa_speak_clone.database.DataInitializer;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.database.entities.User;
 import com.example.elsa_speak_clone.database.entities.UserProgress;
+import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
 import com.example.elsa_speak_clone.database.repositories.UserRepository;
 import com.example.elsa_speak_clone.utilities.ConfigManager;
 import com.google.firebase.database.FirebaseDatabase;
@@ -100,7 +101,7 @@ public class SplashActivity extends AppCompatActivity {
                         Log.e(TAG, "Error preloading data", e);
                     }
                 });
-                
+
                 // Initialize ConfigManager
                 updateLoadingMessage("Loading configuration...");
                 try {
@@ -112,6 +113,26 @@ public class SplashActivity extends AppCompatActivity {
                 
                 // Initialize Firebase and sync data
                 updateLoadingMessage("Connecting to cloud...");
+                
+                // ADD THIS SECTION: Create default users
+                updateLoadingMessage("Syncing user data...");
+                FirebaseDataManager dataManager = FirebaseDataManager.getInstance(getApplicationContext());
+                
+                // Create default users if network is available
+                if (isNetworkAvailable()) {
+                    try {
+                        boolean success = dataManager.addDefaultUsers().get(10, TimeUnit.SECONDS);
+                        if (success) {
+                            Log.d(TAG, "Default users created successfully");
+                        } else {
+                            Log.e(TAG, "Failed to create default users");
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error creating default users: " + e.getMessage());
+                    }
+                } else {
+                    Log.d(TAG, "Network unavailable, skipping default user creation");
+                }
 
                 // Calculate elapsed time and ensure minimum display time
                 long elapsedTime = System.currentTimeMillis() - startTime;

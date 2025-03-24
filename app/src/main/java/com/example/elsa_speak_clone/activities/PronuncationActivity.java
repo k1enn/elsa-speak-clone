@@ -8,12 +8,15 @@ import android.os.Handler;
 import android.os.Looper;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
@@ -30,7 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SpeechToText extends AppCompatActivity {
+public class PronuncationActivity extends AppCompatActivity {
 
     private static final String TAG = "SpeechToTextActivity";
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 1;
@@ -50,6 +53,7 @@ public class SpeechToText extends AppCompatActivity {
     private TextView tvLessonTitle;
     private Button btnSpeak;
     private Button btnRandomWord;
+    Toolbar toolbar;
     private LottieAnimationView lottieConfetti;
 
     // Speech recognition components
@@ -63,40 +67,56 @@ public class SpeechToText extends AppCompatActivity {
         
         // Try to initialize database before anything else
         tryInitializeDatabase(0);
-        
+
         // Wait for database initialization before proceeding
         if (databaseInitialized.get()) {
-            completeInitialization();
+            initialize();
+            setupToolbar ();
         } else {
             Toast.makeText(this, "Failed to initialize database. Please restart the app.", 
                     Toast.LENGTH_LONG).show();
             finish();
         }
+
     }
 
-    private void completeInitialization() {
+    private void initialize() {
         setContentView(R.layout.activity_speech_to_text);
         
-        // Initialize services
         navigationService = new NavigationService(this);
-        
-        // Initialize UI components
         initializeUI();
-        
-        // Set up window insets for edge-to-edge display
         setupWindowInsets();
-        
-        // Request microphone permission
         requestMicrophonePermission();
-        
-        // Initialize speech recognizer
         initializeSpeechRecognizer();
-        
-        // Set up voice recognizer with database
         setupVoiceRecognizer();
-
     }
-
+    private void setupToolbar() {
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+    }
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        Log.d("PronunciationActivity", "onOptionsItemSelected: " + item.getItemId());
+        
+        // Handle the back button (up button in action bar)
+        if (item.getItemId() == android.R.id.home) {
+            Log.d("PronunciationActivity", "Back button pressed");
+            onBackPressed();
+            return true;
+        }
+        
+        return super.onOptionsItemSelected(item);
+    }
+    @Override
+    public void onBackPressed() {
+        Log.d("PronunciationActivity", "onBackPressed called");
+        Log.d("PronunciationActivity", "isTaskRoot: " + isTaskRoot());
+        super.onBackPressed();
+    }
     private void initializeUI() {
         tvPrompt = findViewById(R.id.tvPrompt);
         tvWord = findViewById(R.id.tvWord);
@@ -250,7 +270,7 @@ public class SpeechToText extends AppCompatActivity {
                 } catch (Exception e) {
                     Log.e(TAG, "Error loading vocabulary data", e);
                     mainHandler.post(() -> {
-                        Toast.makeText(SpeechToText.this, 
+                        Toast.makeText(PronuncationActivity.this,
                                 "Error loading vocabulary data", Toast.LENGTH_LONG).show();
                         finish();
                     });
@@ -287,9 +307,9 @@ public class SpeechToText extends AppCompatActivity {
                 // Update UI on main thread
                 mainHandler.post(() -> {
                     if (lessonTitle != null && !lessonTitle.isEmpty()) {
-                        tvLessonTitle.setText("Lesson: " + lessonTitle);
+                        tvLessonTitle.setText(lessonTitle);
                     } else {
-                        tvLessonTitle.setText("Lesson " + lessonId);
+                        tvLessonTitle.setText(lessonId);
                     }
                 });
             } catch (Exception e) {

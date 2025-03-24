@@ -79,7 +79,7 @@ public class ChatGptService {
                 @Override
                 public void onFailure(Call call, IOException e) {
                     Log.e(TAG, "API call failed", e);
-                    callback.onError("Không thể kết nối đến máy chủ. Vui lòng thử lại sau!");
+                    callback.onError("Can not connect to server.");
                 }
                 
                 @Override
@@ -101,13 +101,13 @@ public class ChatGptService {
                         callback.onResponse(content.trim());
                     } catch (JSONException e) {
                         Log.e(TAG, "Error parsing JSON", e);
-                        callback.onError("Lỗi xử lý dữ liệu từ server. Vui lòng thử lại!");
+                        callback.onError("Error parsing JSON");
                     }
                 }
             });
         } catch (JSONException e) {
             Log.e(TAG, "Error creating JSON request", e);
-            callback.onError("Lỗi tạo yêu cầu. Vui lòng thử lại!");
+            callback.onError("Error creating JSON request");
         }
     }
 } 
