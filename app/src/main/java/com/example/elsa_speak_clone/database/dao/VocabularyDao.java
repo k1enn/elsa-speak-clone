@@ -23,7 +23,10 @@ public interface VocabularyDao {
     
     @Query("SELECT * FROM Vocabulary WHERE LessonId = :lessonId")
     List<Vocabulary> getVocabularyByLessonId(int lessonId);
-    
+
+    @Query("SELECT pronunciation FROM Vocabulary WHERE Word = :word")
+    String getWordPronunciation(String word);
+
     @Query("SELECT word FROM Vocabulary WHERE LessonId = :lessonId")
     List<String> getWordsByLessonId(int lessonId);
     

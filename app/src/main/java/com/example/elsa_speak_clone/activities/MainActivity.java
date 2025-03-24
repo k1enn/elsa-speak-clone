@@ -152,17 +152,16 @@ public class MainActivity extends AppCompatActivity {
             int id = item.getItemId();
 
             if (id == R.id.nav_home) {
-                // Handle home action
-                navigationService.navigateToHomeFragment(MainActivity.this);
+                selectFragment (new HomeFragment () ,R.id.nav_home);
             } else if (id == R.id.nav_learn) {
-                // Handle learn action
-               navigationService.navigateToLearnFragment(MainActivity.this);
+                 selectFragment (new LearnFragment () ,R.id.nav_learn);
             } else if (id == R.id.nav_discover) {
                 navigationService.navigateToNews(MainActivity.this);
             } else if (id == R.id.nav_leaderboard) {
                 navigationService.navigateToLeaderboard(MainActivity.this);
             } else if (id == R.id.nav_account) {
-                // Handle profile action
+                loadFragment (new ProfileFragment ());
+                selectFragment (new ProfileFragment () ,R.id.nav_profile);
             }
 
             drawerLayout.closeDrawer(GravityCompat.START);
@@ -198,7 +197,15 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     };
+    private void selectFragment(Fragment fragment, int navItemId) {
+        // Load the fragment
+        loadFragment(fragment);
 
+        // Update bottom navigation UI to show the selected item
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(navItemId);
+        }
+    }
     private void loadFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, fragment).commit();

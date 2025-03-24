@@ -17,6 +17,7 @@ import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
+import com.example.elsa_speak_clone.database.dao.VocabularyDao;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -255,14 +256,26 @@ public class VoiceRecognizer {
     // New method to generate and display a new word
     private void generateAndDisplayNewWord() {
         String word = generateRandomWord();
-        tvWord.setText("Say this word: " + word);
-        // Disable random word button until this word is pronounced correctly
-        disableRandomWordButton();
-        
-        // Notify listener that progress has updated
-        if (progressUpdateListener != null) {
-            progressUpdateListener.onProgressUpdated();
-        }
+
+        // Get pronunciation using the existing DAO method
+        executor.execute(() -> {
+            String pronunciation = database.vocabularyDao().getWordPronunciation(word);
+
+            // Update UI on the main thread
+            mainHandler.post(() -> {
+                // Display word with pronunciation
+                tvWord.setText("Say this word: \n " + word + "\n" +
+                        "[" + pronunciation + "]");
+
+                // Disable random word button until this word is pronounced correctly
+                disableRandomWordButton();
+
+                // Notify listener that progress has updated
+                if (progressUpdateListener != null) {
+                    progressUpdateListener.onProgressUpdated();
+                }
+            });
+        });
     }
     
     // Method to disable the random word button
