@@ -128,6 +128,69 @@
                 android:textSize="16sp"
                 android:gravity="center"
                 android:padding="10dp" />
+
+            <!-- Add these new elements -->
+
+            <TextView
+                android:id="@+id/tvPhonetic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="18sp"
+                android:textStyle="italic"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvWord"
+                tools:text="/həˈloʊ/" />
+
+            <TextView
+                android:id="@+id/tvPronunciationScore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvPhonetic"
+                tools:text="85%" />
+
+            <View
+                android:id="@+id/pronunciationFeedbackView"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:alpha="0"
+                android:background="@android:color/transparent"
+                app:layout_constraintBottom_toBottomOf="@id/tvWord"
+                app:layout_constraintEnd_toEndOf="@id/tvWord"
+                app:layout_constraintStart_toStartOf="@id/tvWord"
+                app:layout_constraintTop_toTopOf="@id/tvWord" />
+
+            <TextView
+                android:id="@+id/tvStreak"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="16dp"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="Streak: 5" />
+
+            <Button
+                android:id="@+id/btnListen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:drawableStart="@drawable/ic_volume_up"
+                android:drawablePadding="8dp"
+                android:text="Listen"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnSpeak" />
         </LinearLayout>
     </ScrollView>
     <!-- Lottie AnimationView as overlay -->
