@@ -59,10 +59,8 @@ public class MainActivity extends AppCompatActivity {
 
         initializeServices();
         initializeUI();
-        setupNavigationMenu();
         initializeSharedPreferences();
         checkUserLogin();
-        setupDictionaryButton();
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         loadFragment(new HomeFragment());
 
@@ -72,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new HomeFragment());
                 return true;
             } else if (itemId == R.id.nav_learn) {
-                loadFragment (new LearnFragment());
+               loadFragment (new LearnFragment());
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 loadFragment(new ProfileFragment());
@@ -111,7 +109,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeUI() {
-        chatbot = findViewById(R.id.btnChatbot);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnItemSelectedListener(navListener);
 
@@ -121,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize drawer layout and navigation view
         drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
 
         // Set up the ActionBarDrawerToggle
         toggle = new ActionBarDrawerToggle(
@@ -149,34 +145,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkUserLogin() {
         if (!sessionManager.isLoggedIn() ||
-                (sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState())) {
+            (sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState())) {
             navigationService.navigateToLogin();
             finish();
         }
     }
 
-    // Side navigation menu (in progress)
-    private void setupNavigationMenu() {
-        navigationView.setNavigationItemSelectedListener(item -> {
-            int id = item.getItemId();
-
-            if (id == R.id.nav_home) {
-                selectFragment (new HomeFragment () ,R.id.nav_home);
-            } else if (id == R.id.nav_learn) {
-                selectFragment (new LearnFragment () ,R.id.nav_learn);
-            } else if (id == R.id.nav_discover) {
-                navigationService.navigateToNews(MainActivity.this);
-            } else if (id == R.id.nav_leaderboard) {
-                navigationService.navigateToLeaderboard(MainActivity.this);
-            } else if (id == R.id.nav_account) {
-                loadFragment (new ProfileFragment ());
-                selectFragment (new ProfileFragment () ,R.id.nav_profile);
-            }
-
-            drawerLayout.closeDrawer(GravityCompat.START);
-            return true;
-        });
-    }
 
     @Override
     public void onBackPressed() {
@@ -195,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_learn) {
-            //   selectedFragment = new LearnFragment();
+         //   selectedFragment = new LearnFragment();
             navigationService.navigateToLearnFragment(MainActivity.this);
         } else if (itemId == R.id.nav_home) {
             navigationService.navigateToHomeFragment(MainActivity.this);
@@ -220,11 +194,6 @@ public class MainActivity extends AppCompatActivity {
         transaction.replace(R.id.fragment_container, fragment).commit();
     }
 
-    private void setupDictionaryButton() {
-        chatbot.setOnClickListener(v -> {
-            navigationService.navigateToChatbot(MainActivity.this);
-        });
-    }
 
 
 }

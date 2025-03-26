@@ -90,6 +90,7 @@ public class HomeFragment extends Fragment {
     private Handler mainHandler;
     private FirebaseDataManager firebaseDataManager;
     private LinearLayout btnLeaderboard;
+    private LinearLayout btnChatbot;
 
     private Handler progressRefreshHandler;
     private final int REFRESH_INTERVAL = 1000; // 1 second refresh interval
@@ -97,7 +98,7 @@ public class HomeFragment extends Fragment {
     private final int MAX_REFRESHES = 2;
     private Runnable progressChecker;
 
-    private CardView cvDictionary, cvNews, cvLeaderboard;
+    private CardView cvDictionary, cvNews;
 
     public HomeFragment() {
     }
@@ -146,12 +147,12 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupOther() {
-        setupLeaderboardButton ();
         setupWelcomeMessage();
         setupSpeechToTextButton();
         setupGrammarButton();
         setupDictionaryButton();
         setupNewsButton();
+        setupChatbotButton ();
         setupLeaderboardButton();
     }
 
@@ -161,8 +162,13 @@ public class HomeFragment extends Fragment {
         initializeUI(view);
         initializeVariables();
     }
+    public void setupChatbotButton() {
+         btnChatbot.setOnClickListener (v -> {
+            navigationService.navigateToChatbot (this.requireContext ());
+        });
+    }
     private void setupLeaderboardButton() {
-        cvLeaderboard.setOnClickListener (v -> {
+        btnLeaderboard.setOnClickListener (v -> {
             navigationService.navigateToLeaderboard (this.requireContext ());
         });
     }
@@ -309,6 +315,7 @@ public class HomeFragment extends Fragment {
     }
     private void initializeUI(View view) {
         try {
+            btnChatbot = view.findViewById (R.id.btnChatbot);
             btnLogin = view.findViewById(R.id.btnLogin);
             cvPronunciation = view.findViewById(R.id.cvPronunciation);
             cvGrammar = view.findViewById(R.id.cvGrammar);
@@ -317,7 +324,7 @@ public class HomeFragment extends Fragment {
             tvWelcome = view.findViewById(R.id.tvWelcome);
             cvDictionary = view.findViewById(R.id.cvDictionary);
             cvNews = view.findViewById(R.id.cvNews);
-            cvLeaderboard = view.findViewById(R.id.cvLeaderboard);
+            btnLeaderboard = view.findViewById(R.id.btnLeaderboard);
             
             if (tvXPPoint == null) {
                 Log.e(TAG, "tvXPPoint is null - check ID in layout");

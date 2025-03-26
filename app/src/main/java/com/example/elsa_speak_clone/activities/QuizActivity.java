@@ -62,6 +62,7 @@ public class QuizActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private LottieAnimationView lottieConfetti;
 
+    private int totalAvailableQuestions = 0;
     // Quiz data
     private String correctAnswer;
     private int currentLessonId = 1; // Default to lesson 1
@@ -74,7 +75,6 @@ public class QuizActivity extends AppCompatActivity {
 
     private int correctAnswersCount = 0;
     private int totalQuestionsAttempted = 0;
-    private static final int QUESTIONS_PER_SESSION = 5; // Set how many questions per session
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,7 +96,7 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     private void initializeUI() {
-        // Get the lesson ID from the intent
+        // Get the lesson ID
         if (getIntent().hasExtra("LESSON_ID")) {
             currentLessonId = getIntent().getIntExtra("LESSON_ID", 1);
         }
@@ -108,13 +108,13 @@ public class QuizActivity extends AppCompatActivity {
         btnNextQuestion = findViewById(R.id.btnNextQuestion);
         tvResult = findViewById(R.id.tvResult);
         
-        // Initialize the confetti animation view
+        // Initialize the confetti
         lottieConfetti = findViewById(R.id.lottieConfetti);
         
         // Initialize the sound player
         correctSoundPlayer = MediaPlayer.create(this, R.raw.correct_sound);
         
-        // Setup check answer button initial state
+        // Setup check answer button default state
         returnCheckAnswerButton();
     }
     private void setupToolbar() {
@@ -154,7 +154,7 @@ public class QuizActivity extends AppCompatActivity {
             try {
                 // Count total questions if not already done
                 if (totalAvailableQuestions == 0) {
-                    totalAvailableQuestions = database.quizDao().countQuizzesForLesson(currentLessonId);
+                    totalAvailableQuestions = database.quizDao().getQuizCountForLesson (currentLessonId);
                 }
                 
                 // Get a random quiz that hasn't been used yet in this session
@@ -175,9 +175,8 @@ public class QuizActivity extends AppCompatActivity {
                         correctAnswer = answer;
                     });
                 } else {
-                    // No more questions, congratulate user
+                    // No more question, end.
                     showCongratulationsPopup ();
-                    runOnUiThread(this::finishQuizSession);
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error loading next question: " + e.getMessage(), e);
@@ -307,7 +306,11 @@ public class QuizActivity extends AppCompatActivity {
                 try {
                     // Add XP based on lesson difficulty
                     int xpPoints = 5;
+
+                    // Add to local
                     quizService.addXpPoints(userId, currentLessonId, xpPoints);
+
+                    // Sync to Firebase
                     AppDatabase.databaseWriteExecutor.execute(() -> {
                         firebaseDataManager.syncUserProgress(userId, currentLessonId);
                     });
@@ -322,9 +325,9 @@ public class QuizActivity extends AppCompatActivity {
             tvResult.setTextColor(Color.RED);
         }
         
-        // Check if we've reached the session limit or run out of questions
-        if (totalQuestionsAttempted >= QUESTIONS_PER_SESSION || usedQuizIds.size() >= totalAvailableQuestions) {
-            finishQuizSession();
+        // Check if run out of questions
+        if (usedQuizIds.size() >= totalAvailableQuestions) {
+            showCongratulationsPopup ();
         }
     }
     
@@ -355,43 +358,4 @@ public class QuizActivity extends AppCompatActivity {
         }
     }
     
-    private void finishQuizSession() {
-        // Update progress with session results
-        int userId = sessionManager.getUserId();
-        quizService.updateQuizProgress(userId, currentLessonId, correctAnswersCount, totalQuestionsAttempted);
-        
-        // Show completion dialog
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            showCompletionDialog();
-        }, 1000); // Small delay to let the user see the last answer result
-    }
-
-    private void showCompletionDialog() {
-        androidx.appcompat.app.AlertDialog.Builder builder = 
-                new androidx.appcompat.app.AlertDialog.Builder(this);
-        
-        int percentCorrect = (correctAnswersCount * 100) / totalQuestionsAttempted;
-        
-        builder.setTitle("Quiz Completed!")
-               .setMessage("You got " + correctAnswersCount + " out of " + 
-                        totalQuestionsAttempted + " correct (" + percentCorrect + "%).")
-               .setPositiveButton("Continue Learning", (dialog, which) -> {
-                    dialog.dismiss();
-                    // Navigate back to learn fragment
-                    navigationService.navigateToMain();
-               });
-        
-        // Show confetti for good performance
-        if (percentCorrect >= 70) {
-            showConfettiAnimation();
-        }
-        
-        builder.create().show();
-    }
-
-    private void showConfettiAnimation() {
-        // Implementation of showing confetti animation
-    }
-
-    private int totalAvailableQuestions = 0;
 }

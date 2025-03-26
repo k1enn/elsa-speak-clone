@@ -32,7 +32,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/gradient_header_bg"
+                    android:background="@drawable/gradient_blue_purple_bg"
                     android:orientation="vertical"
                     android:padding="20dp">
 
@@ -73,26 +73,24 @@
                 android:layout_marginStart="4dp" />
 
 
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:padding="4dp">
-
-                    <!-- RecyclerView -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerLessons"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:clipToPadding="false"
-                        android:overScrollMode="never"
-                        tools:ignore="SpeakableTextPresentCheck"
-                        tools:listitem="@layout/item_lesson" />
-                </LinearLayout>
-
-            
             <!-- Bottom spacing view to ensure content isn't cut off -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="4dp">
+
+                <!-- RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerLessons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:overScrollMode="never"
+                    tools:ignore="SpeakableTextPresentCheck"
+                    tools:listitem="@layout/item_lesson" />
+            </LinearLayout>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="40dp"/>

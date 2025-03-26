@@ -49,9 +49,7 @@ public interface QuizDao {
     @Query("SELECT * FROM quizzes WHERE lessonId = :lessonId AND quizId NOT IN (:excludedIds) ORDER BY RANDOM() LIMIT 1")
     Quiz getRandomQuizForLessonExcludingIds(int lessonId, Integer[] excludedIds);
 
-    /**
-     * Count all quizzes for a specific lesson
-     */
-    @Query("SELECT COUNT(*) FROM quizzes WHERE lessonId = :lessonId")
-    int countQuizzesForLesson(int lessonId);
+
+    @Query("SELECT COUNT(*) FROM quizzes WHERE LessonId = :lessonId")
+    int getQuizCountForLesson(int lessonId);
 } 

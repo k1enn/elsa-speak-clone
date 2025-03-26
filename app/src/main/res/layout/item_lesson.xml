@@ -27,7 +27,7 @@
             android:layout_height="60dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="@color/colorPrimary"
+            app:cardBackgroundColor="@color/lesson_item_background"
             android:layout_gravity="center_vertical">
 
             <ImageView
@@ -75,25 +75,7 @@
                 android:layout_marginTop="8dp"
                 android:gravity="center_vertical">
 
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    android:id="@+id/lessonProgress"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:progress="60"
-                    app:trackCornerRadius="4dp"
-                    app:trackThickness="4dp"
-                    app:indicatorColor="@color/colorPrimary"/>
 
-                <TextView
-                    android:id="@+id/tvProgressPercentage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="60%"
-                    android:textColor="@color/colorPrimary"
-                    android:textStyle="bold"
-                    android:layout_marginStart="8dp"
-                    android:textSize="12sp"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

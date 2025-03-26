@@ -2,9 +2,15 @@ package com.example.elsa_speak_clone.fragments;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +40,18 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import android.app.AlertDialog;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -145,8 +163,164 @@ public class ProfileFragment extends Fragment {
 
     private void setupShareProfileButton() {
         btnShare.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Share button clicked", Toast.LENGTH_SHORT).show();
+            showShareProfileDialog();
         });
+    }
+
+    private void showShareProfileDialog() {
+        try {
+            // Create dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            View dialogView = getLayoutInflater().inflate(R.layout.dialog_share_profile, null);
+            builder.setView(dialogView);
+            AlertDialog dialog = builder.create();
+
+            // Create its border radius
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable (Color.TRANSPARENT));
+            }
+            // Get references to views
+            TextView tvShareUsername = dialogView.findViewById(R.id.tvShareUsername);
+            TextView tvShareStreak = dialogView.findViewById(R.id.tvShareStreak);
+            TextView tvShareXP = dialogView.findViewById(R.id.tvShareXP);
+            Button btnShareToApps = dialogView.findViewById(R.id.btnShareToApps);
+            Button btnDownloadImage = dialogView.findViewById(R.id.btnDownloadImage);
+            LinearLayout shareCardContent = dialogView.findViewById(R.id.shareCardContent);
+
+            // Set user data
+            String username = tvUsername.getText().toString();
+            String streak = tvUserStreak.getText().toString();
+            String xp = tvUserXP.getText().toString();
+
+            tvShareUsername.setText(username);
+            tvShareStreak.setText(streak);
+            tvShareXP.setText(xp);
+
+            // Share to other apps
+            btnShareToApps.setOnClickListener(shareBtn -> {
+                shareProfileToApps(shareCardContent, username, streak, xp);
+            });
+
+            // Download as image
+            btnDownloadImage.setOnClickListener(downloadBtn -> {
+                downloadProfileAsImage(shareCardContent);
+                dialog.dismiss();
+            });
+
+            // Show dialog
+            dialog.show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing share dialog", e);
+            Toast.makeText(requireContext(), "Error creating share view", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareProfileToApps(View contentView, String username, String streak, String xp) {
+        try {
+            // Create bitmap from the content view
+            Bitmap bitmap = getBitmapFromView(contentView);
+
+            // Save bitmap to cache directory
+            File cachePath = new File (requireContext ().getCacheDir (), "images");
+            cachePath.mkdirs ();
+            FileOutputStream stream = new FileOutputStream(cachePath + "/shared_profile.png");
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            stream.close();
+
+            // Create URI for the saved image
+            File imagePath = new File(requireContext().getCacheDir(), "images");
+            File newFile = new File(imagePath, "shared_profile.png");
+            Uri contentUri = FileProvider.getUriForFile(requireContext(),
+                    "com.example.elsa_speak_clone.fileprovider", newFile);
+
+            // Create intent to share
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("image/png");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            shareIntent.putExtra(Intent.EXTRA_TEXT,
+                    "Check out my ELSA Speak progress!\n" +
+                            "Username: " + username + "\n" +
+                            "Streak: " + streak + " days\n" +
+                            "XP: " + xp + " points");
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            // Start the sharing activity
+            startActivity(Intent.createChooser(shareIntent, "Share your profile"));
+        } catch (Exception e) {
+            Log.e(TAG, "Error sharing profile", e);
+            Toast.makeText(requireContext(), "Error sharing profile", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void downloadProfileAsImage(View contentView) {
+        try {
+            // Create bitmap from view
+            Bitmap bitmap = getBitmapFromView(contentView);
+
+            // Define the image file name and directory
+            String fileName = "kien_dep_trai" + System.currentTimeMillis() + ".png";
+
+            // For Android 10+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+                values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/k1enn");
+
+                ContentResolver resolver = requireContext().getContentResolver();
+                Uri imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+                if (imageUri != null) {
+                    OutputStream outputStream = resolver.openOutputStream(imageUri);
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+                    outputStream.close();
+
+                    Toast.makeText(requireContext(), "Profile saved to Pictures/k1enn", Toast.LENGTH_LONG).show();
+                }
+            } else {
+                // For older versions, use traditional file storage
+                File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "k1enn");
+                if (!directory.exists()) {
+                    directory.mkdirs();
+                }
+
+                File file = new File(directory, fileName);
+                FileOutputStream outputStream = new FileOutputStream(file);
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+                outputStream.close();
+
+                // Add to gallery
+                MediaScannerConnection.scanFile(requireContext(),
+                        new String[]{file.getAbsolutePath()},
+                        new String[]{"image/png"}, null);
+
+                Toast.makeText(requireContext(), "Profile saved to Pictures/k1enn", Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error downloading profile image", e);
+            Toast.makeText(requireContext(), "Error saving profile image", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Bitmap getBitmapFromView(View view) {
+        // Define a bitmap with the same size as the view
+        Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+
+        // Bind a canvas to it
+        Canvas canvas = new Canvas(bitmap);
+
+        // Draw the view's background
+        Drawable background = view.getBackground();
+        if (background != null) {
+            background.draw(canvas);
+        } else {
+            canvas.drawColor(Color.WHITE);
+        }
+
+        // Draw the view on the canvas
+        view.draw(canvas);
+
+        return bitmap;
     }
     private void setupLeaderboardButton() {
         btnLeaderboard.setOnClickListener (v -> {
