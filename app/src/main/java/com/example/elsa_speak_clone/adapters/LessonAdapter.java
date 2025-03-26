@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -51,60 +52,12 @@ public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonView
     public void onBindViewHolder(@NonNull LessonViewHolder holder, int position) {
         Lesson lesson = lessons.get(position);
         
-        // Set basic lesson information
+        // Set basic information
         holder.tvTitle.setText(lesson.getTopic());
         holder.tvContent.setText(lesson.getLessonContent());
-        
-        // Get the lesson ID from the current lesson object
-        int currentLessonId = lesson.getLessonId();
-        
-        // Run database operation on a background thread
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-        
-        executor.execute(() -> {
-            // Retrieve vocabulary count for this specific lesson
-            List<String> vocabList = database.vocabularyDao().getWordsByLessonId(currentLessonId);
-            int vocabCount = (vocabList != null) ? vocabList.size() : 0;
-            
-            // Fetch user progress for this lesson
-            int userId = getUserId(holder.itemView.getContext());
-            UserProgress userProgress = database.userProgressDao().getUserLessonProgress(userId, currentLessonId);
-            
-            // Calculate progress percentage
-            int progressPercentage = 0;
-            if (userProgress != null) {
-                // We'll use XP as an indicator of progress
-                // You may want to adjust this calculation based on your business logic
-                int totalPossibleXP = vocabCount * 10; // Assuming each word is worth 10 XP
-                if (totalPossibleXP > 0) {
-                    progressPercentage = Math.min(100, (userProgress.getXp() * 100) / totalPossibleXP);
-                }
-            }
-            
-            final int percentage = progressPercentage;
-            
-            // Update UI on main thread
-            handler.post(() -> {
-                // Update progress bar and percentage only - remove reference to tvVocabularyCount
-                if (holder.lessonProgress != null) {
-                    holder.lessonProgress.setProgress(percentage);
-                }
-                
-                if (holder.tvProgressPercentage != null) {
-                    holder.tvProgressPercentage.setText(percentage + "%");
-                }
-            });
-        });
-        
+
         // Set click listener for the lesson item
         holder.itemView.setOnClickListener(v -> listener.onLessonClick(lesson));
-    }
-
-    private int getUserId(Context context) {
-        // Get the current user ID from SharedPreferences
-        SharedPreferences sharedPreferences = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        return sharedPreferences.getInt("USER_ID", 1); // Default to 1 if not found
     }
 
     @Override
@@ -113,15 +66,12 @@ public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonView
     }
 
     static class LessonViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvContent, tvProgressPercentage;
-        com.google.android.material.progressindicator.LinearProgressIndicator lessonProgress;
+        TextView tvTitle, tvContent;
 
         LessonViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvLessonTitle);
             tvContent = itemView.findViewById(R.id.tvLessonDescription);
-            tvProgressPercentage = itemView.findViewById(R.id.tvProgressPercentage);
-            lessonProgress = itemView.findViewById(R.id.lessonProgress);
         }
     }
 }

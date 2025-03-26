@@ -52,8 +52,6 @@ public class ChatGptService {
                     "Bạn giúp học sinh học tiếng Anh, sửa lỗi ngữ pháp, từ vựng, và phát âm. " +
                     "Khi được hỏi nghĩa tiếng Việt của từ tiếng Anh bất kỳ hãy trả lời danh từ, động từ, " +
                     "tính từ của từ đó nếu có" +
-                    "Truờng hợp người dùng chỉ đưa ra một từ tiếng Anh hoặc một cụm từ ngắn, hãy tự động dịch sang tiếng Việt" +
-                    "và giải thích ý nghĩa của từ hoặc cụm từ đó" +
                     "Hãy cố gắng trả lời bằng tiếng Việt trừ khi được yêu cầu dùng tiếng Anh. " +
                     "Luôn trả lời ngắn gọn, rõ ràng và thân thiện.");
             messagesArray.put(systemMessage);

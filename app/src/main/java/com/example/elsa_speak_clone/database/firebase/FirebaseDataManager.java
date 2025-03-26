@@ -101,9 +101,9 @@ public class FirebaseDataManager {
         
         //  
         Map<String, Object> userUpdate = new HashMap<>();
-        userUpdate.put("userId", Integer.valueOf(userId));
-        userUpdate.put("userStreak", Integer.valueOf(streak));
-        userUpdate.put("userXp", Integer.valueOf(xp));
+        userUpdate.put("userId", userId);
+        userUpdate.put("userStreak", streak);
+        userUpdate.put("userXp", xp);
         
         DatabaseReference userRef = leaderboardRef.child(username);
         

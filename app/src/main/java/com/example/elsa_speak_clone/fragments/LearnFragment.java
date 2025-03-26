@@ -1,5 +1,7 @@
 package com.example.elsa_speak_clone.fragments;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -24,11 +26,15 @@ import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.DataInitializer;
 import com.example.elsa_speak_clone.database.repositories.QuizRepository;
 import com.example.elsa_speak_clone.services.NavigationService;
+import com.example.elsa_speak_clone.database.entities.UserProgress;
+import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.Random;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class LearnFragment extends Fragment {
 
@@ -41,6 +47,10 @@ public class LearnFragment extends Fragment {
     private Handler mainHandler;
     private NavigationService navigationService;
     private QuizRepository quizRepository;
+    private UserProgressRepository userProgressRepository;
+    private SharedPreferences sharedPreferences;
+    private int userId;
+    private boolean isLoggedIn;
 
     @Nullable
     @Override
@@ -64,9 +74,16 @@ public class LearnFragment extends Fragment {
 
         recyclerLessons = view.findViewById(R.id.recyclerLessons);
         recyclerLessons.setLayoutManager(new LinearLayoutManager(getContext()));
+        
         // Database things
         database = AppDatabase.getInstance(requireContext());
         quizRepository = new QuizRepository(requireContext());
+        userProgressRepository = new UserProgressRepository(requireContext());
+        
+        // Get user information
+        sharedPreferences = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        isLoggedIn = sharedPreferences.getBoolean("IS_LOGGED_IN", false);
+        userId = sharedPreferences.getInt("USER_ID", 0);
 
         // Background run
         executor = Executors.newSingleThreadExecutor();
@@ -122,6 +139,7 @@ public class LearnFragment extends Fragment {
             return;
         }
         
+        // Create adapter with progress tracking
         LessonAdapter adapter = new LessonAdapter(lessonList, database, lesson -> {
             showLoading(true);
             executor.execute(() -> {
@@ -129,10 +147,14 @@ public class LearnFragment extends Fragment {
                     List<Quiz> quizzes = quizRepository.getQuizzesForLessonSync(lesson.getLessonId());
                     Log.d(TAG, "Preloaded " + quizzes.size() + " quizzes for lesson " + lesson.getLessonId());
                     
+                    // Track that user started this lesson
+                    if (isLoggedIn && userId > 0) {
+                        trackLessonStarted(lesson.getLessonId());
+                    }
+                    
                     mainHandler.post(() -> {
                         showLoading(false);
-//                        navigationService.navigateToSpeechToText(lesson.getLessonId());
-                        navigationService.navigateToQuiz (lesson.getLessonId ());
+                        navigationService.navigateToQuiz(lesson.getLessonId());
                     });
                 } catch (Exception e) {
                     Log.e(TAG, "Error preloading quizzes for lesson " + lesson.getLessonId(), e);
@@ -149,6 +171,15 @@ public class LearnFragment extends Fragment {
     }
 
     private void showLoading(boolean isLoading) {
+        if (getView() == null) return;
+
+        // Get the loading card view
+        View loadingCard = getView().findViewById(R.id.loadingCard);
+        if (loadingCard != null) {
+            loadingCard.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        }
+
+        // Also control the progress bar itself for backward compatibility
         if (progressBar != null) {
             progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         }
@@ -201,5 +232,43 @@ public class LearnFragment extends Fragment {
             // Log the refresh
             Log.d(TAG, "Refreshed lesson display to show progress updates");
         }
+    }
+
+    private void trackLessonStarted(int lessonId) {
+        try {
+            // Check if there's already progress for this lesson
+            UserProgress progress = database.userProgressDao().getUserLessonProgress(userId, lessonId);
+            
+            if (progress == null) {
+                // Create new progress entry
+                UserProgress newProgress = new UserProgress();
+                newProgress.setUserId(userId);
+                newProgress.setLessonId(lessonId);
+                newProgress.setXp(0);
+                newProgress.setDifficultyLevel (1); // Default difficulty
+                newProgress.setStreak(1);
+                newProgress.setLastStudyDate(getCurrentDate());
+                
+                // Get next available ID
+                List<UserProgress> existingProgress = database.userProgressDao().getUserProgress(userId);
+                int maxId = 0;
+                for (UserProgress p : existingProgress) {
+                    if (p.getProgressId() > maxId) {
+                        maxId = p.getProgressId();
+                    }
+                }
+                newProgress.setProgressId(maxId + 1);
+                
+                database.userProgressDao().insert(newProgress);
+                Log.d(TAG, "Created new progress entry for lesson " + lessonId);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error tracking lesson start", e);
+        }
+    }
+
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return sdf.format(new Date());
     }
 }

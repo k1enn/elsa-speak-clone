@@ -3,6 +3,7 @@
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
     <color name="colorPrimary">#5B61FF</color>
+    <color name="lesson_item_background">#7949F2</color>
     <color name="colorPrimaryDark">#3D42C9</color>
     <color name="colorAccent">#FF6D6D</color>
     <color name="bgBottomNavigation">#fe485a</color>

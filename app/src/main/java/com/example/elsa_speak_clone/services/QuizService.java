@@ -81,34 +81,6 @@ public class QuizService {
         }
     }
 
-    /**
-     * Updates user progress after completing a quiz
-     * @param userId The user ID
-     * @param lessonId The lesson ID
-     * @param correctAnswers Number of correct answers
-     * @param totalQuestions Total number of questions
-     */
-    public void updateQuizProgress(int userId, int lessonId, int correctAnswers, int totalQuestions) {
-        executor.execute(() -> {
-            try {
-                // Calculate points based on performance (customize this formula as needed)
-                int points = (correctAnswers * 20); // 20 points per correct answer
-                
-                // Add XP points
-                addXpPoints(userId, lessonId, points);
-                
-                // If got a high score (e.g., 80% or more correct), mark lesson as completed
-                if (totalQuestions > 0 && (correctAnswers * 100 / totalQuestions) >= 80) {
-                    markLessonCompleted(userId, lessonId);
-                }
-                
-                Log.d(TAG, "Updated progress for user " + userId + " in lesson " + lessonId + 
-                        " with " + correctAnswers + "/" + totalQuestions + " correct answers");
-            } catch (Exception e) {
-                Log.e(TAG, "Error updating quiz progress: " + e.getMessage(), e);
-            }
-        });
-    }
 
     /**
      * Marks a lesson as completed
