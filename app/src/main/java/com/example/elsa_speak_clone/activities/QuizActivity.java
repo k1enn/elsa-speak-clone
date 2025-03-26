@@ -32,6 +32,7 @@ import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.entities.Lesson;
 import com.example.elsa_speak_clone.database.entities.Quiz;
 import com.example.elsa_speak_clone.database.entities.UserScore;
 import com.example.elsa_speak_clone.services.NavigationService;
@@ -54,6 +55,7 @@ public class QuizActivity extends AppCompatActivity {
     private FirebaseDataManager firebaseDataManager;
     
     // UI components
+    private TextView tvTitle;
     private TextView tvQuestion, tvResult;
     private EditText etAnswer;
     private Button btnCheckAnswer, btnNextQuestion;
@@ -98,6 +100,7 @@ public class QuizActivity extends AppCompatActivity {
         if (getIntent().hasExtra("LESSON_ID")) {
             currentLessonId = getIntent().getIntExtra("LESSON_ID", 1);
         }
+        tvTitle = findViewById (R.id.tvTitle);
         toolbar = findViewById (R.id.toolbar) ;
         tvQuestion = findViewById(R.id.tvQuestion);
         etAnswer = findViewById(R.id.etAnswer);
@@ -157,16 +160,17 @@ public class QuizActivity extends AppCompatActivity {
                 // Get a random quiz that hasn't been used yet in this session
                 Quiz quiz = database.quizDao().getRandomQuizForLessonExcludingIds(
                         currentLessonId, usedQuizIds.toArray(new Integer[0]));
-
+                Lesson lesson = database.lessonDao ().getLessonById (currentLessonId);
                 if (quiz != null) {
                     // Add this quiz ID to our used list
                     usedQuizIds.add(quiz.getQuizId());
-                    
+
                     // Update UI on main thread
                     final String question = quiz.getQuestion();
                     final String answer = quiz.getAnswer();
-                    
+
                     runOnUiThread(() -> {
+                        tvTitle.setText (lesson.getTopic ());
                         tvQuestion.setText(question);
                         correctAnswer = answer;
                     });

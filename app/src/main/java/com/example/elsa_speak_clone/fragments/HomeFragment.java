@@ -138,7 +138,8 @@ public class HomeFragment extends Fragment {
         setupOther();
         // Load user progress
         loadUserProgress();
-   observeUserProgress();
+        // Set display for user progress
+        observeUserProgress();
         refreshUserProgress ();
         
         return view;
@@ -267,26 +268,14 @@ public class HomeFragment extends Fragment {
         
         // Observe the LiveData
         repository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
-            TextView tvDayStreak = requireView().findViewById(R.id.tvDayStreak);
             if (tvDayStreak != null) {
                 tvDayStreak.setText(String.valueOf(streak));
             }
         });
         
         repository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
-            TextView tvXPPoint = requireView().findViewById(R.id.tvXPPoint);
             if (tvXPPoint != null) {
                 tvXPPoint.setText(String.valueOf(xp));
-            }
-            
-            // Update XP progress bar (if applicable)
-            com.google.android.material.progressindicator.LinearProgressIndicator xpProgress = 
-                requireView().findViewById(R.id.tvXPPoint);
-            if (xpProgress != null) {
-                // Calculate percentage of progress to next level
-                // For example: levels increase every 100 XP
-                int levelProgress = xp % 100;
-                xpProgress.setProgress(levelProgress);
             }
         });
     }
@@ -329,6 +318,10 @@ public class HomeFragment extends Fragment {
             cvDictionary = view.findViewById(R.id.cvDictionary);
             cvNews = view.findViewById(R.id.cvNews);
             cvLeaderboard = view.findViewById(R.id.cvLeaderboard);
+            
+            if (tvXPPoint == null) {
+                Log.e(TAG, "tvXPPoint is null - check ID in layout");
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error initializing UI components", e);
         }
@@ -378,14 +371,12 @@ public class HomeFragment extends Fragment {
 
     private void observeUserProgress() {
         if (isLoggedIn) {
-            // Observe streak changes
             userProgressRepository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
                 userStreak = streak != null ? streak : 0;
-                tvDayStreak.setText(userStreak + " Streak");
+                tvDayStreak.setText(userStreak + " Days");
                 setupWelcomeMessage(); // Update welcome message based on streak
             });
 
-            // Observe XP changes
             userProgressRepository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
                 int userXp = xp != null ? xp : 0;
                 tvXPPoint.setText(userXp + " XP");
@@ -396,19 +387,19 @@ public class HomeFragment extends Fragment {
     private void loadUserProgress() {
         try {
             if (isLoggedIn) {
-                // Use the repository to load metrics
+                // Use the repository to load progress
                 firebaseDataManager.pullUserProgressToLocal (username, userId);
                 userProgressRepository.loadUserMetrics(userId);
             } else {
                 // Set default values for not logged in users
-                tvXPPoint.setText("0");
-                tvDayStreak.setText("0");
+                tvXPPoint.setText("1 Days");
+                tvDayStreak.setText("0 XP");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error in loadUserProgress: ", e);
             // Set default values in case of any error
-            tvXPPoint.setText("0");
-            tvDayStreak.setText("0");
+            tvXPPoint.setText("1 Days");
+            tvDayStreak.setText("0 XP");
         }
     }
 

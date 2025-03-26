@@ -56,9 +56,9 @@ public class VoiceRecognizer {
     public interface ProgressUpdateListener {
         void onProgressUpdated();
     }
-    
+
     private ProgressUpdateListener progressUpdateListener;
-    
+
     // Set the listener to update progress
     public void setProgressUpdateListener(ProgressUpdateListener listener) {
         this.progressUpdateListener = listener;
@@ -80,29 +80,29 @@ public class VoiceRecognizer {
 
         // Initialize sound player for correct answers
         correctSoundPlayer = MediaPlayer.create(this.context, R.raw.correct_sound);
-        
+
     }
 
     // Make this method public and modify to use background thread
     public void loadVocabularyForLesson() {
         loadVocabularyForLesson(currentLessonId);
     }
-    
+
     // Modified method to use background thread
     public void loadVocabularyForLesson(int lessonId) {
         // Update the current lesson ID
         this.currentLessonId = lessonId;
-        
+
         // Clear available words before loading new ones
         availableWords.clear();
-        
+
         try {
             // Use the correct method that already returns List<String>
             List<String> vocabularyList = database.vocabularyDao().getWordsByLessonId(lessonId);
-            
+
             // Add all words to available words list
             availableWords.addAll(vocabularyList);
-            
+
             // Update UI on main thread
             mainHandler.post(() -> {
                 // Optionally add UI feedback if no words available
@@ -131,7 +131,7 @@ public class VoiceRecognizer {
             usedWords.clear();
         }
     }
-    
+
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
@@ -211,15 +211,15 @@ public class VoiceRecognizer {
             if (recognizedText.equals(randomWord.toLowerCase(Locale.US))) {
                 tvPrompt.setText("Correct! You said: " + recognizedText);
                 currentWordPronounced = true;
-                
+
                 // Play correct sound
                 playCorrectSound();
-                
+
                 // Notify listener that progress has updated
                 if (progressUpdateListener != null) {
                     progressUpdateListener.onProgressUpdated();
                 }
-                
+
                 return true;
             } else {
                 tvPrompt.setText("Incorrect! You said: " + recognizedText);
@@ -251,13 +251,13 @@ public class VoiceRecognizer {
 
         // Add the word to the used words list
         usedWords.add(randomWord);
-        
+
         // Reset the pronunciation flag for the new word
         currentWordPronounced = false;
-        
+
         return randomWord;
     }
-    
+
     // New method to generate and display a new word
     private void generateAndDisplayNewWord() {
         String word = generateRandomWord();
@@ -282,13 +282,13 @@ public class VoiceRecognizer {
             });
         });
     }
-    
+
     // Method to disable the random word button
     private void disableRandomWordButton() {
         btnRandomWord.setEnabled(false);
         btnRandomWord.setAlpha(0.5f); // Visual feedback that button is disabled
     }
-    
+
     // Method to enable the random word button
     private void enableRandomWordButton() {
         btnRandomWord.setEnabled(true);
@@ -306,7 +306,7 @@ public class VoiceRecognizer {
     public void setupRandomWordButton() {
         // Initially disable the button until first word is pronounced correctly
         disableRandomWordButton();
-        
+
         btnRandomWord.setOnClickListener(v -> {
             // Only proceed if the current word has been pronounced correctly
             if (currentWordPronounced) {
@@ -357,10 +357,10 @@ public class VoiceRecognizer {
                 // Award XP points for each correctly pronounced word
                 // You could adjust the points based on difficulty
                 int pointsPerWord = 10;
-                
+
                 // Add XP to the user's progress
                 UserProgress progress = database.userProgressDao().getUserLessonProgress(userId, currentLessonId);
-                
+
                 if (progress != null) {
                     // Update existing progress
                     progress.setXp(progress.getXp() + pointsPerWord);
@@ -370,21 +370,21 @@ public class VoiceRecognizer {
                     // Create new progress entry if none exists
                     int progressId = getNextProgressId(database, userId);
                     UserProgress newProgress = new UserProgress(
-                        progressId,
-                        userId,
-                        currentLessonId,
-                        0, // Default difficulty level
-                        null, // No completion time yet
-                        1, // Start with streak of 1
-                        pointsPerWord, // Initial XP points
-                        getCurrentDate() // Current date
+                            progressId,
+                            userId,
+                            currentLessonId,
+                            0, // Default difficulty level
+                            null, // No completion time yet
+                            1, // Start with streak of 1
+                            pointsPerWord, // Initial XP points
+                            getCurrentDate() // Current date
                     );
                     database.userProgressDao().insert(newProgress);
                 }
-                
-                Log.d(TAG, "Updated pronunciation progress for user " + userId + 
-                       " in lesson " + currentLessonId);
-                   
+
+                Log.d(TAG, "Updated pronunciation progress for user " + userId +
+                        " in lesson " + currentLessonId);
+
                 // Check if all words have been pronounced correctly
                 if (usedWords.size() >= availableWords.size()) {
                     // Mark the pronunciation exercise as completed if all words done
@@ -403,14 +403,14 @@ public class VoiceRecognizer {
         executor.execute(() -> {
             try {
                 UserProgress progress = database.userProgressDao().getUserLessonProgress(userId, currentLessonId);
-                
+
                 if (progress != null && progress.getCompletionTime() == null) {
                     // Set completion time
                     progress.setCompletionTime(getCurrentDate() + " " + getCurrentTime());
-                    
+
                     // Add completion bonus
                     progress.setXp(progress.getXp() + 50); // Bonus for completing all words
-                    
+
                     // Update the progress
                     database.userProgressDao().update(progress);
                     Log.d(TAG, "Marked pronunciation exercise as completed for lesson " + currentLessonId);
@@ -448,23 +448,23 @@ public class VoiceRecognizer {
     private void onRecognizeSuccess() {
         if (!currentWordPronounced) {
             currentWordPronounced = true;
-            
+
             // Play success sound
             playCorrectSound();
-            
+
             // Show success animation
             lottieConfetti.setVisibility(View.VISIBLE);
             lottieConfetti.playAnimation();
-            
+
             // Update the prompt
             tvPrompt.setText("Correct! Great pronunciation.");
-            
+
             // Enable random word button for next word
             enableRandomWordButton();
-            
+
             // Update progress in the database
             updatePronunciationProgress(getCurrentUserId());
-            
+
             // Notify listener that progress has updated
             if (progressUpdateListener != null) {
                 progressUpdateListener.onProgressUpdated();
@@ -473,8 +473,8 @@ public class VoiceRecognizer {
     }
 
     private int getCurrentUserId() {
-        SharedPreferences sharedPreferences = 
-            context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences =
+                context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         return sharedPreferences.getInt("USER_ID", 1); // Default to 1 if not found
     }
 }

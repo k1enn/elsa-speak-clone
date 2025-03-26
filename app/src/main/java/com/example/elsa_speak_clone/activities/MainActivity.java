@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
-    
+
     // UI components
     private BottomNavigationView bottomNavigationView;
     private DrawerLayout drawerLayout;
@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private NavigationService navigationService;
     private GoogleSignInHelper googleSignInHelper;
     private SessionManager sessionManager;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new HomeFragment());
                 return true;
             } else if (itemId == R.id.nav_learn) {
-               loadFragment (new LearnFragment());
+                loadFragment (new LearnFragment());
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 loadFragment(new ProfileFragment());
@@ -148,8 +148,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkUserLogin() {
-        if (!sessionManager.isLoggedIn() || 
-            (sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState())) {
+        if (!sessionManager.isLoggedIn() ||
+                (sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState())) {
             navigationService.navigateToLogin();
             finish();
         }
@@ -163,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
             if (id == R.id.nav_home) {
                 selectFragment (new HomeFragment () ,R.id.nav_home);
             } else if (id == R.id.nav_learn) {
-                 selectFragment (new LearnFragment () ,R.id.nav_learn);
+                selectFragment (new LearnFragment () ,R.id.nav_learn);
             } else if (id == R.id.nav_discover) {
                 navigationService.navigateToNews(MainActivity.this);
             } else if (id == R.id.nav_leaderboard) {
@@ -195,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_learn) {
-         //   selectedFragment = new LearnFragment();
+            //   selectedFragment = new LearnFragment();
             navigationService.navigateToLearnFragment(MainActivity.this);
         } else if (itemId == R.id.nav_home) {
             navigationService.navigateToHomeFragment(MainActivity.this);
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupDictionaryButton() {
         chatbot.setOnClickListener(v -> {
-        navigationService.navigateToChatbot(MainActivity.this);
+            navigationService.navigateToChatbot(MainActivity.this);
         });
     }
 

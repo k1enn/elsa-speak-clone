@@ -1,6 +1,6 @@
 package com.example.elsa_speak_clone.services;
 
-import com.example.elsa_speak_clone.interfaces.DictionaryApi;
+import com.example.elsa_speak_clone.interfaces.DictionaryInterface;
 import com.example.elsa_speak_clone.models.WordResponse;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class DictionaryService {
     private static final String BASE_URL = "https://api.dictionaryapi.dev/";
-    private DictionaryApi api;
+    private DictionaryInterface api;
 
     public DictionaryService() {
         Retrofit retrofit = new Retrofit.Builder()
@@ -21,7 +21,7 @@ public class DictionaryService {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-        api = retrofit.create(DictionaryApi.class);
+        api = retrofit.create(DictionaryInterface.class);
     }
 
     public void getDefinition(String word, final DictionaryCallback callback) {

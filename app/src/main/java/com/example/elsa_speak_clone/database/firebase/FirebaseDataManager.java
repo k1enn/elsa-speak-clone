@@ -830,7 +830,7 @@ public class FirebaseDataManager {
 
     /**
      * Adds default users to the Firebase database
-     * @return CompletableFuture that completes when all users are added
+     * ONLY RUN THIS FOR ONCE
      */
     public CompletableFuture<Boolean> addDefaultUsers() {
         CompletableFuture<Boolean> future = new CompletableFuture<>();

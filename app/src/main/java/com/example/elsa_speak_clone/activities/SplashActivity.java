@@ -20,6 +20,7 @@ import com.example.elsa_speak_clone.database.entities.User;
 import com.example.elsa_speak_clone.database.entities.UserProgress;
 import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
 import com.example.elsa_speak_clone.database.repositories.UserRepository;
+import com.example.elsa_speak_clone.services.NavigationService;
 import com.example.elsa_speak_clone.utilities.ConfigManager;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -36,6 +37,7 @@ public class SplashActivity extends AppCompatActivity {
     private TextView tvLoadingMessage;
     private SessionManager sessionManager;
     private UserRepository userRepository;
+    private NavigationService navigationService;
     private long startTime;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -45,23 +47,8 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
-        
-        // Initialize UI elements
-        tvLoadingMessage = findViewById(R.id.tvLoadingMessage);
-        
-        // Record start time
-        startTime = System.currentTimeMillis();
-        
-        // Initialize context for DataInitializer
-        DataInitializer.initialize(getApplicationContext());
-        
-        // Initialize session manager
-        sessionManager = new SessionManager(this);
-        
-        // Initialize repositories and services
-        userRepository = new UserRepository(getApplication());
-        
-        // Initialize Firebase User Manager
+
+        initialize ();
 
         // Start loading data in background
         loadData();
@@ -74,7 +61,27 @@ public class SplashActivity extends AppCompatActivity {
             }
         }, MAX_WAIT_TIME);
     }
-    
+
+    private void initialize() {
+        // Initialize UI elements
+        tvLoadingMessage = findViewById(R.id.tvLoadingMessage);
+
+        // Record start time
+        startTime = System.currentTimeMillis();
+
+        // Initialize context for DataInitializer
+        DataInitializer.initialize(getApplicationContext());
+
+        // Initialize session manager
+        sessionManager = new SessionManager(this);
+
+        // Initialize repositories and services
+        userRepository = new UserRepository(getApplication());
+
+        // Initialize navigation
+        navigationService = new NavigationService (this);
+    }
+
     private void loadData() {
         executor.execute(() -> {
             try {
@@ -113,26 +120,29 @@ public class SplashActivity extends AppCompatActivity {
                 
                 // Initialize Firebase and sync data
                 updateLoadingMessage("Connecting to cloud...");
-                
-                // ADD THIS SECTION: Create default users
-                updateLoadingMessage("Syncing user data...");
-                FirebaseDataManager dataManager = FirebaseDataManager.getInstance(getApplicationContext());
-                
-                // Create default users if network is available
-                if (isNetworkAvailable()) {
-                    try {
-                        boolean success = dataManager.addDefaultUsers().get(10, TimeUnit.SECONDS);
-                        if (success) {
-                            Log.d(TAG, "Default users created successfully");
-                        } else {
-                            Log.e(TAG, "Failed to create default users");
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error creating default users: " + e.getMessage());
-                    }
-                } else {
-                    Log.d(TAG, "Network unavailable, skipping default user creation");
-                }
+
+                /**
+                 * Adds default users to the Firebase database
+                 * ONLY RUN THIS FOR ONCE
+                 */
+//                updateLoadingMessage("Syncing user data...");
+//                FirebaseDataManager dataManager = FirebaseDataManager.getInstance(getApplicationContext());
+//
+//                // Create default users if network is available
+//                if (isNetworkAvailable()) {
+//                    try {
+//                        boolean success = dataManager.addDefaultUsers().get(10, TimeUnit.SECONDS);
+//                        if (success) {
+//                            Log.d(TAG, "Default users created successfully");
+//                        } else {
+//                            Log.e(TAG, "Failed to create default users");
+//                        }
+//                    } catch (Exception e) {
+//                        Log.e(TAG, "Error creating default users: " + e.getMessage());
+//                    }
+//                } else {
+//                    Log.d(TAG, "Network unavailable, skipping default user creation");
+//                }
 
                 // Calculate elapsed time and ensure minimum display time
                 long elapsedTime = System.currentTimeMillis() - startTime;

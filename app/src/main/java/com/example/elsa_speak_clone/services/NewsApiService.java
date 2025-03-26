@@ -1,6 +1,6 @@
 package com.example.elsa_speak_clone.services;
 
-import com.example.elsa_speak_clone.interfaces.NewsApiInterface;
+import com.example.elsa_speak_clone.interfaces.NewsInterface;
 import com.example.elsa_speak_clone.models.NewsResponse;
 
 import retrofit2.Call;
@@ -12,7 +12,7 @@ public class NewsApiService {
     private static final String API_KEY = "59f053d29ae04e0686c904d704155655";
     
     private static NewsApiService instance;
-    private NewsApiInterface newsApiInterface;
+    private NewsInterface newsInterface;
     
     private NewsApiService() {
         Retrofit retrofit = new Retrofit.Builder()
@@ -20,7 +20,7 @@ public class NewsApiService {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         
-        newsApiInterface = retrofit.create(NewsApiInterface.class);
+        newsInterface = retrofit.create(NewsInterface.class);
     }
     
     public static synchronized NewsApiService getInstance() {
@@ -31,10 +31,10 @@ public class NewsApiService {
     }
     
     public Call<NewsResponse> getTopHeadlines(String country) {
-        return newsApiInterface.getTopHeadlines(country, API_KEY);
+        return newsInterface.getTopHeadlines(country, API_KEY);
     }
     
     public Call<NewsResponse> getTopHeadlinesBySource(String source) {
-        return newsApiInterface.getTopHeadlinesBySource(source, API_KEY);
+        return newsInterface.getTopHeadlinesBySource(source, API_KEY);
     }
 } 

@@ -8,7 +8,7 @@ import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
 
-public interface DictionaryApi {
+public interface DictionaryInterface {
     @GET("api/v2/entries/en/{word}")
     Call<List<WordResponse>> getDefinition(@Path("word") String word);
 }
