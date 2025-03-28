@@ -36,19 +36,12 @@ public class NavigationService {
         this.context = context;
     }
 
-    /**
-     * Navigate to MainActivity
-     */
     public void navigateToMain() {
         Intent intent = new Intent(context, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // Clear top activities
-        intent.putExtra("NAVIGATE_TO_TAB", "learn"); // Tell MainActivity to navigate to learn tab
         context.startActivity(intent);
     }
 
-    /**
-     * Navigate to LoginActivity
-     */
     public void navigateToLogin() {
         try {
             Intent intent = new Intent(context, LoginActivity.class);
@@ -63,9 +56,6 @@ public class NavigationService {
         }
     }
 
-    /**
-     * Navigate to RegisterActivity
-     */
     public void navigateToRegister() {
         try {
             Intent intent = new Intent(context, RegisterActivity.class);
@@ -79,9 +69,6 @@ public class NavigationService {
         }
     }
 
-    /**
-     * Navigate to PronuncationActivity activity
-     */
     public void navigateToSpeechToText(int lessonId) {
         try {
             Intent intent = new Intent(context, PronuncationActivity.class);
@@ -92,9 +79,6 @@ public class NavigationService {
         }
     }
 
-    /**
-     * Navigate to Dictionary activity
-     */
     public void navigateToDictionary() {
         try {
             Intent intent = new Intent(context, DictionaryActivity.class);
@@ -104,10 +88,6 @@ public class NavigationService {
         }
     }
 
-    /**
-     * Navigate to Quiz activity
-     * @param lessonId The ID of the lesson for the quiz
-     */
     public void navigateToQuiz(int lessonId) {
         try {
             Intent intent = new Intent(context, QuizActivity.class);
@@ -118,12 +98,6 @@ public class NavigationService {
         }
     }
 
-    /**
-     * Load a fragment into the fragment container
-     * @param activity The activity containing the fragment container
-     * @param fragment The fragment to load
-     * @param addToBackStack Whether to add the transaction to the back stack
-     */
     public void loadFragment(FragmentActivity activity, Fragment fragment, boolean addToBackStack) {
         try {
             FragmentManager fragmentManager = activity.getSupportFragmentManager();
@@ -140,52 +114,16 @@ public class NavigationService {
         }
     }
 
-    /**
-     * Navigate to Home fragment
-     * @param activity The activity containing the fragment container
-     */
     public void navigateToHomeFragment(FragmentActivity activity) {
         loadFragment(activity, new HomeFragment(), false);
     }
 
-    /**
-     * Navigate to Learn fragment
-     * @param activity The activity containing the fragment container
-     */
     public void navigateToLearnFragment(FragmentActivity activity) {
         loadFragment(activity, new LearnFragment(), false);
     }
 
-    /**
-     * Navigate to Profile fragment
-     * @param activity The activity containing the fragment container
-     */
     public void navigateToProfileFragment(FragmentActivity activity) {
         loadFragment(activity, new ProfileFragment(), false);
-    }
-
-    /**
-     * Navigate to a specific activity with extras
-     * @param activityClass The class of the activity to navigate to
-     * @param extras Bundle of extras to pass to the activity
-     * @param flags Intent flags to apply
-     */
-    public void navigateToActivity(Class<?> activityClass, Bundle extras, int... flags) {
-        try {
-            Intent intent = new Intent(context, activityClass);
-            
-            if (extras != null) {
-                intent.putExtras(extras);
-            }
-            
-            for (int flag : flags) {
-                intent.addFlags(flag);
-            }
-            
-            context.startActivity(intent);
-        } catch (Exception e) {
-            Log.e(TAG, "Error navigating to " + activityClass.getSimpleName(), e);
-        }
     }
 
     public void navigateToChatbot(Context context) {

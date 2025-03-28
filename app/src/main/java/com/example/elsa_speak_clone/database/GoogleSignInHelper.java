@@ -30,10 +30,6 @@ public class GoogleSignInHelper {
         void onError(String message);
     }
 
-    public FirebaseAuth MAuth() {
-        return mAuth;
-    }
-
     public GoogleSignInHelper(Activity activity, AuthCallback callback) {
         this.activity = activity;
         this.authCallback = callback;

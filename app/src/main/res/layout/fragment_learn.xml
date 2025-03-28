@@ -114,13 +114,6 @@
             android:gravity="center"
             android:padding="20dp">
 
-            <!-- Progress Bar (centered) -->
-            <ProgressBar
-                android:id="@+id/progressBar"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:indeterminateTint="@color/colorPrimary" />
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

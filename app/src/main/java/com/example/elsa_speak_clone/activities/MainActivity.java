@@ -12,6 +12,8 @@ import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.GoogleSignInHelper;
 import com.example.elsa_speak_clone.database.SessionManager;
+import com.example.elsa_speak_clone.database.entities.UserProgress;
+import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 import com.example.elsa_speak_clone.fragments.HomeFragment;
 import com.example.elsa_speak_clone.fragments.LearnFragment;
 import com.example.elsa_speak_clone.fragments.ProfileFragment;
@@ -34,7 +36,10 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,8 +50,8 @@ public class MainActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigationView;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle toggle;
-    private NavigationView navigationView;
-    private ImageButton chatbot;
+
+    private AppDatabase database;
 
     private NavigationService navigationService;
     private GoogleSignInHelper googleSignInHelper;
@@ -70,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new HomeFragment());
                 return true;
             } else if (itemId == R.id.nav_learn) {
-               loadFragment (new LearnFragment());
+                loadFragment(new LearnFragment());
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 loadFragment(new ProfileFragment());
@@ -92,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
     private void initializeServices() {
         sessionManager = new SessionManager(this);
         navigationService = new NavigationService(this);
+        database = AppDatabase.getInstance(this);
+
 
         // Adding this so it doesn't crash
         googleSignInHelper = new GoogleSignInHelper(this, new GoogleSignInHelper.AuthCallback() {
@@ -106,6 +113,48 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+
+
+    private void createUserProgress(int userId, String date) {
+        try {
+            // Generate a unique progress ID
+            Integer maxId = database.userProgressDao().getMaxProgressId();
+            int progressId = (maxId != null) ? maxId + 1 : 100001;
+
+            // Create new progress entry
+            UserProgress newProgress = new UserProgress(
+                    progressId,
+                    userId,
+                    1,  // Default lesson ID
+                    1,  // Default difficulty
+                    date,  // Completion time (use current date)
+                    1,  // Initial streak
+                    0,  // Initial XP
+                    date  // Last study date
+            );
+
+            // Insert the new progress record
+            database.userProgressDao().insert(newProgress);
+            Log.d(TAG, "Created initial progress for user ID: " + userId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating initial progress: " + e.getMessage(), e);
+        }
+    }
+
+    private void updateUserStreakAfterStudy(int userId, String previousDate, String currentDate) {
+        // Don't trigger streak calculation if user has already studied today
+        if (previousDate == null || !previousDate.equals(currentDate)) {
+            // This should be handled by a repository class
+            UserProgressRepository repository = new UserProgressRepository(this);
+            repository.updateDailyStreak(userId);
+        }
+    }
+
+    private String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return dateFormat.format(new Date());
     }
 
     private void initializeUI() {
@@ -145,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkUserLogin() {
         if (!sessionManager.isLoggedIn() ||
-            (sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState())) {
+                (sessionManager.isGoogleUser() && !googleSignInHelper.CheckGoogleLoginState())) {
             navigationService.navigateToLogin();
             finish();
         }
@@ -169,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_learn) {
-         //   selectedFragment = new LearnFragment();
+            //   selectedFragment = new LearnFragment();
             navigationService.navigateToLearnFragment(MainActivity.this);
         } else if (itemId == R.id.nav_home) {
             navigationService.navigateToHomeFragment(MainActivity.this);
@@ -180,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     };
+
     private void selectFragment(Fragment fragment, int navItemId) {
         // Load the fragment
         loadFragment(fragment);
@@ -189,11 +239,11 @@ public class MainActivity extends AppCompatActivity {
             bottomNavigationView.setSelectedItemId(navItemId);
         }
     }
+
     private void loadFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, fragment).commit();
     }
-
 
 
 }

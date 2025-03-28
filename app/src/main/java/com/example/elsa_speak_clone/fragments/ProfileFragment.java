@@ -48,7 +48,9 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+
 import androidx.core.content.FileProvider;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -76,14 +78,13 @@ public class ProfileFragment extends Fragment {
     private LinearLayout btnLeaderboard;
     private Button btnLogout;
     private Button btnShare;
-    private Button btnSettings;
     private final String TAG = "ProfileFragment";
-    
+
     // Room database components
     private AppDatabase database;
     private ExecutorService executor;
     private Handler mainHandler;
-    
+
     // User progress repository
     private UserProgressRepository userProgressRepository;
 
@@ -123,16 +124,15 @@ public class ProfileFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        initializeVariable ();
+        initializeVariable();
 
         initializeUI(view);
         loadUserProfile();
 
         setupLogoutButton();
-        setupSettingsButton();
         setupShareProfileButton();
 
-        setupLeaderboardButton ();
+        setupLeaderboardButton();
         return view;
     }
 
@@ -142,14 +142,13 @@ public class ProfileFragment extends Fragment {
         executor = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
 
-        navigationService = new NavigationService (this.requireContext ());
+        navigationService = new NavigationService(this.requireContext());
         // Initialize user progress repository
         userProgressRepository = new UserProgressRepository(requireActivity().getApplication());
     }
 
     private void initializeUI(View view) {
-        btnLeaderboard = view.findViewById (R.id.btnLeaderboard);
-        ivProfilePicture = view.findViewById(R.id.ivProfilePicture);
+        btnLeaderboard = view.findViewById(R.id.btnLeaderboard);
         tvUsername = view.findViewById(R.id.tvUsername);
         tvUserStreak = view.findViewById(R.id.tvDayStreak);
         tvUserXP = view.findViewById(R.id.tvXPPoint);
@@ -157,7 +156,6 @@ public class ProfileFragment extends Fragment {
         // Initialize the button variables
         btnLogout = view.findViewById(R.id.btnLogout);
         btnShare = view.findViewById(R.id.btnShare);
-        btnSettings = view.findViewById(R.id.btnSettings);
         sessionManager = new SessionManager(requireContext());
     }
 
@@ -167,6 +165,7 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    // Popup share view
     private void showShareProfileDialog() {
         try {
             // Create dialog
@@ -177,8 +176,9 @@ public class ProfileFragment extends Fragment {
 
             // Create its border radius
             if (dialog.getWindow() != null) {
-                dialog.getWindow().setBackgroundDrawable(new ColorDrawable (Color.TRANSPARENT));
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             }
+
             // Get references to views
             TextView tvShareUsername = dialogView.findViewById(R.id.tvShareUsername);
             TextView tvShareStreak = dialogView.findViewById(R.id.tvShareStreak);
@@ -215,14 +215,15 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    // Share to other message app
     private void shareProfileToApps(View contentView, String username, String streak, String xp) {
         try {
             // Create bitmap from the content view
             Bitmap bitmap = getBitmapFromView(contentView);
 
             // Save bitmap to cache directory
-            File cachePath = new File (requireContext ().getCacheDir (), "images");
-            cachePath.mkdirs ();
+            File cachePath = new File(requireContext().getCacheDir(), "images");
+            cachePath.mkdirs();
             FileOutputStream stream = new FileOutputStream(cachePath + "/shared_profile.png");
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
             stream.close();
@@ -252,6 +253,7 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    // Download to local storage
     private void downloadProfileAsImage(View contentView) {
         try {
             // Create bitmap from view
@@ -322,14 +324,10 @@ public class ProfileFragment extends Fragment {
 
         return bitmap;
     }
+
     private void setupLeaderboardButton() {
-        btnLeaderboard.setOnClickListener (v -> {
-            navigationService.navigateToLeaderboard (this.requireContext ());
-        });
-    }
-    private void setupSettingsButton() {
-        btnSettings.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Settings button clicked", Toast.LENGTH_SHORT).show();
+        btnLeaderboard.setOnClickListener(v -> {
+            navigationService.navigateToLeaderboard(this.requireContext());
         });
     }
 
@@ -352,6 +350,7 @@ public class ProfileFragment extends Fragment {
                         // Clear local session data
                         sessionManager.clearSession();
                         navigateToLogin();
+                        Log.d(TAG, "Logout successfully");
                     });
                 } else {
                     // For local
@@ -365,10 +364,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void navigateToLogin() {
-       try {
-           navigationService.navigateToLogin ();
-           sessionManager.logout ();
-           sessionManager.clearSession ();
+        try {
+            navigationService.navigateToLogin();
+
+            // Just in case
+            sessionManager.logout();
+            sessionManager.clearSession();
         } catch (NullPointerException e) {
             Log.d(TAG, "Activity is NULL", e);
         } finally {
@@ -376,22 +377,23 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    // Can't use this for home fragment
     private void loadUserProfile() {
         String username = sessionManager.getUserDetails().get("username");
         int userId = sessionManager.getUserId();
-        
+
         // Set initial values
         if (username != null) {
             tvUsername.setText(username);
         }
-        
+
         // Retrieve user data from Room database in background thread
         executor.execute(() -> {
             try {
                 // Get user data from Room database
                 User user = database.userDao().getUserById(userId);
                 final User finalUser = user;
-                
+
                 // Update UI on main thread with user info
                 mainHandler.post(() -> {
                     if (isAdded()) { // Check if fragment is still attached
@@ -404,9 +406,9 @@ public class ProfileFragment extends Fragment {
                         }
                     }
                 });
-                
-                // Load user metrics through the repository
-                // This should be done on the main thread because we're setting up LiveData observers
+
+                // Load user progress
+                // Using main thread because using LiveData
                 mainHandler.post(() -> {
                     if (isAdded()) {
                         // Set up LiveData observers
@@ -414,20 +416,20 @@ public class ProfileFragment extends Fragment {
                             int userStreak = streak != null ? streak : 0;
                             tvUserStreak.setText(String.valueOf(userStreak));
                         });
-                        
+
                         userProgressRepository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
                             int userXp = xp != null ? xp : 0;
                             tvUserXP.setText(String.valueOf(userXp));
                         });
-                        
+
                         // Trigger the loading of metrics
                         userProgressRepository.loadUserMetrics(userId);
                     }
                 });
-                
+
             } catch (Exception e) {
                 Log.e(TAG, "Error loading user profile", e);
-                
+
                 mainHandler.post(() -> {
                     if (isAdded()) {
                         Toast.makeText(requireContext(),
@@ -438,7 +440,7 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
-    
+
     @Override
     public void onDestroy() {
         super.onDestroy();

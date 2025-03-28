@@ -69,7 +69,7 @@ public class QuizActivity extends AppCompatActivity {
     private List<Integer> usedQuizIds = new ArrayList<>(); // Track used questions
     private MediaPlayer correctSoundPlayer; // For the "ting ting" sound
     private PopupWindow confettiPopup;
-    
+
     // Thread management
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -309,6 +309,7 @@ public class QuizActivity extends AppCompatActivity {
 
                     // Add to local
                     quizService.addXpPoints(userId, currentLessonId, xpPoints);
+
 
                     // Sync to Firebase
                     AppDatabase.databaseWriteExecutor.execute(() -> {

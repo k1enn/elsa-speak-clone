@@ -1,6 +1,7 @@
 package com.example.elsa_speak_clone.activities;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -24,10 +25,9 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.R;
-import com.example.elsa_speak_clone.adapters.VoiceRecognizer;
+import com.example.elsa_speak_clone.adapters.VoiceRecognizeAdapter;
 import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.dao.VocabularyDao;
-import com.example.elsa_speak_clone.services.NavigationService;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,7 +43,6 @@ public class PronuncationActivity extends AppCompatActivity {
     private VocabularyDao vocabularyDao;
     private ExecutorService executor;
     private Handler mainHandler;
-    private NavigationService navigationService;
     private final AtomicBoolean databaseInitialized = new AtomicBoolean(false);
 
     // UI elements
@@ -58,7 +57,7 @@ public class PronuncationActivity extends AppCompatActivity {
 
     // Speech recognition components
     private SpeechRecognizer speechRecognizer;
-    private VoiceRecognizer voiceRecognizer;
+    private VoiceRecognizeAdapter voiceRecognizeAdapter;
     private boolean isRecognitionAvailable;
 
     @Override
@@ -83,9 +82,7 @@ public class PronuncationActivity extends AppCompatActivity {
     private void initialize() {
         setContentView(R.layout.activity_speech_to_text);
         
-        navigationService = new NavigationService(this);
         initializeUI();
-        setupWindowInsets();
         requestMicrophonePermission();
         initializeSpeechRecognizer();
         setupVoiceRecognizer();
@@ -117,6 +114,7 @@ public class PronuncationActivity extends AppCompatActivity {
         Log.d("PronunciationActivity", "isTaskRoot: " + isTaskRoot());
         super.onBackPressed();
     }
+    @SuppressLint("SetTextI18n")
     private void initializeUI() {
         tvPrompt = findViewById(R.id.tvPrompt);
         tvWord = findViewById(R.id.tvWord);
@@ -128,21 +126,15 @@ public class PronuncationActivity extends AppCompatActivity {
 
         // Set up speak button
         btnSpeak.setOnClickListener(v -> {
-            if (voiceRecognizer != null) {
-                voiceRecognizer.startListening();
+            if (voiceRecognizeAdapter != null) {
+                voiceRecognizeAdapter.startListening();
                 tvPrompt.setText("Listening...");
             }
         });
     }
 
-    private void setupWindowInsets() {
-        View main = findViewById(android.R.id.content);
-        ViewCompat.setOnApplyWindowInsetsListener(main, (v, insets) -> {
-            WindowInsetsCompat.Type.systemBars();
-            return insets;
-        });
-    }
-    
+
+
     private void tryInitializeDatabase(int retryCount) {
         try {
             Log.d(TAG, "Initializing database... (Attempt " + (retryCount + 1) + ")");
@@ -219,42 +211,42 @@ public class PronuncationActivity extends AppCompatActivity {
                 return;
             }
             
-            // First create the VoiceRecognizer without loading data
-            voiceRecognizer = new VoiceRecognizer(tvPrompt, tvWord, this, btnSpeak, btnRandomWord,
+            // First create the VoiceRecognizeAdapter without loading data
+            voiceRecognizeAdapter = new VoiceRecognizeAdapter (tvPrompt, tvWord, this, btnSpeak, btnRandomWord,
                     speechRecognizer, lottieConfetti, database) {
             };
             
-            // Verify VoiceRecognizer was created successfully
-            if (voiceRecognizer == null) {
-                Log.e(TAG, "Failed to create VoiceRecognizer");
+            // Verify VoiceRecognizeAdapter was created successfully
+            if (voiceRecognizeAdapter == null) {
+                Log.e(TAG, "Failed to create VoiceRecognizeAdapter");
                 Toast.makeText(this, "Error initializing speech recognition", Toast.LENGTH_LONG).show();
                 finish();
                 return;
             }
             
             // Set up progress update listener
-            voiceRecognizer.setProgressUpdateListener(() -> updateProgressText());
+            voiceRecognizeAdapter.setProgressUpdateListener(() -> updateProgressText());
             
             // Set up UI components that don't require database access
-            voiceRecognizer.setupRandomWordButton();
+            voiceRecognizeAdapter.setupRandomWordButton();
             
             // Load vocabulary data in background thread
             executor.execute(() -> {
                 try {
                     // Load vocabulary data in background
-                    voiceRecognizer.loadVocabularyForLesson();
+                    voiceRecognizeAdapter.loadVocabularyForLesson();
                     
                     // Update UI on main thread after data is loaded
                     mainHandler.post(() -> {
                         try {
                             // Start listening and set up remaining components on UI thread
-                            voiceRecognizer.startListening();
+                            voiceRecognizeAdapter.startListening();
                             
                             // Process any lesson ID from intent
                             Intent intent = getIntent();
                             if (intent.hasExtra("LESSON_ID")) {
                                 int lessonId = intent.getIntExtra("LESSON_ID", 1);
-                                voiceRecognizer.setCurrentLessonId(lessonId);
+                                voiceRecognizeAdapter.setCurrentLessonId(lessonId);
                                 updateLessonTitle(lessonId);
                             } else {
                                 // Default lesson ID is 1
@@ -291,9 +283,9 @@ public class PronuncationActivity extends AppCompatActivity {
             return;
         }
         
-        if (voiceRecognizer != null) {
-            int used = voiceRecognizer.getUsedWordsCount();
-            int total = voiceRecognizer.getTotalWordsCount();
+        if (voiceRecognizeAdapter != null) {
+            int used = voiceRecognizeAdapter.getUsedWordsCount();
+            int total = voiceRecognizeAdapter.getTotalWordsCount();
             tvProgress.setText("Words count: " + used + "/" + total);
         }
     }
@@ -328,8 +320,8 @@ public class PronuncationActivity extends AppCompatActivity {
         }
         
         // Release voice recognizer
-        if (voiceRecognizer != null) {
-            voiceRecognizer.release();
+        if (voiceRecognizeAdapter != null) {
+            voiceRecognizeAdapter.release();
         }
         
         // Shutdown executor
