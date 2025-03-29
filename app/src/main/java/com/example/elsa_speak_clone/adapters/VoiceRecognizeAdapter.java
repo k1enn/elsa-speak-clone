@@ -19,7 +19,6 @@ import com.airbnb.lottie.LottieAnimationView;
 import com.example.elsa_speak_clone.activities.QuizActivity;
 import com.example.elsa_speak_clone.R;
 import com.example.elsa_speak_clone.database.AppDatabase;
-import com.example.elsa_speak_clone.database.dao.VocabularyDao;
 import com.example.elsa_speak_clone.database.entities.UserProgress;
 
 import java.util.ArrayList;
@@ -30,8 +29,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.text.SimpleDateFormat;
 
-public class VoiceRecognizer {
-    private static final String TAG = "VoiceRecognizer";
+public class VoiceRecognizeAdapter {
+    private static final String TAG = "VoiceRecognizeAdapter";
     private final TextView tvPrompt;
     private final TextView tvWord;
     private final Context context;
@@ -65,9 +64,9 @@ public class VoiceRecognizer {
     }
 
     // Update constructor to NOT load vocabulary immediately
-    public VoiceRecognizer(TextView tvPrompt, TextView tvWord, Context context, Button btnSpeak,
-                           Button btnRandomWord, SpeechRecognizer speechRecognizer,
-                           LottieAnimationView lottieConfetti, AppDatabase database) {
+    public VoiceRecognizeAdapter(TextView tvPrompt, TextView tvWord, Context context, Button btnSpeak,
+                                 Button btnRandomWord, SpeechRecognizer speechRecognizer,
+                                 LottieAnimationView lottieConfetti, AppDatabase database) {
         this.tvPrompt = tvPrompt;
         this.tvWord = tvWord;
         this.context = context;

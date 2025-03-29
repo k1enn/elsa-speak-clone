@@ -11,9 +11,9 @@ import java.util.HashMap;
 
 public class SessionManager {
     private static final String TAG = "SessionManager";
-    private SharedPreferences sharedPreferences;
-    private SharedPreferences.Editor editor;
-    private Context context;
+    private final SharedPreferences sharedPreferences;
+    private final SharedPreferences.Editor editor;
+    private final Context context;
     public static final String PREF_NAME = "UserSession";
     public static final String IS_LOGGED_IN = "IsLoggedIn";
     public static final String KEY_USERNAME = "username";
@@ -21,7 +21,6 @@ public class SessionManager {
     public static final String KEY_AUTH_TYPE = "authType";
     public static final String AUTH_TYPE_LOCAL = "local";
     public static final String AUTH_TYPE_GOOGLE = "google";
-;
 
     public SessionManager(Context context) {
         this.context = context;
@@ -98,11 +97,6 @@ public class SessionManager {
         Intent intent = new Intent(context, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
-    }
-
-    // Get auth type
-    public String getAuthType() {
-        return sharedPreferences.getString(KEY_AUTH_TYPE, AUTH_TYPE_LOCAL);
     }
 
     public Context getContext() { return context;

@@ -16,9 +16,6 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-/**
- * Repository class for handling User data operations
- */
 public class UserRepository {
     private static final String TAG = "UserRepository";
     private final UserDao userDao;
@@ -69,17 +66,6 @@ public class UserRepository {
             return future.get() > 0;
         } catch (ExecutionException | InterruptedException e) {
             Log.e(TAG, "Error checking if username exists", e);
-            return false;
-        }
-    }
-
-    public boolean isEmailExists(String email) {
-        try {
-            Future<Integer> future = AppDatabase.databaseWriteExecutor.submit(() -> 
-                userDao.checkEmailExists(email));
-            return future.get() > 0;
-        } catch (ExecutionException | InterruptedException e) {
-            Log.e(TAG, "Error checking if email exists", e);
             return false;
         }
     }
