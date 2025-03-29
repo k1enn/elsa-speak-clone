@@ -34,7 +34,9 @@ import com.example.elsa_speak_clone.database.AppDatabase;
 import com.example.elsa_speak_clone.database.SessionManager;
 import com.example.elsa_speak_clone.database.entities.Lesson;
 import com.example.elsa_speak_clone.database.entities.Quiz;
+import com.example.elsa_speak_clone.database.entities.UserProgress;
 import com.example.elsa_speak_clone.database.entities.UserScore;
+import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
 import com.example.elsa_speak_clone.services.NavigationService;
 import com.example.elsa_speak_clone.services.QuizService;
 import com.example.elsa_speak_clone.database.firebase.FirebaseDataManager;
@@ -301,20 +303,23 @@ public class QuizActivity extends AppCompatActivity {
 
             // Update user score in database
             int userId = sessionManager.getUserId();
-            
             executor.execute(() -> {
                 try {
                     // Add XP based on lesson difficulty
                     int xpPoints = 5;
+                    try {
+                        // Add to local
+                        quizService.addXpPoints(userId, currentLessonId, xpPoints);
 
-                    // Add to local
-                    quizService.addXpPoints(userId, currentLessonId, xpPoints);
-
-
-                    // Sync to Firebase
-                    AppDatabase.databaseWriteExecutor.execute(() -> {
-                        firebaseDataManager.syncUserProgress(userId, currentLessonId);
-                    });
+                    } catch (Exception e) {
+                       Log.d(TAG, "Error in addXpPoints");
+                    } finally {
+                        // Sync to Firebase
+                        AppDatabase.databaseWriteExecutor.execute(() -> {
+                            firebaseDataManager.syncUserProgress(userId, currentLessonId);
+                        });
+                        Log.d(TAG, "Successfully add" + xpPoints + "for user id: " + userId);
+                    }
                 } catch (Exception e) {
                     Log.e(TAG, "Error updating score: " + e.getMessage(), e);
                 }

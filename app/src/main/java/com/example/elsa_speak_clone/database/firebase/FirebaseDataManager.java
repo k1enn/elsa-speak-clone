@@ -32,6 +32,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class FirebaseDataManager {
     private static final String TAG = "FirebaseDataManager";
@@ -192,6 +193,8 @@ public class FirebaseDataManager {
         userUpdate.put("userStreak", streak);
         userUpdate.put("userXp", xp);
 
+
+        UserProgress progress = progressRepository.getUserLessonProgress(userId, 1);
         DatabaseReference userRef = leaderboardRef.child(username);
         
         userRef.runTransaction(new Transaction.Handler() {
@@ -209,7 +212,8 @@ public class FirebaseDataManager {
                 mutableData.child("userId").setValue(userId);
                 mutableData.child("userStreak").setValue(streak);
                 mutableData.child("userXp").setValue(xp);
-                
+
+                Log.d(TAG, "Put user id: " + userId + "user streak: " + streak + "user XP: " + xp);
                 return Transaction.success(mutableData);
             }
             
@@ -253,6 +257,7 @@ public class FirebaseDataManager {
                 
                 // Update the progress in the database
                 progressRepository.updateUserProgress(progress);
+                progressRepository.updateDailyStreak(userId);
                 
                 // Get total XP
                 int totalXp = getTotalUserXp(userId);
@@ -263,7 +268,7 @@ public class FirebaseDataManager {
                             if (success) {
                                 Log.d(TAG, "Leaderboard synced to Firebase successfully");
                                 
-                                // Also update user table
+//                                // Also update user table
                                 updateUserStats(user.getName(), totalXp, currentStreak)
                                     .thenAccept(userUpdateSuccess -> {
                                         if (userUpdateSuccess) {
@@ -272,6 +277,8 @@ public class FirebaseDataManager {
                                             Log.e(TAG, "Failed to sync user table to Firebase");
                                         }
                                     });
+
+
                             } else {
                                 Log.e(TAG, "Failed to sync leaderboard to Firebase");
                             }
@@ -347,15 +354,15 @@ public class FirebaseDataManager {
                                 } else {
                                     // No progress entries found, create a default one
                                     Log.d(TAG, "No progress entries found, creating default entry");
-                                    UserProgress newProgress = new UserProgress();
-                                    newProgress.setUserId(userId);
-                                    newProgress.setLessonId(1); // Default lesson
-                                    newProgress.setXp(Math.toIntExact(userXp));
-                                    newProgress.setStreak(Math.toIntExact(userStreak));
-                                    newProgress.setLastStudyDate(getCurrentDate());
-                                    
-                                    progressDao.insert(newProgress);
-                                    Log.d(TAG, "Created new progress entry with XP: " + userXp + ", Streak: " + userStreak);
+//                                    UserProgress newProgress = new UserProgress();
+//                                    newProgress.setUserId(userId);
+//                                    newProgress.setLessonId(1); // Default lesson
+//                                    newProgress.setXp(Math.toIntExact(userXp));
+//                                    newProgress.setStreak(Math.toIntExact(userStreak));
+//                                    newProgress.setLastStudyDate(getCurrentDate());
+//
+//                                    progressDao.insert(newProgress);
+//                                    Log.d(TAG, "Created new progress entry with XP: " + userXp + ", Streak: " + userStreak);
                                     future.complete(true);
                                 }
                             } catch (Exception e) {
@@ -562,30 +569,38 @@ public class FirebaseDataManager {
 
 
     /**
-     * Update user XP and streak in Firebase
+     * Update user statistics in Firebase
      */
     public CompletableFuture<Boolean> updateUserStats(String username, int xp, int streak) {
+        return updateUserStats(username, xp, streak, getCurrentDate());
+    }
+
+    /**
+     * Update user statistics in Firebase with a specific study date
+     */
+    public CompletableFuture<Boolean> updateUserStats(String username, int xp, int streak, String lastStudyDate) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
+        
+        if (username == null || username.isEmpty()) {
+            Log.e(TAG, "Cannot update user stats: Username is null or empty");
+            future.complete(false);
+            return future;
+        }
         
         Map<String, Object> updates = new HashMap<>();
         updates.put("userXp", xp);
         updates.put("userStreak", streak);
+        updates.put("lastStudyDate", lastStudyDate);
         
-        usersTableRef.child(username)
-            .updateChildren(updates)
+        usersTableRef.child(username).updateChildren(updates)
             .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "User stats updated for " + username + ": XP=" + xp + ", Streak=" + streak);
-                // Also update leaderboard
-                User user = userRepository.getUserByName(username);
-                if (user != null) {
-                    updateLeaderboard(username, user.getUserId(), streak, xp)
-                        .thenAccept(future::complete);
-                } else {
-                    future.complete(true);
-                }
+                Log.d(TAG, "User stats updated for " + username + 
+                      " - XP: " + xp + ", Streak: " + streak + 
+                      ", Last study date: " + lastStudyDate);
+                future.complete(true);
             })
             .addOnFailureListener(e -> {
-                Log.e(TAG, "Error updating user stats: " + e.getMessage());
+                Log.e(TAG, "Failed to update user stats: " + e.getMessage());
                 future.complete(false);
             });
         
@@ -615,8 +630,8 @@ public class FirebaseDataManager {
                     for (UserProgress progress : progressList) {
                         progress.setXp(xp);
                         progress.setStreak(streak);
-                        progressDao.update(progress);
                         progress.setLastStudyDate(getCurrentDate());
+                        progressDao.update(progress);
                     }
                     
                     Log.d(TAG, "Updated " + progressList.size() + " progress entries with XP: " + xp + ", Streak: " + streak);
@@ -729,4 +744,204 @@ public class FirebaseDataManager {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         return dateFormat.format(new Date());
     }
+/**
+ * Smart sync method that ensures Firebase values take precedence
+ * when they are higher than local values and manages streak updates
+ */
+public CompletableFuture<Boolean> smartSyncUserProgress(String username, int userId) {
+    CompletableFuture<Boolean> future = new CompletableFuture<>();
+    
+    try {
+        Log.d(TAG, "Starting smart sync for user: " + username);
+        
+        // First, calculate and update the streak
+        calculateAndUpdateStreak(username, userId)
+            .thenAccept(updatedStreak -> {
+                Log.d(TAG, "Streak calculated: " + updatedStreak);
+                
+                // Then continue with the regular sync process
+                usersTableRef.child(username).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        if (dataSnapshot.exists()) {
+                            // Log the full data snapshot for debugging
+                            Log.d(TAG, "Full Firebase data: " + dataSnapshot.toString());
+                            
+                            // Extract Firebase values
+                            Long userXp = dataSnapshot.child("userXp").getValue(Long.class);
+                            Long userStreak = dataSnapshot.child("userStreak").getValue(Long.class);
+                            String lastStudyDate = dataSnapshot.child("lastStudyDate").getValue(String.class);
+                            
+                            Log.d(TAG, "Firebase values - XP: " + userXp + 
+                                  ", Streak: " + userStreak + 
+                                  ", Last study date: " + lastStudyDate);
+                            
+                            // Continue with the existing sync process...
+                            // [rest of the method remains the same]
+                            AppDatabase.databaseWriteExecutor.execute(() -> {
+                                try {
+                                    // Get local progress
+                                    UserProgressDao progressDao = progressRepository.getUserProgressDao();
+                                    List<UserProgress> progressList = progressDao.getUserProgress(userId);
+                                    
+                                    if (progressList != null && !progressList.isEmpty()) {
+                                        // Update progress with Firebase data including last study date
+                                        for (UserProgress progress : progressList) {
+                                            progress.setXp(userXp != null ? userXp.intValue() : 0);
+                                            progress.setStreak(userStreak != null ? userStreak.intValue() : 0);
+                                            progress.setLastStudyDate(lastStudyDate != null ? lastStudyDate : getCurrentDate());
+                                            progressDao.update(progress);
+                                        }
+                                        
+                                        Log.d(TAG, "Updated local progress with Firebase data");
+                                        future.complete(true);
+                                    } else {
+                                        // Create new progress entry
+                                        Log.d(TAG, "No local progress, creating new entry");
+                                        UserProgress newProgress = new UserProgress();
+                                        newProgress.setUserId(userId);
+                                        newProgress.setXp(userXp != null ? userXp.intValue() : 0);
+                                        newProgress.setStreak(userStreak != null ? userStreak.intValue() : 0);
+                                        newProgress.setLastStudyDate(lastStudyDate != null ? lastStudyDate : getCurrentDate());
+                                        newProgress.setProgressId(generateUniqueProgressId());
+                                        progressDao.insert(newProgress);
+                                        
+                                        Log.d(TAG, "Created new progress entry");
+                                        future.complete(true);
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error syncing progress: " + e.getMessage(), e);
+                                    future.complete(false);
+                                }
+                            });
+                        } else {
+                            Log.e(TAG, "User not found in Firebase: " + username);
+                            future.complete(false);
+                        }
+                    }
+                    
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.e(TAG, "Firebase error: " + databaseError.getMessage());
+                        future.complete(false);
+                    }
+                });
+            });
+    } catch (Exception e) {
+        Log.e(TAG, "Error in smart sync: " + e.getMessage(), e);
+        future.complete(false);
+    }
+    
+    return future;
+}
+
+/**
+ * Generate a unique progress ID
+ */
+private int generateUniqueProgressId() {
+    Random random = new Random();
+    return 100000 + random.nextInt(900000); // 6-digit random ID
+}
+
+/**
+ * Calculate streak based on last study date and current date
+ * @param username User to update
+ * @return CompletableFuture with the updated streak value
+ */
+public CompletableFuture<Integer> calculateAndUpdateStreak(String username, int userId) {
+    CompletableFuture<Integer> future = new CompletableFuture<>();
+    
+    try {
+        usersTableRef.child(username).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    // Get current values
+                    Long currentStreak = dataSnapshot.child("userStreak").getValue(Long.class);
+                    String lastStudyDate = dataSnapshot.child("lastStudyDate").getValue(String.class);
+                    Long userXp = dataSnapshot.child("userXp").getValue(Long.class);
+                    
+                    int streak = currentStreak != null ? currentStreak.intValue() : 0;
+                    int xp = userXp != null ? userXp.intValue() : 0;
+                    
+                    // Get current date
+                    String currentDate = getCurrentDate();
+                    
+                    // Calculate days between dates
+                    int daysDifference = 0;
+                    if (lastStudyDate != null && !lastStudyDate.isEmpty()) {
+                        daysDifference = calculateDaysDifference(lastStudyDate, currentDate);
+                        Log.d(TAG, "Days difference: " + daysDifference + " (last: " + lastStudyDate + ", current: " + currentDate + ")");
+                    }
+                    
+                    // Update streak based on days difference
+                    if (lastStudyDate == null || lastStudyDate.isEmpty() || daysDifference > 1) {
+                        // Reset streak if more than 1 day passed or no previous date
+                        streak = 1;
+                        Log.d(TAG, "Streak reset to 1 - days difference: " + daysDifference);
+                    } else if (daysDifference == 1) {
+                        // Increment streak if exactly 1 day passed
+                        streak += 1;
+                        Log.d(TAG, "Streak incremented to " + streak);
+                    } else {
+                        // Same day, keep current streak
+                        Log.d(TAG, "Same day, keeping streak at " + streak);
+                    }
+                    
+                    // Update the user stats with new streak and today's date
+                    final int updatedStreak = streak;
+                    updateUserStats(username, xp, updatedStreak, currentDate)
+                        .thenAccept(success -> {
+                            if (success) {
+                                Log.d(TAG, "Updated streak for " + username + " to " + updatedStreak);
+                                
+                                // Also update local database
+                                updateUserProgressWithFirebaseData(userId, xp, updatedStreak);
+                                
+                                future.complete(updatedStreak);
+                            } else {
+                                Log.e(TAG, "Failed to update streak");
+                                future.complete(currentStreak != null ? currentStreak.intValue() : 0);
+                            }
+                        });
+                } else {
+                    Log.e(TAG, "User not found in Firebase: " + username);
+                    future.complete(0);
+                }
+            }
+            
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e(TAG, "Firebase error during streak update: " + databaseError.getMessage());
+                future.complete(0);
+            }
+        });
+    } catch (Exception e) {
+        Log.e(TAG, "Error calculating streak: " + e.getMessage(), e);
+        future.complete(0);
+    }
+    
+    return future;
+}
+
+/**
+ * Calculate days difference between two date strings (format: yyyy-MM-dd)
+ */
+private int calculateDaysDifference(String date1, String date2) {
+    try {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        Date firstDate = dateFormat.parse(date1);
+        Date secondDate = dateFormat.parse(date2);
+        
+        if (firstDate != null && secondDate != null) {
+            long diffInMillis = Math.abs(secondDate.getTime() - firstDate.getTime());
+            return (int) TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
+        }
+    } catch (Exception e) {
+        Log.e(TAG, "Error calculating days difference", e);
+    }
+    
+    return 0;
+}
+
 } 

@@ -126,7 +126,6 @@ public class HomeFragment extends Fragment {
         initializeVariables();
 
         // Load user progress
-        syncFirebaseProgress();
         loadUserProfile();
 
         // Setup things
@@ -284,35 +283,13 @@ public class HomeFragment extends Fragment {
         // Retrieve user data from Room database in background thread
         executor.execute(() -> {
             try {
-                // Load user progress
                 // Using main thread because using LiveData
                 mainHandler.post(() -> {
                     if (isAdded()) {
-
-                        userProgressRepository.loadUserMetrics(userId);
-                        // Set up LiveData observers
-                        userProgressRepository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
-                            int userStreak = streak != null ? streak : 0;
-                            tvDayStreak.setText(String.valueOf(userStreak) + " Days");
-                        });
-
-                        userProgressRepository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
-                            int userXp = xp != null ? xp : 0;
-                            tvXPPoint.setText(String.valueOf(userXp) + " XP");
-                        });
-
-                        UserProgress progress = userProgressRepository.getCurrentProgress().getValue();
-                        if (progress != null) {
-                            tvDayStreak.setText(progress.getStreak());
-                            tvXPPoint.setText(progress.getXp());
-                        }
-
-                        // Trigger the loading of metrics
-                        userProgressRepository.loadUserMetrics(userId);
-                        firebaseDataManager.syncUserProgress(userId, 1);
+                        // Set up LiveData observers - ONLY NEED TO SET UP ONCE
+                        setupLiveDataObservers(userId);
                     }
                 });
-
             } catch (Exception e) {
                 Log.e(TAG, "Error loading user profile", e);
 
@@ -326,24 +303,27 @@ public class HomeFragment extends Fragment {
             }
         });
     }
-    private void syncFirebaseProgress() {
-        // Get current user ID
-        SharedPreferences prefs = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        int userId = prefs.getInt("USER_ID", 1);
 
-        executor.execute(() -> {
-            try {
-                // Force sync all user progress from Firebase to local database
-                firebaseDataManager.syncAllUserProgressFromFirebase(userId);
-
-                // Then refresh UI on main thread after sync completes
-                mainHandler.post(this::loadUserProgress);
-
-                Log.d(TAG, "Firebase progress sync completed for user " + userId);
-            } catch (Exception e) {
-                Log.e(TAG, "Error syncing Firebase progress: " + e.getMessage(), e);
+    private void setupLiveDataObservers(int userId) {
+        // Set up LiveData observers
+        userProgressRepository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
+            int userStreak = streak != null ? streak : 0;
+            if (tvDayStreak != null) {
+                tvDayStreak.setText(userStreak + " Days");
+                Log.d(TAG, "Updated streak UI: " + userStreak);
             }
         });
+
+        userProgressRepository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
+            int userXp = xp != null ? xp : 0;
+            if (tvXPPoint != null) {
+                tvXPPoint.setText(userXp + " XP");
+                Log.d(TAG, "Updated XP UI: " + userXp);
+            }
+        });
+        
+        // Trigger metrics loading to refresh the LiveData
+        userProgressRepository.loadUserMetrics(userId);
     }
 
     public int getRandomNumber() {
@@ -351,116 +331,90 @@ public class HomeFragment extends Fragment {
         return random.nextInt(9) + 1;
     }
 
-    private void loadUserProgress() {
-        try {
-            if (isLoggedIn) {
-                // Use the repository to load progress
-                firebaseDataManager.pullUserProgressToLocal(username, userId);
-                userProgressRepository.updateStreakAndSyncToFirebase(userId, username);
-                userProgressRepository.loadUserMetrics(userId);
-            } else {
-                // Set default values for not logged in users
-                tvXPPoint.setText("1 Days");
-                tvDayStreak.setText("0 XP");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error in loadUserProgress: ", e);
-            // Set default values in case of any error
-            tvXPPoint.setText("1 Days");
-            tvDayStreak.setText("0 XP");
-        }
-    }
-    private void createProgressCheckerRunnable() {
-        progressChecker = new Runnable() {
-            @Override
-            public void run() {
-                // Check if reach max loop time
-                if (refreshCount < MAX_REFRESHES) {
-                    // Load the latest user progress
-                    loadUserProgress();
-                    refreshCount++;
-                    Log.d(TAG, "Progress refresh #" + refreshCount + " completed");
-
-                    // Reload twice for sure
-                    if (refreshCount < MAX_REFRESHES) {
-                        progressRefreshHandler.postDelayed(this, REFRESH_INTERVAL);
-                    } else {
-                        Log.d(TAG, "Reached maximum number of refreshes");
-                    }
-                }
-            }
-        };
-    }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        // Always refresh progress when returning to this fragment
-        startProgressRefresh();
-        refreshUserProgress();
-
-        // Pull latest data from Firebase
-        syncFirebaseProgress();
-    }
-    private void startProgressRefresh() {
-        // Reset counter
-        refreshCount = 0;
-
-        // Start the refresh cycle
-        if (progressRefreshHandler != null && progressChecker != null) {
-            progressRefreshHandler.post(progressChecker);
-            Log.d(TAG, "Started progress refresh cycle");
+        
+        // Only refresh data if user is logged in
+        if (isLoggedIn) {
+            pullFirebaseDataToLocal();
         }
     }
 
-    private void refreshUserProgress() {
-        // Get current user ID
-        SharedPreferences prefs = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        int userId = prefs.getInt("USER_ID", 1);
-
-        // Create a repository instance
-        UserProgressRepository repository = new UserProgressRepository(requireContext());
-
-        // Load updated metrics
-        repository.loadUserMetrics(userId);
-
-        // Observe the LiveData
-        repository.getUserStreak().observe(getViewLifecycleOwner(), streak -> {
-            if (tvDayStreak != null) {
-                tvDayStreak.setText(String.valueOf(streak));
+    /**
+     * Dedicated method to pull data from Firebase to local database
+     */
+    private void pullFirebaseDataToLocal() {
+        try {
+            if (!isAdded() || !isLoggedIn) {
+                return;
             }
-        });
 
-        repository.getUserXp().observe(getViewLifecycleOwner(), xp -> {
-            if (tvXPPoint != null) {
-                tvXPPoint.setText(String.valueOf(xp));
-            }
-        });
+            Log.d(TAG, "Pulling Firebase data for user: " + username);
+
+            executor.execute(() -> {
+                try {
+                    // Use the smart sync method instead
+                    firebaseDataManager.smartSyncUserProgress(username, userId)
+                            .thenAccept(success -> {
+                                if (success) {
+                                    Log.d(TAG, "Smart sync completed successfully for: " + username);
+
+                                    // Now update the UI from the local database
+                                    mainHandler.post(() -> {
+                                        if (isAdded()) {
+                                            // This will trigger the LiveData updates
+                                            userProgressRepository.loadUserMetrics(userId);
+                                        }
+                                    });
+                                } else {
+                                    Log.e(TAG, "Smart sync failed for: " + username);
+                                    // Fallback to traditional method if smart sync fails
+                                    firebaseDataManager.pullUserProgressToLocal(username, userId);
+
+                                    mainHandler.post(() -> {
+                                        if (isAdded()) {
+                                            userProgressRepository.loadUserMetrics(userId);
+                                        }
+                                    });
+                                }
+                            });
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in smart sync: " + e.getMessage(), e);
+
+                    // Fallback to local data if Firebase sync fails
+                    mainHandler.post(() -> {
+                        if (isAdded()) {
+                            userProgressRepository.loadUserMetrics(userId);
+                        }
+                    });
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error in pullFirebaseDataToLocal: ", e);
+        }
     }
-
     @Override
     public void onPause() {
         super.onPause();
-        if (progressRefreshHandler != null && progressChecker != null) {
-            progressRefreshHandler.removeCallbacks(progressChecker);
-            Log.d(TAG, "Refresh timer paused in onPause");
-        }
+        // Remove any pending refresh callbacks
+    if (mainHandler != null) {
+        mainHandler.removeCallbacksAndMessages(null);
+    }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (progressRefreshHandler != null) {
-            progressRefreshHandler.removeCallbacksAndMessages(null);
-            progressRefreshHandler = null;
-            Log.d(TAG, "Refresh timer cleaned up in onDestroy");
-        }
-
-        // Clean up executor
-        if (executor != null) {
-            executor.shutdown();
-        }
+    // Clean up handler and executor
+    if (mainHandler != null) {
+        mainHandler.removeCallbacksAndMessages(null);
+    }
+    
+    if (executor != null && !executor.isShutdown()) {
+        executor.shutdown();
+    }
     }
 
 }

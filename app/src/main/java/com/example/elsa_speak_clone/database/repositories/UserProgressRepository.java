@@ -273,17 +273,27 @@ public class UserProgressRepository {
     // Helper method to update streak in Firebase
     private void updateStreakInFirebase(String firebaseUid, int userId, int streak, String lastStudyDate) {
         try {
-            DatabaseReference userProgressRef = FirebaseDatabase.getInstance().getReference()
-                    .child("userProgress")
-                    .child(firebaseUid);
-
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("streak", streak);
-            updates.put("lastStudyDate", lastStudyDate);
-
-            userProgressRef.updateChildren(updates)
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Firebase streak updated for user: " + userId))
-                    .addOnFailureListener(e -> Log.e(TAG, "Failed to update Firebase streak", e));
+            // Use FirebaseDataManager and usersTableRef instead of direct Firebase reference
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser != null) {
+                String userEmail = firebaseUser.getEmail();
+                String username = userEmail != null ? userEmail.split("@")[0] : firebaseUid;
+                
+                // Use FirebaseDataManager's updateUserStats method which uses usersTableRef
+                FirebaseDataManager.getInstance(null).updateUserStats(
+                        username,
+                        userProgressDao.getUserProgressById(userId).getXp(), // Keep existing XP
+                        streak  // Update streak
+                ).thenAccept(success -> {
+                    if (success) {
+                        Log.d(TAG, "Successfully updated streak in Firebase for: " + username);
+                    } else {
+                        Log.e(TAG, "Failed to update streak in Firebase for: " + username);
+                    }
+                });
+            } else {
+                Log.e(TAG, "Cannot update Firebase streak: No authenticated user");
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error updating Firebase streak", e);
         }
@@ -292,23 +302,27 @@ public class UserProgressRepository {
     // Helper method to create initial progress in Firebase
     private void createInitialProgressInFirebase(String firebaseUid, int userId, int progressId) {
         try {
-            DatabaseReference userProgressRef = FirebaseDatabase.getInstance().getReference()
-                    .child("userProgress")
-                    .child(firebaseUid);
-
-            Map<String, Object> progressData = new HashMap<>();
-            progressData.put("progressId", progressId);
-            progressData.put("userId", userId);
-            progressData.put("lessonId", 1);
-            progressData.put("difficulty", 1);
-            progressData.put("completionTime", getCurrentDate());
-            progressData.put("streak", 1);
-            progressData.put("xp", 0);
-            progressData.put("lastStudyDate", getCurrentDate());
-
-            userProgressRef.setValue(progressData)
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Initial Firebase progress created for user: " + userId))
-                    .addOnFailureListener(e -> Log.e(TAG, "Failed to create initial Firebase progress", e));
+            // Get Firebase user to determine username
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser != null) {
+                String userEmail = firebaseUser.getEmail();
+                String username = userEmail != null ? userEmail.split("@")[0] : firebaseUid;
+                
+                // Use FirebaseDataManager which manages the correct references
+                FirebaseDataManager.getInstance(null).updateUserStats(
+                        username,
+                        0, // Initial XP
+                        1  // Initial streak
+                ).thenAccept(success -> {
+                    if (success) {
+                        Log.d(TAG, "Successfully created initial progress in Firebase for: " + username);
+                    } else {
+                        Log.e(TAG, "Failed to create initial progress in Firebase for: " + username);
+                    }
+                });
+            } else {
+                Log.e(TAG, "Cannot create Firebase progress: No authenticated user");
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error creating initial Firebase progress", e);
         }
