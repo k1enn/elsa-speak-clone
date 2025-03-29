@@ -30,7 +30,7 @@ public interface UserProgressDao {
     @Query("UPDATE UserProgress SET Xp = Xp + :points WHERE UserId = :userId")
     void addXpPoints(int userId, int points);
 
-    @Query("UPDATE UserProgress SET Xp = :points WHERE UserId = :userId")
+    @Query("UPDATE UserProgress SET Xp = Xp + :points WHERE UserId = :userId")
     void updateXpPoints(int userId, int points);
 
     @Query("UPDATE UserProgress SET Streak = :streak WHERE UserId = :userId")
@@ -50,7 +50,7 @@ public interface UserProgressDao {
     @Query("SELECT * FROM UserProgress")
     List<UserProgress> getAllUserProgress();
     
-    @Query("SELECT SUM(Xp) FROM UserProgress WHERE UserId = :userId")
+    @Query("SELECT Xp FROM UserProgress WHERE UserId = :userId")
     int getTotalXpForUser(int userId);
     
     @Query("SELECT MAX(Streak) FROM UserProgress WHERE UserId = :userId")
@@ -61,5 +61,6 @@ public interface UserProgressDao {
     
     @Query("SELECT MAX(ProgressId) FROM UserProgress")
     Integer getMaxProgressId();
+
 
 } 
