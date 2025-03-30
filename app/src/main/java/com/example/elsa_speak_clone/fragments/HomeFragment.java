@@ -238,7 +238,7 @@ public class HomeFragment extends Fragment {
 
     private void setupSpeechToTextButton() {
         cvPronunciation.setOnClickListener(v -> {
-                navigationService.navigateToSpeechToText(getRandomNumber());
+            navigationService.navigateToSpeechToText(getRandomNumber());
         });
     }
 
@@ -280,28 +280,26 @@ public class HomeFragment extends Fragment {
     private void loadUserProfile() {
         int userId = sessionManager.getUserId();
 
-        // Retrieve user data from Room database in background thread
-        executor.execute(() -> {
-            try {
-                // Using main thread because using LiveData
-                mainHandler.post(() -> {
-                    if (isAdded()) {
-                        // Set up LiveData observers - ONLY NEED TO SET UP ONCE
-                        setupLiveDataObservers(userId);
-                    }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading user profile", e);
+        try {
+            // Main thread for LiveData
+            mainHandler.post(() -> {
+                if (isAdded()) {
+                    // Set up LiveData observers
+                    setupLiveDataObservers(userId);
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading user profile", e);
 
-                mainHandler.post(() -> {
-                    if (isAdded()) {
-                        Toast.makeText(requireContext(),
-                                "Error loading profile: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
+            mainHandler.post(() -> {
+                if (isAdded()) {
+                    Toast.makeText(requireContext(),
+                            "Error loading profile: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
     }
 
     private void setupLiveDataObservers(int userId) {
@@ -321,7 +319,7 @@ public class HomeFragment extends Fragment {
                 Log.d(TAG, "Updated XP UI: " + userXp);
             }
         });
-        
+
         // Trigger metrics loading to refresh the LiveData
         userProgressRepository.loadUserMetrics(userId);
     }
@@ -335,7 +333,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        
+
         // Only refresh data if user is logged in
         if (isLoggedIn) {
             pullFirebaseDataToLocal();
@@ -356,34 +354,23 @@ public class HomeFragment extends Fragment {
             executor.execute(() -> {
                 try {
                     // Use the smart sync method instead
-                    firebaseDataManager.smartSyncUserProgress(username, userId)
+                    firebaseDataManager.syncUserProgress(username, userId)
                             .thenAccept(success -> {
                                 if (success) {
-                                    Log.d(TAG, "Smart sync completed successfully for: " + username);
+                                    Log.d(TAG, "Sync user progress success: " + username);
 
-                                    // Now update the UI from the local database
                                     mainHandler.post(() -> {
                                         if (isAdded()) {
-                                            // This will trigger the LiveData updates
                                             userProgressRepository.loadUserMetrics(userId);
                                         }
                                     });
                                 } else {
-                                    Log.e(TAG, "Smart sync failed for: " + username);
-                                    // Fallback to traditional method if smart sync fails
-                                    firebaseDataManager.pullUserProgressToLocal(username, userId);
-
-                                    mainHandler.post(() -> {
-                                        if (isAdded()) {
-                                            userProgressRepository.loadUserMetrics(userId);
-                                        }
-                                    });
+                                    Log.e(TAG, "Pull Firebase data to local failed");
                                 }
                             });
                 } catch (Exception e) {
                     Log.e(TAG, "Error in smart sync: " + e.getMessage(), e);
 
-                    // Fallback to local data if Firebase sync fails
                     mainHandler.post(() -> {
                         if (isAdded()) {
                             userProgressRepository.loadUserMetrics(userId);
@@ -395,26 +382,27 @@ public class HomeFragment extends Fragment {
             Log.e(TAG, "Error in pullFirebaseDataToLocal: ", e);
         }
     }
+
     @Override
     public void onPause() {
         super.onPause();
         // Remove any pending refresh callbacks
-    if (mainHandler != null) {
-        mainHandler.removeCallbacksAndMessages(null);
-    }
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-    // Clean up handler and executor
-    if (mainHandler != null) {
-        mainHandler.removeCallbacksAndMessages(null);
-    }
-    
-    if (executor != null && !executor.isShutdown()) {
-        executor.shutdown();
-    }
+        // Clean up handler and executor
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
     }
 
 }

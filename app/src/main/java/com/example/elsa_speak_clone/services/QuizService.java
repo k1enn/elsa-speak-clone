@@ -1,14 +1,15 @@
 package com.example.elsa_speak_clone.services;
 
+import android.app.Application;
 import android.content.Context;
-import android.net.ConnectivityManager;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
 import com.example.elsa_speak_clone.database.AppDatabase;
+import com.example.elsa_speak_clone.database.dao.UserProgressDao;
 import com.example.elsa_speak_clone.database.entities.Quiz;
 import com.example.elsa_speak_clone.database.entities.UserProgress;
+import com.example.elsa_speak_clone.database.repositories.UserProgressRepository;
+import com.example.elsa_speak_clone.database.repositories.UserRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -43,14 +44,19 @@ public class QuizService {
     public void addXpPoints(int userId, int lessonId, int points) {
         try {
             // Check if score entry exists for this specific user AND lesson combination
+            UserProgressRepository userProgressRepository = new UserProgressRepository(this.context);
             UserProgress existingProgress = database.userProgressDao().getUserLessonProgress(userId, lessonId);
-            
+            UserProgressDao userProgressDao = userProgressRepository.getUserProgressDao();
+
+
             if (existingProgress != null) {
                 // Update existing progress for this lesson
-                existingProgress.setXp(existingProgress.getXp() + points);
+//                existingProgress.setXp(existingProgress.getXp() + points);
                 existingProgress.setLastStudyDate(getCurrentDate());
                 database.userProgressDao().update(existingProgress);
-                Log.d(TAG, "Updated XP for existing progress: " + existingProgress.getProgressId());
+                userProgressDao.updateXpPoints(userId, points);
+                Log.d(TAG, "Updated XP for existing progress: " + existingProgress.getProgressId() +
+                        "\n Total XP: " + existingProgress.getXp());
                 
             } else {
                 // Create new progress entry
