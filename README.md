@@ -42,7 +42,6 @@ A comprehensive Android application designed to help users learn English through
 - **Local Storage**: SQLite for storing progress and lesson data
 - **APIs Integration**: 
   - Google Authentication API
-  - Speech Recognition API
   - News API
   - Dictionary API
   - ChatGPT API for the English assistant
