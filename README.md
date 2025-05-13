@@ -19,6 +19,10 @@
 --- 
 A comprehensive Android application designed to help users learn English through interactive lessons, pronunciation practice, quizzes, and more. This app follows self-guided language learning principles to help users build a strong foundation in English.
 
+## Overview
+![ELSA Speak Clone](image/elsa-speak-clone.png)
+
+
 ## Features
 
 - **Interactive Lessons**: Structured lessons organized by difficulty levels and topics relevant to daily life
